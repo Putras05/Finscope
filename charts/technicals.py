@@ -29,8 +29,8 @@ _ZZ_CLR = '#F59E0B'
 def chart_technical(df: pd.DataFrame, ticker: str, T: dict, *,
                     window: int = 180, show_sr: bool = True,
                     show_fib: bool = True, show_channel: bool = True,
-                    show_zigzag: bool = True, zigzag_pct: float = 0.06,
-                    is_en: bool = False) -> go.Figure:
+                    show_zigzag: bool = True, show_patterns: bool = True,
+                    zigzag_pct: float = 0.06, is_en: bool = False) -> go.Figure:
     """Vẽ nến + các lớp kỹ thuật trên `window` phiên gần nhất."""
     d = df.tail(window).reset_index(drop=True)
     dates = pd.to_datetime(d['Ngay'])
@@ -112,6 +112,39 @@ def chart_technical(df: pd.DataFrame, ticker: str, T: dict, *,
                 name=('Waves (ZigZag)' if is_en else 'Sóng (ZigZag)'),
                 hovertemplate='%{x|%Y-%m-%d}<br>%{y:,.0f} đ<extra></extra>',
             ))
+
+    # ── Mẫu hình nến (đánh dấu trên chart) ──────────────────────────────
+    if show_patterns:
+        pats = TA.candlestick_patterns(d, lookback=window)
+        bx, by, bt = [], [], []          # bullish
+        rx, ry, rt = [], [], []          # bearish
+        nx, ny, nt = [], [], []          # neutral (doji)
+        for p in pats:
+            i = p['idx']
+            if p['dir'] > 0:
+                bx.append(dates.iloc[i]); by.append(d['Low'].iloc[i] * K * 0.985); bt.append(p['name'])
+            elif p['dir'] < 0:
+                rx.append(dates.iloc[i]); ry.append(d['High'].iloc[i] * K * 1.015); rt.append(p['name'])
+            else:
+                nx.append(dates.iloc[i]); ny.append(d['High'].iloc[i] * K * 1.012); nt.append(p['name'])
+        if bx:
+            fig.add_trace(go.Scatter(
+                x=bx, y=by, mode='markers', name=('Bullish pattern' if is_en else 'Mẫu hình tăng'),
+                marker=dict(symbol='triangle-up', size=10, color=_SUP_CLR,
+                            line=dict(color='#fff', width=1)),
+                text=bt, hovertemplate='%{text}<br>%{x|%Y-%m-%d}<extra></extra>'))
+        if rx:
+            fig.add_trace(go.Scatter(
+                x=rx, y=ry, mode='markers', name=('Bearish pattern' if is_en else 'Mẫu hình giảm'),
+                marker=dict(symbol='triangle-down', size=10, color=_RES_CLR,
+                            line=dict(color='#fff', width=1)),
+                text=rt, hovertemplate='%{text}<br>%{x|%Y-%m-%d}<extra></extra>'))
+        if nx:
+            fig.add_trace(go.Scatter(
+                x=nx, y=ny, mode='markers', name='Doji',
+                marker=dict(symbol='diamond', size=7, color=T['text_muted'],
+                            line=dict(color='#fff', width=1)),
+                text=nt, hovertemplate='%{text}<br>%{x|%Y-%m-%d}<extra></extra>'))
 
     fig.update_layout(
         height=480, margin=dict(l=46, r=70, t=24, b=40),

@@ -176,6 +176,81 @@ def zigzag(df: pd.DataFrame, pct: float = 0.05) -> dict:
     return {'idx': idx, 'px': px, 'dirs': dirs}
 
 
+# ── Mẫu hình nến (candlestick patterns) ─────────────────────────────────────
+def candlestick_patterns(df: pd.DataFrame, lookback: int = 12) -> list:
+    """Nhận dạng các mẫu hình nến phổ biến trong `lookback` phiên gần nhất.
+
+    Trả list dict {'idx', 'date', 'name', 'dir'(+1 tăng/-1 giảm/0 trung lập),
+    'desc'}, mới nhất ở cuối. Dùng tỉ lệ thân/bóng nến + bối cảnh 1-3 nến.
+    """
+    n = len(df)
+    if n < 4:
+        return []
+    O = df['Open'].values.astype(float)
+    H = df['High'].values.astype(float)
+    L = df['Low'].values.astype(float)
+    C = df['Close'].values.astype(float)
+    D = df['Ngay'].values
+    out = []
+    start = max(3, n - lookback)
+
+    for i in range(start, n):
+        o, h, l, c = O[i], H[i], L[i], C[i]
+        body = abs(c - o)
+        rng = h - l
+        if rng <= 0:
+            continue
+        upsh = h - max(o, c)            # bóng trên
+        dnsh = min(o, c) - l            # bóng dưới
+        bull = c >= o
+        po, pc = O[i - 1], C[i - 1]
+        pbody = abs(pc - po)
+        pbull = pc >= po
+        name = dir_ = desc = None
+
+        # ── 3 nến: Sao Mai / Sao Hôm ──
+        o2, c2 = O[i - 2], C[i - 2]
+        body2 = abs(c2 - o2)
+        if (c2 < o2 and pbody < body2 * 0.5 and bull and c > (o2 + c2) / 2
+                and body > pbody):
+            name, dir_, desc = ('Sao Mai (Morning Star)', 1,
+                                'Đảo chiều TĂNG sau xu hướng giảm — 3 nến')
+        elif (c2 > o2 and pbody < body2 * 0.5 and (not bull) and c < (o2 + c2) / 2
+              and body > pbody):
+            name, dir_, desc = ('Sao Hôm (Evening Star)', -1,
+                                'Đảo chiều GIẢM sau xu hướng tăng — 3 nến')
+        # ── 2 nến: Nhấn chìm (Engulfing) ──
+        elif bull and (not pbull) and c >= po and o <= pc and body > pbody:
+            name, dir_, desc = ('Nhấn chìm tăng (Bullish Engulfing)', 1,
+                                'Nến xanh bao trùm nến đỏ trước — tín hiệu mua')
+        elif (not bull) and pbull and o >= pc and c <= po and body > pbody:
+            name, dir_, desc = ('Nhấn chìm giảm (Bearish Engulfing)', -1,
+                                'Nến đỏ bao trùm nến xanh trước — tín hiệu bán')
+        # ── 2 nến: Harami (thai nghén) ──
+        elif pbody > body * 1.6 and max(o, c) <= max(po, pc) and min(o, c) >= min(po, pc):
+            if not pbull:
+                name, dir_, desc = ('Harami tăng', 1,
+                                    'Thân nhỏ nằm trong nến giảm lớn — khả năng đảo chiều tăng')
+            else:
+                name, dir_, desc = ('Harami giảm', -1,
+                                    'Thân nhỏ nằm trong nến tăng lớn — khả năng đảo chiều giảm')
+        # ── 1 nến: Búa / Sao băng / Doji ──
+        elif body <= rng * 0.32 and dnsh >= body * 2 and upsh <= body * 0.8:
+            name, dir_, desc = ('Búa (Hammer)', 1,
+                                'Bóng dưới dài — lực mua hấp thụ đáy')
+        elif body <= rng * 0.32 and upsh >= body * 2 and dnsh <= body * 0.8:
+            name, dir_, desc = ('Sao băng (Shooting Star)', -1,
+                                'Bóng trên dài — lực bán áp đảo đỉnh')
+        elif body <= rng * 0.1:
+            name, dir_, desc = ('Doji', 0,
+                                'Thân rất nhỏ — thị trường lưỡng lự')
+
+        if name:
+            out.append({'idx': i, 'date': D[i], 'name': name,
+                        'dir': dir_, 'desc': desc})
+    return out
+
+
 # ── Tóm tắt vị thế kỹ thuật cho thẻ/bảng ────────────────────────────────────
 def technical_summary(df: pd.DataFrame) -> dict:
     """Gộp các chỉ số vị thế cho bảng tóm tắt: hỗ trợ/kháng cự gần nhất,

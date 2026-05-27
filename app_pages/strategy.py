@@ -154,7 +154,7 @@ def _technical_analysis_section(df, ticker, _T, is_en):
         f'{"— Hỗ trợ/Kháng cự · Fibonacci · Kênh xu hướng · Sóng" if not is_en else "— Support/Resistance · Fibonacci · Trend channel · Waves"}'
         f'</span></div>', unsafe_allow_html=True)
 
-    c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 1.3])
+    c1, c2, c3, c4, c5, c6 = st.columns([1, 1, 1, 1, 1, 1.3])
     _sr = c1.toggle(('Hỗ trợ/Kháng cự' if not is_en else 'S/R'),
                     value=True, key=f'ta_sr_{ticker}')
     _fib = c2.toggle('Fibonacci', value=True, key=f'ta_fib_{ticker}')
@@ -162,18 +162,43 @@ def _technical_analysis_section(df, ticker, _T, is_en):
                     value=True, key=f'ta_ch_{ticker}')
     _zz = c4.toggle(('Sóng (ZigZag)' if not is_en else 'Waves'),
                     value=True, key=f'ta_zz_{ticker}')
-    _win = c5.radio(('Cửa sổ' if not is_en else 'Window'),
+    _pat = c5.toggle(('Mẫu nến' if not is_en else 'Patterns'),
+                     value=True, key=f'ta_pat_{ticker}')
+    _win = c6.radio(('Cửa sổ' if not is_en else 'Window'),
                     options=[120, 180, 365], index=1, horizontal=True,
                     key=f'ta_win_{ticker}', label_visibility='collapsed')
 
     try:
         fig = chart_technical(df, ticker, _T, window=int(_win), show_sr=_sr,
                               show_fib=_fib, show_channel=_ch, show_zigzag=_zz,
-                              is_en=is_en)
+                              show_patterns=_pat, is_en=is_en)
         st.plotly_chart(fig, use_container_width=True, config={
             **_PLOTLY_CONFIG, 'scrollZoom': True})
     except Exception as _e:
         st.caption(f'⚠ {_e}')
+
+    # ── Mẫu hình nến gần đây (panel) ────────────────────────────────────
+    _pats = TA.candlestick_patterns(df, lookback=20)
+    if _pats:
+        _chips = ''
+        for p in _pats[-6:][::-1]:
+            _pc = ('#16A34A' if p['dir'] > 0 else '#DC2626' if p['dir'] < 0
+                   else _T['text_muted'])
+            _parr = '▲' if p['dir'] > 0 else '▼' if p['dir'] < 0 else '◆'
+            _chips += (
+                f'<div style="flex:1 1 220px;min-width:200px;background:{_T["bg_card"]};'
+                f'border:1px solid {_T["border"]};border-left:3px solid {_pc};'
+                f'border-radius:8px;padding:8px 12px">'
+                f'<div style="font-size:12px;font-weight:700;color:{_pc}">'
+                f'{_parr} {p["name"]}</div>'
+                f'<div style="font-size:10px;color:{_T["text_muted"]};margin-top:2px">'
+                f'{str(p["date"])[:10]} · {p["desc"]}</div></div>')
+        st.markdown(
+            f'<div style="font-size:11px;font-weight:700;color:{_T["text_secondary"]};'
+            f'text-transform:uppercase;letter-spacing:.5px;margin:10px 0 6px">'
+            f'{"Mẫu hình nến gần đây" if not is_en else "Recent candlestick patterns"}</div>'
+            f'<div style="display:flex;gap:8px;flex-wrap:wrap">{_chips}</div>',
+            unsafe_allow_html=True)
 
     # ── Bảng tóm tắt vị thế kỹ thuật + Pivot Points ─────────────────────
     s = TA.technical_summary(df.tail(int(_win)))
@@ -293,6 +318,15 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     except Exception:
         _ns = {'ok': False}; _news_vote = 0
 
+    # ── Mẫu hình nến gần nhất (trong 3 phiên) → phiếu ──────────────────
+    try:
+        from data.technicals import candlestick_patterns
+        _recent_pats = candlestick_patterns(df, lookback=3)
+        _pat_vote = _recent_pats[-1]['dir'] if _recent_pats else 0
+        _pat_name = _recent_pats[-1]['name'] if _recent_pats else None
+    except Exception:
+        _pat_vote, _pat_name = 0, None
+
     # ── Tổng hợp phiếu ──────────────────────────────────────────────────
     tv = _tech_votes(last)
     votes = [
@@ -302,6 +336,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         ('RSI14', tv['rsi']),
         ('Bollinger %B', tv['bollinger']),
         ('Ichimoku', _ichi_vote),
+        (('Mẫu hình nến' if not is_en else 'Candlestick') + (f' · {_pat_name.split(" (")[0]}' if _pat_name else ''), _pat_vote),
         ('Đồng thuận dự báo' if not is_en else 'Forecast consensus', _fc_vote),
         ('Tâm lý tin tức' if not is_en else 'News sentiment', _news_vote),
     ]
