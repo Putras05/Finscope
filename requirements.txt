@@ -1,0 +1,17 @@
+# Pinned 2026-05-06 (perf optimization phase) — version pins reduce
+# resolution time on Streamlit Cloud cold start. Versions are known-good
+# on PyPI as of pin date. `vnstock` is fast-moving; held to 3.x range
+# rather than a strict pin so HOSE data layer keeps working.
+streamlit==1.39.0
+streamlit-option-menu==0.3.13
+pandas==2.2.3
+numpy==2.0.2
+plotly==5.24.1
+matplotlib==3.9.2
+scipy==1.14.1
+scikit-learn==1.5.2
+statsmodels==0.14.4
+arch==8.0.0
+vnstock>=3.0,<4.0
+google-genai==1.5.0
+requests==2.32.3
