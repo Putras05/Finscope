@@ -155,22 +155,40 @@ if _need_reload:
             render_training_overlay(_title, _subtitle, step, total, task, _T),
             unsafe_allow_html=True)
 
-    _show(0, 5, t('load.market'))
+    _show(0, 3, t('load.market'))
     df = fetch_data(ticker, date_from, date_to)
 
-    _show(1, 5, t('load.ar1') + f' · AR({ar_order})')
-    r1 = run_ar(ticker, train_ratio, p=ar_order,
-                date_from=date_from, date_to=date_to)
+    # ── HUẤN LUYỆN SONG SONG cả 7 mô hình (1 lần) → warm cache ──────────
+    # Mỗi run_* đã @st.cache_data → các trang sau chỉ đọc cache (tức thì).
+    # Chạy đồng thời → tổng thời gian ≈ mô hình lâu nhất (ARIMA ~3s) thay vì
+    # cộng dồn tuần tự ~13s.
+    _show(1, 3, ('Huấn luyện song song 7 mô hình...'
+                 if st.session_state.get('lang', 'VI') == 'VI'
+                 else 'Training 7 models in parallel...'))
+    from concurrent.futures import ThreadPoolExecutor as _TPE
+    from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
+    _mkw = dict(p=ar_order, date_from=date_from, date_to=date_to)
+    with _TPE(max_workers=7) as _ex:
+        _futs = {
+            'ar':      _ex.submit(run_ar,      ticker, train_ratio, **_mkw),
+            'mlr':     _ex.submit(run_mlr,     ticker, train_ratio, **_mkw),
+            'arima':   _ex.submit(run_arima,   ticker, train_ratio, **_mkw),
+            'sarima':  _ex.submit(run_sarima,  ticker, train_ratio, **_mkw),
+            'ets':     _ex.submit(run_ets,     ticker, train_ratio, **_mkw),
+            'garch':   _ex.submit(run_garch,   ticker, train_ratio, **_mkw),
+            'sarimax': _ex.submit(run_sarimax, ticker, train_ratio, **_mkw),
+        }
+        r1 = _futs['ar'].result()
+        r2 = _futs['mlr'].result()
+        r3 = _futs['arima'].result()
+        # 4 mô hình nâng cao — chỉ cần .result() để warm cache (bỏ qua lỗi lẻ)
+        for _k in ('sarima', 'ets', 'garch', 'sarimax'):
+            try:
+                _futs[_k].result()
+            except Exception:
+                pass
 
-    _show(2, 5, t('load.mlr') + f' · MLR({ar_order})')
-    r2 = run_mlr(ticker, train_ratio, p=ar_order,
-                 date_from=date_from, date_to=date_to)
-
-    _show(3, 5, t('load.arima') + f' · ARIMA')
-    r3 = run_arima(ticker, train_ratio, p=ar_order,
-                   date_from=date_from, date_to=date_to)
-
-    _show(4, 5, t('load.metrics'))
+    _show(2, 3, t('load.metrics'))
     m1 = calc_metrics(r1['yte'], r1['pte'], k=ar_order)
     m2 = calc_metrics(r2['yte'], r2['pte'], k=3 * ar_order)
     # ARIMA: số tham số ≈ p + q + 1 (hằng số) — dùng cho R²adj

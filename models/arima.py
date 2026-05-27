@@ -18,7 +18,7 @@ warnings.filterwarnings('ignore')
 
 # Trần bậc AR khi auto-chọn order — ARIMA bậc quá cao vừa chậm vừa overfit.
 # Tham số p từ sidebar chỉ dùng làm "trần tìm kiếm", không ép cứng.
-_P_CEIL = 4
+_P_CEIL = 3
 _Q_CEIL = 2
 
 

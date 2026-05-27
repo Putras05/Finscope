@@ -18,6 +18,34 @@ def render():
     tdt_b64 = _img_b64('TDT_logo.png')
     khoa_b64 = _img_b64('khoa_logo.png')
 
+    # ── PRELOAD pro-style: warm sẵn 7 mô hình của mã mặc định NGAY khi hiện
+    #    trang bìa (tận dụng vài giây user đọc cover) → bấm VÀO NGAY là
+    #    Dashboard hiện gần như tức thì. Chạy 1 lần / session, daemon thread. ──
+    if not st.session_state.get('_splash_warm_started'):
+        st.session_state['_splash_warm_started'] = True
+        import threading as _th
+
+        def _warm_default():
+            try:
+                from core.constants import TICKERS
+                from data.fetcher import fetch_data
+                from models.ar import run_ar
+                from models.mlr import run_mlr
+                from models.arima import run_arima
+                from models.advanced import (run_sarima, run_ets,
+                                             run_garch, run_sarimax)
+                tk = TICKERS[0]
+                fetch_data(tk)  # warm raw data (1 network call) trước
+                for _fn in (run_ar, run_mlr, run_arima, run_sarima,
+                            run_ets, run_garch, run_sarimax):
+                    try:
+                        _fn(tk, 0.80, p=1)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+        _th.Thread(target=_warm_default, daemon=True).start()
+
     # Ẩn sidebar TRONG splash bằng style ở parent <head> có id riêng →
     # app chính gỡ chính xác theo id (không để CSS sót lại che sidebar).
     import streamlit.components.v1 as _components

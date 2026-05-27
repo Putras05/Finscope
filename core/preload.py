@@ -26,13 +26,27 @@ _arima_threads: list = []
 # ── Background ARIMA precompute ──────────────────────────────────────────────
 def _bg_arima(ticker: str, ar_order: int,
               date_from=None, date_to=None) -> None:
-    """Run ARIMA cho 5 slider values × common p values, trong daemon thread.
+    """Warm ngầm ARIMA + nhóm nâng cao cho 1 ticker, trong daemon thread.
 
-    ARIMA auto-chọn order (quét lưới AIC) nên fit chậm hơn AR/MLR → precompute
-    ngầm để user đổi ticker/ratio/p = cache hit tức thời."""
+    Mục tiêu: lần đầu vào Dashboard (mã mặc định) là instant, và đổi
+    ticker/ratio/p = cache hit. Warm combo mặc định (p=1, 0.80) toàn bộ 7 mô
+    hình trước, rồi mới warm các combo ARIMA còn lại."""
     from models.arima import run_arima
+    from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
+    _adv = (run_sarima, run_ets, run_garch, run_sarimax)
+    try:
+        run_arima(ticker, 0.80, p=1, date_from=date_from, date_to=date_to)
+        for _fn in _adv:
+            try:
+                _fn(ticker, 0.80, p=1, date_from=date_from, date_to=date_to)
+            except Exception:
+                pass
+    except Exception:
+        pass
     for p in _COMMON_P:
         for tr in _SLIDER_VALUES:
+            if p == 1 and abs(tr - 0.80) < 1e-9:
+                continue
             try:
                 run_arima(ticker, tr, p=p,
                           date_from=date_from, date_to=date_to)
