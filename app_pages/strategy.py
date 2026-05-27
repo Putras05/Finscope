@@ -135,6 +135,103 @@ def _backtest_longonly(d: pd.DataFrame, nt: int, fee_side: float = 0.0015):
     )
 
 
+@st.fragment
+def _technical_analysis_section(df, ticker, _T, is_en):
+    """Phân tích kỹ thuật nâng cao — toggle các lớp KHÔNG rerun toàn trang.
+
+    Hỗ trợ/Kháng cự · Fibonacci · Kênh xu hướng · Sóng (ZigZag) + bảng tóm tắt
+    vị thế kỹ thuật + Pivot Points.
+    """
+    from charts.technicals import chart_technical
+    from data import technicals as TA
+    from charts.base import _PLOTLY_CONFIG
+
+    st.markdown("<div style='margin:18px 0 6px'></div>", unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="sec-hdr">'
+        f'{"Phân tích Kỹ thuật nâng cao" if not is_en else "Advanced technical analysis"}'
+        f' <span style="font-size:11px;font-weight:600;color:{_T["text_muted"]}">'
+        f'{"— Hỗ trợ/Kháng cự · Fibonacci · Kênh xu hướng · Sóng" if not is_en else "— Support/Resistance · Fibonacci · Trend channel · Waves"}'
+        f'</span></div>', unsafe_allow_html=True)
+
+    c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 1.3])
+    _sr = c1.toggle(('Hỗ trợ/Kháng cự' if not is_en else 'S/R'),
+                    value=True, key=f'ta_sr_{ticker}')
+    _fib = c2.toggle('Fibonacci', value=True, key=f'ta_fib_{ticker}')
+    _ch = c3.toggle(('Kênh xu hướng' if not is_en else 'Channel'),
+                    value=True, key=f'ta_ch_{ticker}')
+    _zz = c4.toggle(('Sóng (ZigZag)' if not is_en else 'Waves'),
+                    value=True, key=f'ta_zz_{ticker}')
+    _win = c5.radio(('Cửa sổ' if not is_en else 'Window'),
+                    options=[120, 180, 365], index=1, horizontal=True,
+                    key=f'ta_win_{ticker}', label_visibility='collapsed')
+
+    try:
+        fig = chart_technical(df, ticker, _T, window=int(_win), show_sr=_sr,
+                              show_fib=_fib, show_channel=_ch, show_zigzag=_zz,
+                              is_en=is_en)
+        st.plotly_chart(fig, use_container_width=True, config={
+            **_PLOTLY_CONFIG, 'scrollZoom': True})
+    except Exception as _e:
+        st.caption(f'⚠ {_e}')
+
+    # ── Bảng tóm tắt vị thế kỹ thuật + Pivot Points ─────────────────────
+    s = TA.technical_summary(df.tail(int(_win)))
+    pv = TA.pivot_points(df)
+    K = 1000.0
+    last = s['last'] * K
+
+    def _fmt(v):
+        return f'{v*K:,.0f} đ' if (v == v) else '—'   # v==v: not NaN
+
+    _rows = [
+        (('Giá hiện tại' if not is_en else 'Current price'), f'{last:,.0f} đ', _T['text_primary']),
+        (('Kháng cự gần nhất' if not is_en else 'Nearest resistance'), _fmt(s['near_res']), '#DC2626'),
+        (('Hỗ trợ gần nhất' if not is_en else 'Nearest support'), _fmt(s['near_sup']), '#16A34A'),
+        (('Vùng Fibonacci' if not is_en else 'Fibonacci zone'), s['fib_zone'] or '—', '#7C3AED'),
+        (('Vị trí trong kênh' if not is_en else 'Channel position'), s['channel_pos'] or '—', '#0891B2'),
+        (('Độ dốc kênh (%/phiên)' if not is_en else 'Channel slope (%/bar)'),
+         f'{s["slope_pct"]:+.3f}%', _T['success'] if s['slope_pct'] >= 0 else _T['danger']),
+    ]
+    _cells = ''.join(
+        f'<div style="flex:1 1 150px;min-width:140px;background:{_T["bg_card"]};'
+        f'border:1px solid {_T["border"]};border-top:3px solid {col};border-radius:10px;'
+        f'padding:10px 12px"><div style="font-size:10px;color:{_T["text_muted"]};'
+        f'text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">{lbl}</div>'
+        f'<div style="font-size:15px;font-weight:800;color:{col}">{val}</div></div>'
+        for lbl, val, col in _rows)
+    st.markdown(
+        f'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">{_cells}</div>',
+        unsafe_allow_html=True)
+
+    # Pivot Points (R3..S3)
+    if pv:
+        _piv_order = ['R3', 'R2', 'R1', 'PP', 'S1', 'S2', 'S3']
+        _piv_cells = ''
+        for k in _piv_order:
+            _c = ('#DC2626' if k.startswith('R') else '#16A34A' if k.startswith('S')
+                  else _T['accent'])
+            _piv_cells += (
+                f'<div style="flex:1;text-align:center;padding:6px 4px;'
+                f'border-right:1px solid {_T["divider"]}">'
+                f'<div style="font-size:10px;font-weight:700;color:{_c}">{k}</div>'
+                f'<div style="font-size:12px;color:{_T["text_primary"]};font-weight:600">'
+                f'{pv[k]*K:,.0f}</div></div>')
+        st.markdown(
+            f'<div style="margin-top:10px;border:1px solid {_T["border"]};border-radius:10px;'
+            f'overflow:hidden"><div style="font-size:10px;font-weight:700;'
+            f'color:{_T["text_secondary"]};padding:6px 12px;background:{_T["bg_elevated"]};'
+            f'text-transform:uppercase;letter-spacing:.5px">'
+            f'{"Pivot Points (điểm xoay — phiên gần nhất)" if not is_en else "Pivot Points (latest session)"}</div>'
+            f'<div style="display:flex">{_piv_cells}</div></div>',
+            unsafe_allow_html=True)
+
+    st.markdown(
+        f'<div style="font-size:11px;color:{_T["text_muted"]};margin-top:10px;line-height:1.6">'
+        f'{"Hỗ trợ/Kháng cự gom từ các đỉnh/đáy swing (số sau dấu · = số lần chạm vùng). Fibonacci đo trên sóng lớn nhất của cửa sổ. Kênh xu hướng = hồi quy tuyến tính ±2σ. ZigZag lọc đảo chiều ≥6% để lộ bộ khung sóng (cơ sở đếm sóng Elliott thủ công, KHÔNG phải đếm sóng tự động)." if not is_en else "Support/Resistance clustered from swing highs/lows (number after · = touches). Fibonacci on the window largest swing. Channel = linear regression ±2σ. ZigZag filters ≥6% reversals to reveal the wave skeleton (basis for manual Elliott counting, NOT automatic)."}'
+        f'</div>', unsafe_allow_html=True)
+
+
 def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, _T,
            ar_order=1):
     is_en = st.session_state.get('lang', 'VI') == 'EN'
@@ -339,6 +436,9 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     _plotly_axes_style(fig, _T)
     fig.update_xaxes(tickformat='%m/%Y')
     st.plotly_chart(fig, use_container_width=True, config=_PLOTLY_CONFIG)
+
+    # ── PHÂN TÍCH KỸ THUẬT NÂNG CAO (S/R · Fib · Kênh · Sóng) ───────────
+    _technical_analysis_section(df, ticker, _T, is_en)
 
     # ── BACKTEST ───────────────────────────────────────────────────────
     st.markdown("<div style='margin:16px 0 6px'></div>", unsafe_allow_html=True)

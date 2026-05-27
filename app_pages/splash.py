@@ -2,6 +2,8 @@ import streamlit as st
 import base64
 from pathlib import Path
 
+from ui.logo import mark_gradient
+
 
 def _img_b64(filename: str) -> str:
     """Đọc ảnh từ static/ và encode base64."""
@@ -125,11 +127,8 @@ div[data-testid="stButton"] > button:hover { transform: translateY(-3px) scale(1
         '<div class="splash-badge">Cuộc thi Ứng dụng Trí tuệ Nhân tạo · 2026</div>',
         '<div class="splash-title">',
         ('<span style="font-size:46px;font-weight:800;color:#1E40AF;letter-spacing:-1.5px;'
-         'display:inline-flex;align-items:center;gap:12px;justify-content:center">'
-         '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#1E40AF" '
-         'stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">'
-         '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 14l4-4 3 3 5-6"/>'
-         '<path d="M19 7v3h-3"/></svg>FinScope</span><br/>'),
+         'display:inline-flex;align-items:center;gap:14px;justify-content:center">'
+         + mark_gradient(52) + 'FinScope</span><br/>'),
         '<span style="font-size:18px;color:#334155;font-weight:600;display:inline-block;margin-top:4px">PHÂN TÍCH &amp; DỰ BÁO CHỨNG KHOÁN</span><br/>',
         '<span style="font-size:14px;color:#64748B;font-weight:500;font-style:italic">Dựa trên Mô hình Thống kê &amp; Học máy · Khoảng tin cậy · Chiến lược Giao dịch</span>',
         '</div>',

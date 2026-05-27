@@ -10,6 +10,7 @@ from streamlit_option_menu import option_menu
 
 from core.constants import TICKERS
 from core.i18n import t
+from ui.logo import mark_mono
 
 _PAGE_KEYS = [
     'Dashboard Tổng quan', 'Phân tích Chi tiết', 'Mô hình Nâng cao',
@@ -21,13 +22,8 @@ _ICONS = [
     'activity', 'clock-history', 'briefcase', 'book-half',
 ]
 
-# Logo FinScope — SVG tự build (đường giá đi lên), không dùng emoji.
-_LOGO_SVG = (
-    "<svg width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='#1E40AF' "
-    "stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round'>"
-    "<path d='M3 3v16a2 2 0 0 0 2 2h16'/>"
-    "<path d='M7 14l4-4 3 3 5-6'/><path d='M19 7v3h-3'/></svg>"
-)
+# Logo FinScope — kính soi tài chính (ui/logo.py), không dùng emoji.
+_LOGO_SVG = mark_mono(24, '#1E40AF')
 
 
 def render_topbar() -> tuple:

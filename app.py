@@ -20,11 +20,16 @@ from ui.topbar import render_topbar
 # v40 PERF: Lazy page imports — chỉ load module khi user navigate đến.
 # Trước: 6 imports eager × ~50ms = ~300ms cold start. Giờ chỉ 1 page.
 
+# Favicon = logo FinScope (PNG đồng bộ thương hiệu); fallback emoji nếu thiếu file.
+from pathlib import Path as _Path
+_fav = _Path(__file__).resolve().parent / 'static' / 'finscope_favicon.png'
+_page_icon = str(_fav) if _fav.exists() else PAGE_ICON
+
 st.set_page_config(
     page_title=PAGE_TITLE,
     layout=LAYOUT,
     initial_sidebar_state=SIDEBAR_STATE,
-    page_icon=PAGE_ICON,
+    page_icon=_page_icon,
 )
 
 if 'theme_mode' not in st.session_state:

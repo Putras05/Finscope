@@ -216,6 +216,38 @@ def _render_dm_section(all_models, df, _T, is_en=False):
             vcol = _T['text_muted']
         rows.append((other['name'], dm['dm'], dm['p'], dm['n'], verdict, vcol))
 
+    # ── Đối chứng BƯỚC NGẪU NHIÊN (random walk): dự báo nạve = giá phiên trước.
+    #    Câu hỏi học thuật cốt lõi: mô hình có THỰC SỰ hơn "ngày mai = hôm nay"? ──
+    try:
+        cser = pd.Series(df['Close'].values.astype(float),
+                         index=pd.to_datetime(df['Ngay']))
+        cser = cser[~cser.index.duplicated(keep='last')]
+        bidx = pd.to_datetime(best['res']['dates_te'])
+        fb = pd.Series(np.asarray(best['res']['pte'], float), index=bidx)
+        fb = fb[~fb.index.duplicated(keep='last')]
+        naive = cser.shift(1).reindex(fb.index)
+        ytrue = cser.reindex(fb.index)
+        j = pd.concat([ytrue, fb, naive], axis=1).dropna()
+        if len(j) >= 8:
+            dmn = diebold_mariano(j.iloc[:, 0].values, j.iloc[:, 1].values,
+                                  j.iloc[:, 2].values, h=1, loss='MSE')
+            if dmn.get('ok'):
+                better = dmn['dbar'] < 0
+                sig = dmn['p'] < 0.05
+                if sig and better:
+                    verdict = ('Tốt hơn đáng kể' if not is_en else 'Significantly better')
+                    vcol = '#16A34A'
+                elif sig and not better:
+                    verdict = ('Kém hơn đáng kể' if not is_en else 'Significantly worse')
+                    vcol = '#DC2626'
+                else:
+                    verdict = ('Khác biệt không ý nghĩa' if not is_en else 'Not significant')
+                    vcol = _T['text_muted']
+                rows.append(('Random Walk (naïve)', dmn['dm'], dmn['p'],
+                             dmn['n'], verdict, vcol))
+    except Exception:
+        pass
+
     if not rows:
         return
 
