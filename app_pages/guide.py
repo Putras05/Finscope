@@ -140,17 +140,25 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         _guide_card(_IC_ANA, '2. Phân tích Chi tiết' if not _is_en else '2. Detailed Analysis',
                     '#8B5CF6', f"""
 <b style="color:{_T['text_primary']}">{'Mục đích:' if not _is_en else 'Purpose:'}</b>
-{'Xem chi tiết 3 mô hình dự báo phiên kế tiếp — phương trình, hệ số, hiệu năng Train/Test.'
- if not _is_en else 'Detailed view of 3 next-session forecasting models — equation, coefficients, Train/Test performance.'}<br><br>
+{'Xem chi tiết 7 mô hình dự báo phiên kế tiếp — mỗi tab có phương trình, bảng tham số ước lượng, hiệu năng Train/Test, biểu đồ & khoảng tin cậy.'
+ if not _is_en else 'Detailed view of 7 next-session forecasting models — each tab shows the equation, estimated-parameter table, Train/Test performance, charts & confidence interval.'}<br><br>
 
-<b style="color:{_T['text_primary']}">{'3 mô hình (tất cả dự báo Y(t+1)):' if not _is_en else '3 models (all forecast Y(t+1)):'}</b><br>
-{(f'• <b>AR(p)</b> — Autoregressive bậc p theo Box-Jenkins. Dùng {ar_order} phiên quá khứ [Y(t), Y(t−1), ..., Y(t−p+1)]. Tổng <b>p+1</b> = {ar_order+1} hệ số.<br>'
-  f'• <b>MLR(p)</b> — Hồi quy đa biến với Distributed Lag: Close + Volume + Range × p lag. Tổng <b>3p+1</b> = {3*ar_order+1} hệ số.<br>'
-  f'• <b>ARIMA(p,d,q)</b> — Mô hình Box-Jenkins tổng quát: tự hồi quy (AR) + sai phân (I) + trung bình trượt (MA). Bậc (p,d,q) tự chọn theo AIC, d xác định bằng kiểm định ADF. Ước lượng hợp lý cực đại (MLE) và cho <b>khoảng dự báo</b> 80%/95% giải tích.')
+<b style="color:{_T['text_primary']}">{'7 mô hình (mỗi mô hình 1 tab):' if not _is_en else '7 models (one tab each):'}</b><br>
+{(f'• <b>AR(p)</b> — Tự hồi quy bậc p (Box-Jenkins), {ar_order+1} hệ số.<br>'
+  f'• <b>MLR(p)</b> — Hồi quy đa biến Close + Volume + Range × p lag.<br>'
+  f'• <b>ARIMA(p,d,q)</b> — Box-Jenkins tổng quát, order tự chọn theo AIC + chẩn đoán ACF/PACF.<br>'
+  f'• <b>SARIMA</b> — ARIMA có mùa vụ (chu kỳ tuần s=5).<br>'
+  f'• <b>Holt-Winters (ETS)</b> — San mũ có xu thế giảm dần (damped).<br>'
+  f'• <b>GARCH</b> — AR(1) + GARCH(1,1): mô hình biến động có điều kiện.<br>'
+  f'• <b>SARIMAX</b> — ARIMA + biến ngoại sinh log(Volume) & Range.')
  if not _is_en else
- (f'• <b>AR(p)</b> — Autoregressive order p (Box-Jenkins). Uses {ar_order} past sessions [Y(t), Y(t−1), ..., Y(t−p+1)]. Total <b>p+1</b> = {ar_order+1} coefficients.<br>'
-  f'• <b>MLR(p)</b> — Multiple Linear Regression with Distributed Lag: Close + Volume + Range × p lags. Total <b>3p+1</b> = {3*ar_order+1} coefficients.<br>'
-  f'• <b>ARIMA(p,d,q)</b> — General Box-Jenkins model: autoregression (AR) + differencing (I) + moving average (MA). Order (p,d,q) auto-selected by AIC, d via the ADF test. Maximum-likelihood estimation with analytic 80%/95% <b>prediction intervals</b>.')
+ (f'• <b>AR(p)</b> — Autoregressive order p (Box-Jenkins), {ar_order+1} coefficients.<br>'
+  f'• <b>MLR(p)</b> — Multiple linear regression on Close + Volume + Range × p lags.<br>'
+  f'• <b>ARIMA(p,d,q)</b> — General Box-Jenkins, AIC-selected order + ACF/PACF diagnostics.<br>'
+  f'• <b>SARIMA</b> — seasonal ARIMA (weekly period s=5).<br>'
+  f'• <b>Holt-Winters (ETS)</b> — exponential smoothing with damped trend.<br>'
+  f'• <b>GARCH</b> — AR(1) + GARCH(1,1) conditional-volatility model.<br>'
+  f'• <b>SARIMAX</b> — ARIMA + exogenous log(Volume) & Range.')
 }<br><br>
 
 <b style="color:{_T['text_primary']}">{'Biểu đồ hiển thị:' if not _is_en else 'Charts shown:'}</b><br>

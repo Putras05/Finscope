@@ -95,11 +95,12 @@ def run_sarima(ticker: str, train_ratio: float, p: int = 1,
         npred = float(np.asarray(fc.predicted_mean, dtype=float)[0])
         n95 = np.asarray(fc.conf_int(alpha=0.05), dtype=float)[0]
         n80 = np.asarray(fc.conf_int(alpha=0.20), dtype=float)[0]
+        _coef = {str(k): float(v) for k, v in res.params.items()}
         return dict(
             name='SARIMA', engine='statsmodels SARIMAX', ok=True,
             params=f'order={order} · seasonal={seasonal_order}',
             summary=f'SARIMA{order}×{seasonal_order} · AIC={res.aic:.1f}',
-            aic=float(res.aic), bic=float(res.bic),
+            aic=float(res.aic), bic=float(res.bic), coef=_coef,
             order=order, seasonal_order=seasonal_order,
             yte=yte, pte=pte, dates_te=dates[nt:], nt=nt,
             pte_lower=c95[:, 0], pte_upper=c95[:, 1],
@@ -150,11 +151,12 @@ def run_ets(ticker: str, train_ratio: float, p: int = 1,
         nlo95, nhi95 = float(sfn['pi_lower'].iloc[0]), float(sfn['pi_upper'].iloc[0])
         nlo80, nhi80 = float(sfn80['pi_lower'].iloc[0]), float(sfn80['pi_upper'].iloc[0])
 
+        _coef = {str(k): float(v) for k, v in res_tr.params.items()}
         return dict(
             name='Holt-Winters (ETS)', engine='statsmodels ETSModel', ok=True,
             params='error=add · trend=add · damped',
             summary=f'ETS(A,Ad,N) · AIC={res_tr.aic:.1f}',
-            aic=float(res_tr.aic), bic=float(res_tr.bic),
+            aic=float(res_tr.aic), bic=float(res_tr.bic), coef=_coef,
             yte=yte, pte=pte, dates_te=dates[nt:], nt=nt,
             pte_lower=lo95, pte_upper=hi95,
             pte_lower80=lo80, pte_upper80=hi80,
@@ -221,10 +223,12 @@ def run_garch(ticker: str, train_ratio: float, p: int = 1,
         nlo80 = last * (1.0 + (mn - _Z80 * sn) / 100.0)
         nhi80 = last * (1.0 + (mn + _Z80 * sn) / 100.0)
 
+        _coef = {str(k): float(v) for k, v in res.params.items()}
         return dict(
             name='GARCH', engine='arch · AR(1)+GARCH(1,1)', ok=True,
             params='mean=AR(1) · vol=GARCH(1,1) · dist=Normal',
             summary=f'AR(1)-GARCH(1,1) · σ phiên tới ≈ {sn:.2f}%',
+            coef=_coef,
             yte=y[nt:], pte=pte, dates_te=dates[nt:], nt=nt,
             pte_lower=lo95, pte_upper=hi95,
             pte_lower80=lo80, pte_upper80=hi80,
@@ -318,11 +322,12 @@ def run_sarimax(ticker: str, train_ratio: float, p: int = 1,
         npred = float(np.asarray(fc.predicted_mean, dtype=float)[0])
         n95 = np.asarray(fc.conf_int(alpha=0.05), dtype=float)[0]
         n80 = np.asarray(fc.conf_int(alpha=0.20), dtype=float)[0]
+        _coef = {str(k): float(v) for k, v in res.params.items()}
         return dict(
             name='SARIMAX', engine='statsmodels SARIMAX', ok=True,
             params=f'order={order} · exog=[log(Volume), Range]',
             summary=f'SARIMAX{order} + Volume,Range · AIC={res.aic:.1f}',
-            aic=float(res.aic), bic=float(res.bic), order=order,
+            aic=float(res.aic), bic=float(res.bic), order=order, coef=_coef,
             yte=yte, pte=pte, dates_te=dates[nt:], nt=nt,
             pte_lower=c95[:, 0], pte_upper=c95[:, 1],
             pte_lower80=c80[:, 0], pte_upper80=c80[:, 1],

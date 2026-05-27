@@ -360,6 +360,7 @@ def _render_adv_tab(res, label, ticker, date_from, date_to, _T, _next_lbl):
         f'<div class="info-box"><b>{label}</b> · {res.get("summary", "")}'
         f' &nbsp;·&nbsp; engine: {res.get("engine", "")}{_ci_txt}{_next_lbl}</div>',
         unsafe_allow_html=True)
+    _adv_equation(label, res, is_en)
     try:
         figh = chart_price_history_plotly(res, ticker, date_from, date_to, T=_T)
         st.plotly_chart(figh, use_container_width=True, config={
@@ -373,3 +374,61 @@ def _render_adv_tab(res, label, ticker, date_from, date_to, _T, _next_lbl):
                 'filename': f'{ticker}_{label}_CI'}})
     except Exception as _e:
         st.error(f'Chart error: {_e}')
+
+
+def _adv_equation(label, res, is_en):
+    """Expander hiển thị công thức toán + bảng tham số ước lượng của mô hình nâng cao."""
+    coef = res.get('coef', {}) or {}
+
+    def _g(*keys, default=0.0):
+        for k in keys:
+            if k in coef:
+                return coef[k]
+        return default
+
+    _title = 'Phương trình & tham số ước lượng' if not is_en else 'Equation & estimated parameters'
+    with st.expander(_title, expanded=True):
+        if label == 'SARIMA':
+            _o = res.get('order', (0, 0, 0)); _so = res.get('seasonal_order', (0, 0, 0, 5))
+            st.markdown(f"**SARIMA{_o}×{_so}** — "
+                        + ('ARIMA có thành phần mùa vụ (chu kỳ s=5 phiên/tuần)'
+                           if not is_en else 'seasonal ARIMA (period s=5 trading days)'))
+            st.latex(r"\phi_p(B)\,\Phi_P(B^s)\,(1-B)^d(1-B^s)^D\,Y_t"
+                     r"=\theta_q(B)\,\Theta_Q(B^s)\,\varepsilon_t")
+        elif label.startswith('Holt'):
+            st.markdown("**Holt-Winters — ETS(A, Ad, N)** — "
+                        + ('san mũ có xu thế giảm dần (damped)'
+                           if not is_en else 'exponential smoothing with damped trend'))
+            st.latex(r"\ell_t=\alpha\,y_t+(1-\alpha)\,(\ell_{t-1}+\phi\,b_{t-1})")
+            st.latex(r"b_t=\beta\,(\ell_t-\ell_{t-1})+(1-\beta)\,\phi\,b_{t-1}")
+            st.latex(r"\hat{y}_{t+h}=\ell_t+\Big(\sum_{i=1}^{h}\phi^{\,i}\Big)\,b_t")
+            _a = _g('smoothing_level'); _b = _g('smoothing_trend'); _ph = _g('damping_trend')
+            st.caption(f"α (level) = {_a:.4f} · β (trend) = {_b:.4f} · φ (damping) = {_ph:.4f}")
+        elif label == 'GARCH':
+            st.markdown("**AR(1) mean + GARCH(1,1) variance** — "
+                        + ('mô hình biến động có điều kiện'
+                           if not is_en else 'conditional-volatility model'))
+            st.latex(r"r_t=\mu+\varphi\,r_{t-1}+\varepsilon_t,\qquad \varepsilon_t=\sigma_t z_t")
+            st.latex(r"\sigma_t^{2}=\omega+\alpha\,\varepsilon_{t-1}^{2}+\beta\,\sigma_{t-1}^{2}")
+            _al = _g('alpha[1]'); _be = _g('beta[1]')
+            st.caption(('Độ dai dẳng biến động α+β = ' if not is_en
+                        else 'Volatility persistence α+β = ') + f"{_al + _be:.4f}"
+                       + (' (gần 1 → biến động kéo dài)' if not is_en
+                          else ' (near 1 → long-lasting volatility)'))
+        elif label == 'SARIMAX':
+            _o = res.get('order', (0, 0, 0))
+            st.markdown(f"**SARIMAX{_o} + biến ngoại sinh** — "
+                        + ('ARIMA kèm log(Volume) & Range (biên độ)'
+                           if not is_en else 'ARIMA with log(Volume) & Range regressors'))
+            st.latex(r"Y_t=\beta_1\log V_t+\beta_2\,(H_t-L_t)+\eta_t,\qquad"
+                     r"\phi_p(B)(1-B)^d\,\eta_t=\theta_q(B)\,\varepsilon_t")
+            _b1 = _g('x1'); _b2 = _g('x2')
+            st.caption(f"β₁ (log Volume) = {_b1:.4f} · β₂ (Range) = {_b2:.4f}")
+
+        if coef:
+            _hdr = ('| Tham số | Giá trị |\n|---|---|\n' if not is_en
+                    else '| Parameter | Value |\n|---|---|\n')
+            _rows = '\n'.join(f"| `{k}` | {v:.6f} |" for k, v in coef.items())
+            st.markdown(_hdr + _rows)
+        st.caption(f"AIC = {res.get('aic', float('nan')):.1f}  ·  "
+                   f"BIC = {res.get('bic', float('nan')):.1f}")
