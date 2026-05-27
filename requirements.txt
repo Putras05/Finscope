@@ -19,3 +19,10 @@ requests==2.32.3
 # Trên Streamlit Cloud RAM thấp: BỎ TRỐNG dòng dưới → app tự fallback sang
 # sklearn MLP (đã có scikit-learn), KHÔNG vỡ. Bỏ '#' nếu muốn LSTM trên cloud:
 # tensorflow-cpu==2.17.0
+
+# Đọc hiểu tin tức bằng HỌC SÂU (PhoBERT sentiment tiếng Việt) — TÙY CHỌN.
+# Bật toggle "Đọc hiểu bằng AI học sâu" ở trang Tin tức cần 2 gói dưới.
+# KHÔNG cài (mặc định) → app tự dùng từ điển tài chính (deploy-safe, luôn chạy).
+# Cài nặng (~1.5GB) — chỉ bỏ '#' khi máy/deploy đủ RAM:
+# torch==2.4.1
+# transformers==4.44.2

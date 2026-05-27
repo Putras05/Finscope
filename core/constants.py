@@ -9,6 +9,10 @@ TICKERS = [
     'VIC', 'VHM', 'VRE', 'BCM',
     'GAS', 'PLX', 'POW', 'GVR',
     'MSN', 'MWG', 'SAB', 'VJC', 'SSI', 'BVH',
+    # ── Mã HOSE thanh khoản cao bổ sung (ngoài VN30) ──
+    'PNJ', 'REE', 'GMD', 'DGC', 'DCM', 'DPM', 'HSG', 'NKG',
+    'PDR', 'DXG', 'KDH', 'NLG', 'KBC', 'VND', 'HCM', 'VCI',
+    'FRT', 'DGW', 'GEX', 'VHC', 'DBC', 'BMP', 'PVD', 'SZC',
 ]
 
 # Nhóm ngành (đơn ngữ, đa số là danh từ riêng + sàn) — dùng cho nhãn hiển thị.
@@ -27,6 +31,19 @@ TICKER_INFO = {
     'MSN': 'Tiêu dùng — Bán lẻ · HOSE', 'MWG': 'Bán lẻ · HOSE',
     'SAB': 'Đồ uống · HOSE', 'VJC': 'Hàng không · HOSE',
     'SSI': 'Chứng khoán · HOSE', 'BVH': 'Bảo hiểm · HOSE',
+    # ── Bổ sung ngoài VN30 ──
+    'PNJ': 'Bán lẻ trang sức · HOSE', 'REE': 'Điện — Hạ tầng · HOSE',
+    'GMD': 'Cảng biển — Logistics · HOSE', 'DGC': 'Hóa chất · HOSE',
+    'DCM': 'Phân bón · HOSE', 'DPM': 'Phân bón · HOSE',
+    'HSG': 'Tôn — Thép · HOSE', 'NKG': 'Tôn — Thép · HOSE',
+    'PDR': 'Bất động sản · HOSE', 'DXG': 'Bất động sản · HOSE',
+    'KDH': 'Bất động sản · HOSE', 'NLG': 'Bất động sản · HOSE',
+    'KBC': 'Bất động sản KCN · HOSE', 'VND': 'Chứng khoán · HOSE',
+    'HCM': 'Chứng khoán · HOSE', 'VCI': 'Chứng khoán · HOSE',
+    'FRT': 'Bán lẻ công nghệ — dược · HOSE', 'DGW': 'Phân phối công nghệ · HOSE',
+    'GEX': 'Đầu tư đa ngành · HOSE', 'VHC': 'Thủy sản · HOSE',
+    'DBC': 'Chăn nuôi — Nông nghiệp · HOSE', 'BMP': 'Nhựa xây dựng · HOSE',
+    'PVD': 'Dầu khí — Khoan · HOSE', 'SZC': 'Bất động sản KCN · HOSE',
 }
 TICKER_DESC = {
     'FPT': 'Cổ phiếu tăng trưởng bền vững, xu hướng tăng tuyến tính dài hạn.',
