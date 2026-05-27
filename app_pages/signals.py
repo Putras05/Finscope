@@ -147,7 +147,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     )
     overall_label = t(f'ichi.overall.{overall_code}')
 
-    # Share Ichimoku summary sang chatbot qua session_state → AI dùng trong context
+    # Lưu tóm tắt Ichimoku vào session_state để các trang khác (AI Insight) dùng lại
     st.session_state['ichimoku_summary'] = {
         'label':        overall_label,
         'code':         overall_code,

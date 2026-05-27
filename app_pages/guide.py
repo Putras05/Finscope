@@ -64,8 +64,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 </div>
 """, unsafe_allow_html=True)
 
-    _SVGS['chat-dots'] = '<path d="M5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/><path d="m2.165 15.803.02-.004c1.83-.363 2.948-.842 3.468-1.105A9 9 0 0 0 8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6a10.4 10.4 0 0 1-.524 2.318l-.003.011a11 11 0 0 1-.244.637c-.079.186.074.394.273.362a22 22 0 0 0 .693-.125m.8-3.108a1 1 0 0 0-.287-.801C1.618 10.83 1 9.468 1 8c0-3.192 3.004-6 7-6s7 2.808 7 6-3.004 6-7 6a8 8 0 0 1-2.088-.272 1 1 0 0 0-.711.074c-.387.196-1.24.57-2.634.893a11 11 0 0 0 .398-2"/>'
-    _SVGS['file-pdf']  = '<path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/><path d="M4.603 14.087a.8.8 0 0 1-.438-.42c-.195-.388-.13-.776.08-1.102.198-.307.526-.568.897-.787a7.7 7.7 0 0 1 1.482-.645 19.7 19.7 0 0 0 1.062-2.227 7.3 7.3 0 0 1-.43-1.295c-.086-.4-.119-.796-.046-1.136.075-.354.274-.672.65-.823.192-.077.4-.12.602-.077a.7.7 0 0 1 .477.365c.088.164.12.356.127.538.007.188-.012.396-.047.614-.084.51-.27 1.134-.52 1.794a10.95 10.95 0 0 0 .98 1.686 5.753 5.753 0 0 1 1.334.05c.364.066.734.195.96.465.12.144.193.32.2.518.007.192-.047.382-.138.563a1.04 1.04 0 0 1-.354.416.86.86 0 0 1-.51.138c-.331-.014-.654-.196-.933-.417a5.712 5.712 0 0 1-.911-.95 11.651 11.651 0 0 0-1.997.406 11.307 11.307 0 0 1-1.02 1.51c-.292.35-.609.656-.927.787a.793.793 0 0 1-.58.029m1.379-1.901q-.25.115-.459.238c-.328.194-.541.383-.647.547-.094.145-.096.25-.04.361q.016.032.026.044l.035-.012c.137-.056.355-.235.635-.572a8 8 0 0 0 .45-.606zm1.64-1.33a13 13 0 0 1 1.01-.193 12 12 0 0 1-.51-.858 21 21 0 0 1-.5 1.05zm2.446.45q.226.244.435.41c.24.19.407.253.498.256a.1.1 0 0 0 .07-.015.3.3 0 0 0 .094-.125.44.44 0 0 0 .059-.2.1.1 0 0 0-.026-.063c-.052-.062-.2-.152-.518-.209a4 4 0 0 0-.612-.053zM8.078 7.8a7 7 0 0 0 .2-.828q.046-.282.038-.465a.6.6 0 0 0-.032-.198.5.5 0 0 0-.145.04c-.087.035-.158.106-.196.283-.04.192-.03.469.046.822q.036.167.09.346z"/>'
+    _SVGS['newspaper'] = '<path d="M0 2.5A1.5 1.5 0 0 1 1.5 1h11A1.5 1.5 0 0 1 14 2.5v10.528c0 .3-.05.654-.238.972h.738a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 1 1 0v9a1.5 1.5 0 0 1-1.5 1.5H1.497A1.497 1.497 0 0 1 0 13.5zM12 14c.37 0 .654-.211.853-.441.092-.106.147-.279.147-.531V2.5a.5.5 0 0 0-.5-.5h-11a.5.5 0 0 0-.5.5v11c0 .278.223.5.497.5z"/><path d="M2 3h10v2H2zm0 3h4v3H2zm0 4h4v1H2zm0 2h4v1H2zm5-6h2v1H7zm3 0h2v1h-2zM7 8h2v1H7zm3 0h2v1h-2zm-3 2h2v1H7zm3 0h2v1h-2zm-3 2h2v1H7zm3 0h2v1h-2z"/>'
 
     _IC_DASH = 'speedometer2'
     _IC_ANA  = 'graph-up-arrow'
@@ -73,9 +72,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     _IC_HIST = 'clock-history'
     _IC_SIG  = 'activity'
     _IC_PORT = 'briefcase'
-    _IC_AI   = 'chat-dots'
     _IC_SET  = 'sliders'
-    _IC_PDF  = 'file-pdf'
 
     col_g1, col_g2 = st.columns(2)
 
@@ -87,19 +84,17 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
  if not _is_en else 'Quick snapshot of the selected VN30 ticker: price, KPIs, multi-model forecast, technical signals.'}<br><br>
 
 <b style="color:{_T['text_primary']}">{'Các thông tin hiển thị:' if not _is_en else 'Information displayed:'}</b><br>
-{'• Giá đóng cửa hiện tại và thay đổi so với phiên trước<br>'
- '• 3 card mô hình AR · MLR · ARIMA với giá dự báo + KTC 95% + sparkline<br>'
- '• AI Insight tổng hợp: tín hiệu Ichimoku 4 tầng + dự báo phiên tới<br>'
- '• <b>Biểu đồ nến TradingView-style</b>: chọn khung 1D/1W/1M/3M, '
- 'toggle SMA 5/20 và Ichimoku, info bar O/H/L/C, volume bar dưới<br>'
- '• Bảng xếp hạng mô hình theo MAPE'
+{'• Giá đóng cửa hiện tại + KPI biến động/khối lượng/tín hiệu Ichimoku<br>'
+ '• Banner <b>Dự báo Kết hợp (FinScope Ensemble)</b> + 3 card <b>TOP-3 mô hình tốt nhất theo MAPE</b> (động, không cố định)<br>'
+ '• Thẻ <b>Tâm lý tin tức</b> (đọc hiểu) + AI Insight: Ichimoku 4 tầng + dự báo phiên tới<br>'
+ '• <b>Biểu đồ nến TradingView-style</b>: khung 1D/1W/1M/3M, toggle SMA 5/20 & Ichimoku, info bar O/H/L/C, volume<br>'
+ '• Dự báo nhiều phiên (fan chart) + bảng đa mô hình + <b>kiểm định Diebold–Mariano</b> + xếp hạng MAPE'
  if not _is_en else
- '• Current close price and change vs. previous session<br>'
- '• 3 model cards AR · MLR · ARIMA with forecast + 95% CI + sparkline<br>'
- '• AI Insight: Ichimoku 4-tier signal + next-session forecast<br>'
- '• <b>TradingView-style candlestick chart</b>: pick 1D/1W/1M/3M, '
- 'toggle SMA 5/20 and Ichimoku, OHLC info bar, volume bars below<br>'
- '• Model ranking table by MAPE'}
+ '• Current close price + volatility/volume/Ichimoku KPIs<br>'
+ '• <b>Combined Forecast (FinScope Ensemble)</b> banner + 3 cards = <b>TOP-3 models by MAPE</b> (dynamic, not fixed)<br>'
+ '• <b>News sentiment</b> card + AI Insight: Ichimoku 4-tier signal + next-session forecast<br>'
+ '• <b>TradingView-style candlestick</b>: 1D/1W/1M/3M, toggle SMA 5/20 & Ichimoku, OHLC info bar, volume<br>'
+ '• Multi-step fan chart + multi-model table + <b>Diebold–Mariano test</b> + MAPE ranking'}
 """)
 
         _guide_card(_IC_HIST, '3. Lịch sử & Dữ liệu' if not _is_en else '3. History & Data',
@@ -109,12 +104,12 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
  if not _is_en else 'Browse historical data and descriptive statistics.'}<br><br>
 
 <b style="color:{_T['text_primary']}">{'Cách sử dụng:' if not _is_en else 'How to use:'}</b><br>
-{'• Chọn khoảng thời gian bằng bộ lọc <b>Từ</b> / <b>Đến</b> ở sidebar<br>'
+{'• Chọn khoảng thời gian bằng bộ lọc <b>Từ</b> / <b>Đến</b> trên thanh điều khiển<br>'
  '• Biểu đồ giá lịch sử tương tác (zoom/pan/download)<br>'
  '• Phân phối Return hàng ngày so với phân phối Chuẩn<br>'
  '• Bảng dữ liệu OHLCV đầy đủ có thể tải xuống'
  if not _is_en else
- '• Select date range using <b>From</b> / <b>To</b> filters in sidebar<br>'
+ '• Select date range using <b>From</b> / <b>To</b> filters on the top bar<br>'
  '• Interactive historical price chart (zoom/pan/download)<br>'
  '• Daily Return distribution vs. Normal distribution<br>'
  '• Full OHLCV data table downloadable'}
@@ -136,21 +131,41 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
  '• Sparkline cards + Return stats (mean/std/min/max/up_days) per ticker'}
 """)
 
+        _guide_card('newspaper', 'Tin tức & Đọc hiểu' if not _is_en else 'News & AI Reading',
+                    '#0891B2', f"""
+<b style="color:{_T['text_primary']}">{'Mục đích:' if not _is_en else 'Purpose:'}</b>
+{'Đọc tin RSS thị trường (CafeF · VnExpress · Vietstock) và <b>đọc hiểu</b> bằng AI để bổ trợ tín hiệu — không dùng để dự báo giá.'
+ if not _is_en else 'Read market RSS news (CafeF · VnExpress · Vietstock) and <b>comprehend</b> it with AI to augment the signal — not for price forecasting.'}<br><br>
+
+<b style="color:{_T['text_primary']}">{'Nội dung:' if not _is_en else 'Content:'}</b><br>
+{'• Thẻ tâm lý <b>thị trường</b> & <b>theo mã</b> (từ điển tài chính tiếng Việt, có trọng số + ưu tiên tin mới)<br>'
+ '• Nhận diện <b>chủ đề</b> mỗi tin (KQKD · cổ tức · M&A · pháp lý · vĩ mô · khối ngoại...) + gom nhóm <b>Chủ đề nổi bật</b><br>'
+ '• Tùy chọn <b>Đọc hiểu bằng AI học sâu (PhoBERT)</b> — cảm xúc bằng Transformer tiếng Việt, hiển thị song song từ điển để đối chiếu<br>'
+ '• Cảm xúc tin tham gia <b>phiếu tín hiệu</b> ở trang Chiến lược Giao dịch'
+ if not _is_en else
+ '• <b>Market</b> & <b>per-ticker</b> sentiment cards (weighted Vietnamese finance lexicon + recency)<br>'
+ '• <b>Aspect</b> tags per headline (earnings · dividend · M&A · legal · macro · foreign flows...) + <b>theme clustering</b><br>'
+ '• Optional <b>deep-learning AI reading (PhoBERT)</b> — Vietnamese Transformer sentiment shown side-by-side with the lexicon<br>'
+ '• News sentiment feeds the <b>signal vote</b> on the Trading Strategy page'}
+""")
+
     with col_g2:
         _guide_card(_IC_ANA, '2. Phân tích Chi tiết' if not _is_en else '2. Detailed Analysis',
                     '#8B5CF6', f"""
 <b style="color:{_T['text_primary']}">{'Mục đích:' if not _is_en else 'Purpose:'}</b>
-{'Xem chi tiết 7 mô hình dự báo phiên kế tiếp — mỗi tab có phương trình, bảng tham số ước lượng, hiệu năng Train/Test, biểu đồ & khoảng tin cậy.'
- if not _is_en else 'Detailed view of 7 next-session forecasting models — each tab shows the equation, estimated-parameter table, Train/Test performance, charts & confidence interval.'}<br><br>
+{'Xem chi tiết các mô hình dự báo phiên kế tiếp — mỗi tab có phương trình, bảng tham số ước lượng, hiệu năng Train/Test, biểu đồ & khoảng tin cậy.'
+ if not _is_en else 'Detailed view of each next-session forecasting model — each tab shows the equation, estimated-parameter table, Train/Test performance, charts & confidence interval.'}<br><br>
 
-<b style="color:{_T['text_primary']}">{'7 mô hình (mỗi mô hình 1 tab):' if not _is_en else '7 models (one tab each):'}</b><br>
+<b style="color:{_T['text_primary']}">{'9 tab (8 mô hình + Kết hợp):' if not _is_en else '9 tabs (8 models + Ensemble):'}</b><br>
 {(f'• <b>AR(p)</b> — Tự hồi quy bậc p (Box-Jenkins), {ar_order+1} hệ số.<br>'
   f'• <b>MLR(p)</b> — Hồi quy đa biến Close + Volume + Range × p lag.<br>'
   f'• <b>ARIMA(p,d,q)</b> — Box-Jenkins tổng quát, order tự chọn theo AIC + chẩn đoán ACF/PACF.<br>'
   f'• <b>SARIMA</b> — ARIMA có mùa vụ (chu kỳ tuần s=5).<br>'
   f'• <b>Holt-Winters (ETS)</b> — San mũ có xu thế giảm dần (damped).<br>'
   f'• <b>GARCH</b> — AR(1) + GARCH(1,1): mô hình biến động có điều kiện.<br>'
-  f'• <b>SARIMAX</b> — ARIMA + biến ngoại sinh log(Volume) & Range.')
+  f'• <b>SARIMAX</b> — ARIMA + biến ngoại sinh log(Volume) & Range.<br>'
+  f'• <b>Gradient Boosting</b> — học máy phi tuyến (cây) dự báo lợi suất → giá.<br>'
+  f'• <b>FinScope Ensemble</b> — kết hợp các mô hình theo trọng số nghịch-MAPE.')
  if not _is_en else
  (f'• <b>AR(p)</b> — Autoregressive order p (Box-Jenkins), {ar_order+1} coefficients.<br>'
   f'• <b>MLR(p)</b> — Multiple linear regression on Close + Volume + Range × p lags.<br>'
@@ -158,7 +173,9 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
   f'• <b>SARIMA</b> — seasonal ARIMA (weekly period s=5).<br>'
   f'• <b>Holt-Winters (ETS)</b> — exponential smoothing with damped trend.<br>'
   f'• <b>GARCH</b> — AR(1) + GARCH(1,1) conditional-volatility model.<br>'
-  f'• <b>SARIMAX</b> — ARIMA + exogenous log(Volume) & Range.')
+  f'• <b>SARIMAX</b> — ARIMA + exogenous log(Volume) & Range.<br>'
+  f'• <b>Gradient Boosting</b> — nonlinear ML (trees) predicting return → price.<br>'
+  f'• <b>FinScope Ensemble</b> — inverse-MAPE weighted combination of models.')
 }<br><br>
 
 <b style="color:{_T['text_primary']}">{'Biểu đồ hiển thị:' if not _is_en else 'Charts shown:'}</b><br>
@@ -181,23 +198,27 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 {'Mở rộng sang bộ mô hình thống kê chuyên sâu và chức năng Khoảng tin cậy cho dự báo phiên kế tiếp.'
  if not _is_en else 'Extend to a suite of advanced statistical models plus a Confidence-Interval feature for the next-session forecast.'}<br><br>
 
-<b style="color:{_T['text_primary']}">{'4 mô hình thống kê bổ sung:' if not _is_en else '4 additional statistical models:'}</b><br>
+<b style="color:{_T['text_primary']}">{'Mô hình nâng cao (thống kê · ML · kết hợp):' if not _is_en else 'Advanced models (statistical · ML · ensemble):'}</b><br>
 {'• <b>SARIMA</b> — ARIMA có thành phần mùa vụ (chu kỳ tuần giao dịch s=5)<br>'
  '• <b>Holt-Winters (ETS)</b> — San mũ có xu thế giảm dần (damped trend)<br>'
  '• <b>GARCH</b> — AR(1) + GARCH(1,1): mô hình biến động có điều kiện<br>'
- '• <b>SARIMAX</b> — ARIMA + biến ngoại sinh log(Volume) & Range'
+ '• <b>SARIMAX</b> — ARIMA + biến ngoại sinh log(Volume) & Range<br>'
+ '• <b>Gradient Boosting</b> — học máy phi tuyến (cây quyết định)<br>'
+ '• <b>FinScope Ensemble</b> — kết hợp tất cả theo trọng số nghịch-MAPE'
  if not _is_en else
  '• <b>SARIMA</b> — ARIMA with a seasonal component (trading-week s=5)<br>'
  '• <b>Holt-Winters (ETS)</b> — exponential smoothing with damped trend<br>'
  '• <b>GARCH</b> — AR(1) + GARCH(1,1): conditional-volatility model<br>'
- '• <b>SARIMAX</b> — ARIMA + exogenous log(Volume) & Range'}<br><br>
+ '• <b>SARIMAX</b> — ARIMA + exogenous log(Volume) & Range<br>'
+ '• <b>Gradient Boosting</b> — nonlinear ML (decision trees)<br>'
+ '• <b>FinScope Ensemble</b> — inverse-MAPE weighted combination'}<br><br>
 
 <b style="color:{_T['text_primary']}">{'Chức năng Khoảng tin cậy:' if not _is_en else 'Confidence-Interval feature:'}</b><br>
-{'• Bảng so sánh dự báo phiên tới + KTC 80%/95% cho cả 7 mô hình<br>'
+{'• Bảng so sánh dự báo phiên tới + KTC 80%/95% cho mọi mô hình<br>'
  '• Fan chart từng mô hình: dải tin cậy 80%/95% quanh dự báo<br>'
  '• Biểu đồ biến động có điều kiện (GARCH) + xếp hạng độ chính xác MAPE'
  if not _is_en else
- '• Comparison table of next-session forecast + 80%/95% CI for all 7 models<br>'
+ '• Comparison table of next-session forecast + 80%/95% CI for all models<br>'
  '• Per-model fan charts: 80%/95% bands around the forecast<br>'
  '• Conditional volatility chart (GARCH) + MAPE accuracy ranking'}
 """)
@@ -209,13 +230,15 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
  if not _is_en else 'Combine <b>technical analysis</b> (Ichimoku, RSI, MACD, Bollinger, MA cross) with the <b>forecast consensus</b> of the models → a BUY/SELL/HOLD signal with an entry plan.'}<br><br>
 
 <b style="color:{_T['text_primary']}">{'Nội dung:' if not _is_en else 'Content:'}</b><br>
-{'• Bảng điểm đa chỉ báo kỹ thuật + đồng thuận hướng dự báo của 7 mô hình<br>'
+{'• Bảng điểm 9 phiếu: MA50 · MA5/20 · MACD · RSI · Bollinger · Ichimoku · <b>mẫu hình nến</b> · đồng thuận dự báo · <b>tâm lý tin tức</b><br>'
  '• Khuyến nghị MUA/BÁN/GIỮ với điểm <b>vào lệnh</b>, <b>cắt lỗ (SL)</b>, <b>chốt lời (TP)</b> theo ATR<br>'
- '• <b>Backtest</b> nhanh chiến lược trên tập kiểm tra (số lệnh, tỉ lệ thắng, lợi nhuận tích lũy)'
+ '• <b>Phân tích Kỹ thuật nâng cao</b>: Hỗ trợ/Kháng cự · Fibonacci · Kênh xu hướng · Sóng (ZigZag) · Pivot Points · mẫu hình nến<br>'
+ '• <b>Backtest</b> chiến lược (đã trừ phí giao dịch ~0,3% khứ hồi): số lệnh, tỉ lệ thắng, Sharpe, lợi nhuận tích lũy'
  if not _is_en else
- '• Multi-indicator technical score + 7-model forecast direction consensus<br>'
+ '• 9-vote score: MA50 · MA5/20 · MACD · RSI · Bollinger · Ichimoku · <b>candlestick patterns</b> · forecast consensus · <b>news sentiment</b><br>'
  '• BUY/SELL/HOLD recommendation with <b>entry</b>, <b>stop-loss (SL)</b>, <b>take-profit (TP)</b> via ATR<br>'
- '• Quick <b>backtest</b> of the strategy on the test set (trades, win rate, cumulative return)'}
+ '• <b>Advanced technical analysis</b>: Support/Resistance · Fibonacci · Trend channel · Waves (ZigZag) · Pivot Points · candlestick patterns<br>'
+ '• Strategy <b>backtest</b> (net of ~0.3% round-trip fees): trades, win rate, Sharpe, cumulative return'}
 """)
 
         _guide_card(_IC_SIG, '4. Tín hiệu & Cảnh báo' if not _is_en else '4. Signals & Alerts',
@@ -248,22 +271,22 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
  '• <b>Note:</b> For academic reference only, not investment advice'}
 """)
 
-        _guide_card(_IC_SET, 'Thanh điều khiển Sidebar' if not _is_en else 'Sidebar Controls',
+        _guide_card(_IC_SET, 'Thanh điều khiển (Topbar)' if not _is_en else 'Topbar Controls',
                     '#64748B', f"""
 <b style="color:{_T['text_primary']}">{'Điều hướng trang:' if not _is_en else 'Page navigation:'}</b><br>
-{'• <b>Menu 8 trang</b> ở đầu sidebar: Dashboard · Phân tích · Mô hình Nâng cao · Chiến lược Giao dịch · Tín hiệu · Lịch sử · Danh mục · Hướng dẫn<br>'
+{'• <b>Menu 9 trang</b> trên thanh ngang đầu trang: Dashboard · Phân tích · Mô hình Nâng cao · Chiến lược Giao dịch · <b>Tin tức</b> · Tín hiệu · Lịch sử · Danh mục · Hướng dẫn<br>'
  '• Bấm vào tên trang để chuyển qua lại — trạng thái mô hình được giữ nguyên (không train lại)'
  if not _is_en else
- '• <b>8-page menu</b> at top of sidebar: Dashboard · Analysis · Advanced Models · Trading Strategy · Signals · History · Portfolio · Guide<br>'
+ '• <b>9-page menu</b> on the top bar: Dashboard · Analysis · Advanced Models · Trading Strategy · <b>News</b> · Signals · History · Portfolio · Guide<br>'
  '• Click a page name to switch — trained model state persists (no retraining)'}<br><br>
 
 <b style="color:{_T['text_primary']}">{'Tham số mô hình:' if not _is_en else 'Model parameters:'}</b><br>
-{'• <b>Mã giao dịch:</b> chọn mã trong danh sách VN30 (FPT, HPG, VNM, VCB, ...) để xem dữ liệu tương ứng<br>'
+{'• <b>Mã giao dịch:</b> chọn trong <b>53 mã HOSE</b> (VN30 + nhiều mã thanh khoản cao: FPT, HPG, VCB, PNJ, GMD, DGC, ...)<br>'
  '• <b>Tỉ lệ Huấn luyện:</b> 70–90% — tỉ lệ dữ liệu dùng để train mô hình (còn lại để test)<br>'
  '• <b>Độ trễ (p):</b> số phiên quá khứ làm input cho AR/MLR; với ARIMA dùng làm trần bậc AR khi tự chọn order. Mặc định p=1; tăng 3–5 để thử. Quy tắc an toàn: p ≤ √n<br>'
  '• <b>Khoảng thời gian:</b> lọc dữ liệu lịch sử theo ngày <b>Từ</b> / <b>Đến</b> (định dạng YYYY/MM/DD)'
  if not _is_en else
- '• <b>Ticker:</b> pick a symbol from the VN30 list (FPT, HPG, VNM, VCB, ...) to view its data<br>'
+ '• <b>Ticker:</b> pick from <b>53 HOSE symbols</b> (VN30 + many liquid names: FPT, HPG, VCB, PNJ, GMD, DGC, ...)<br>'
  '• <b>Train Ratio:</b> 70–90% — proportion of data used for training (remainder for testing)<br>'
  '• <b>Lag Order (p):</b> past sessions as input for AR/MLR; for ARIMA it caps the AR order during auto-selection. Default p=1; try 3–5. Safety: p ≤ √n<br>'
  '• <b>Date Range:</b> filter historical data by <b>From</b> / <b>To</b> (format YYYY/MM/DD)'}<br><br>
@@ -271,11 +294,11 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 <b style="color:{_T['text_primary']}">{'Hành động & cài đặt:' if not _is_en else 'Actions & settings:'}</b><br>
 {'• <b>Cập nhật dữ liệu</b> (nút trên cùng): xoá cache + tải lại dữ liệu mới nhất từ nguồn<br>'
  '• <b>Dark / Light</b>: chuyển đổi chế độ giao diện sáng / tối (mọi biểu đồ + card đổi theo)<br>'
- '• <b>VI / EN</b>: chuyển đổi ngôn ngữ Tiếng Việt / English (cả sidebar và nội dung đều đổi theo)'
+ '• <b>VI / EN</b>: chuyển đổi ngôn ngữ Tiếng Việt / English (toàn bộ giao diện đổi theo)'
  if not _is_en else
  '• <b>Refresh data</b> (top button): clears cache + reloads latest data from source<br>'
  '• <b>Dark / Light</b>: toggle dark / light interface mode (all charts + cards follow)<br>'
- '• <b>VI / EN</b>: switch Vietnamese / English (sidebar and content follow)'}
+ '• <b>VI / EN</b>: switch Vietnamese / English (entire interface follows)'}
 """)
 
     st.markdown(f"""
@@ -319,8 +342,8 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     st.markdown(f"""
 <div style="text-align:center;margin-top:20px;padding:14px;
             color:{_T['text_muted']};font-size:11px">
-  {'Hệ thống được phát triển cho mục đích học thuật · NCKH TDTU 2026 · Không phải lời khuyên đầu tư'
+  {'Hệ thống phát triển cho Cuộc thi Ứng dụng AI 2026 · FinScope · Không phải lời khuyên đầu tư'
    if not _is_en else
-   'System developed for academic purposes · TDTU NCKH 2026 · Not investment advice'}
+   'Built for the AI Application Contest 2026 · FinScope · Not investment advice'}
 </div>
 """, unsafe_allow_html=True)
