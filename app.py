@@ -14,9 +14,8 @@ from models.mlr   import run_mlr
 from models.arima import run_arima
 from core.validate import validate_params
 from ui.css import inject_global_css, inject_theme_css
-from ui.js import (inject_theme_js, force_sidebar_open_js,
-                   hide_streamlit_badges_js, cleanup_splash_overlay_js)
-from ui.sidebar import render_sidebar
+from ui.js import inject_theme_js, hide_streamlit_badges_js
+from ui.topbar import render_topbar
 
 # v40 PERF: Lazy page imports — chỉ load module khi user navigate đến.
 # Trước: 6 imports eager × ~50ms = ~300ms cold start. Giờ chỉ 1 page.
@@ -41,7 +40,6 @@ _T = theme()
 inject_global_css()
 inject_theme_css(_T)
 inject_theme_js(_T)
-force_sidebar_open_js()
 hide_streamlit_badges_js()
 
 # ẨN UI CHUẨN: dùng config.toml với toolbarMode="minimal" (đã set ở .streamlit/config.toml)
@@ -58,9 +56,17 @@ st.markdown("""
     [data-testid*="manage-app"],
     .stDeployButton, .stAppDeployButton,
     a[href*="share.streamlit.io"]:not([href*="docs"]),
-    #MainMenu {
+    #MainMenu,
+    /* Sidebar không còn dùng (điều hướng + tham số đã chuyển lên topbar) */
+    [data-testid="stSidebar"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"] {
         display: none !important;
         visibility: hidden !important;
+    }
+    /* Topbar cần khoảng đệm trên nhỏ hơn để gọn */
+    .main .block-container, [data-testid="stMain"] .block-container {
+        padding-top: 1.2rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -71,14 +77,12 @@ if not st.session_state.get('_splash_done'):
     _pg_splash.render()
     st.stop()
 
-# Đã rời splash → gỡ CSS splash sót lại (ẩn sidebar) để menu điều hướng hiện lại
-cleanup_splash_overlay_js()
-
-# Preload 3 tickers 1 lần duy nhất mỗi session → UX mượt hơn
+# Preload mã mặc định 1 lần duy nhất mỗi session → UX mượt hơn
 from core.preload import preload_all_tickers, trigger_bg_arima
 preload_all_tickers()
 
-page, ticker, train_ratio, date_from, date_to, ar_order = render_sidebar()
+# Điều hướng + tham số ở TOP main area (luôn hiển thị, không phụ thuộc sidebar)
+page, ticker, train_ratio, date_from, date_to, ar_order = render_topbar()
 
 # ── Tải dữ liệu (bọc try/except: mã lỗi hoặc vnstock rate-limit 20 req/phút
 #    KHÔNG làm sập app — hiện thông báo thân thiện) ──────────────────────────

@@ -380,93 +380,110 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         f'</div>',
         unsafe_allow_html=True)
 
-    best_i  = int(np.argmin([m1['MAPE'], m2['MAPE'], m3['MAPE']]))
+    # ── Tính ĐỦ 7 mô hình 1 lần (cache đã warm ở app.py → tức thì) ──────
+    _is_en_d = st.session_state.get('lang', 'VI') == 'EN'
+    with st.spinner('Đang tổng hợp 7 mô hình...' if not _is_en_d
+                    else 'Aggregating 7 models...'):
+        from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
+        _rs = run_sarima(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
+        _re = run_ets(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
+        _rg = run_garch(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
+        _rx = run_sarimax(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
+
+    def _sm(res):
+        yte = np.asarray(res['yte'], float); pte = np.asarray(res['pte'], float)
+        fin = np.isfinite(pte) & np.isfinite(yte)
+        if fin.sum() < 3:
+            return dict(MAPE=float('nan'), RMSE=float('nan'), MAE=float('nan'), R2adj=float('nan'))
+        return calc_metrics(yte[fin], pte[fin], k=2)
+
+    def _ci_lin(res):
+        c = _ci95(res['yte'], res['pte']); n = float(res['next_pred'])
+        return n - c, n + c
+
+    _MCLR = {'AR': '#1565C0', 'MLR': '#6A1B9A', 'ARIMA': '#0891B2',
+             'SARIMA': '#0D9488', 'Holt-Winters': '#EA580C',
+             'GARCH': '#DC2626', 'SARIMAX': '#4338CA'}
+    _raw7 = [
+        (f'AR({ar_order})', 'AR',  r1, m1, _ci_lin(r1)),
+        ('MLR', 'MLR',              r2, m2, _ci_lin(r2)),
+        ('ARIMA', 'ARIMA',          r3, m3, (r3.get('next_lower'), r3.get('next_upper'))),
+        ('SARIMA', 'SARIMA',        _rs, _sm(_rs), (_rs.get('next_lower'), _rs.get('next_upper'))),
+        ('Holt-Winters', 'Holt-Winters', _re, _sm(_re), (_re.get('next_lower'), _re.get('next_upper'))),
+        ('GARCH', 'GARCH',          _rg, _sm(_rg), (_rg.get('next_lower'), _rg.get('next_upper'))),
+        ('SARIMAX', 'SARIMAX',      _rx, _sm(_rx), (_rx.get('next_lower'), _rx.get('next_upper'))),
+    ]
+    _all7 = []
+    for _disp, _base, _res, _mm, _ci in _raw7:
+        _np = float(_res.get('next_pred', float('nan')))
+        if not np.isfinite(_np):
+            continue
+        _all7.append(dict(name=_disp, base=_base, res=_res, m=_mm, npred=_np,
+                          ci=_ci, color=_MCLR.get(_base, '#1565C0')))
+    _all7.sort(key=lambda dct: dct['m'].get('MAPE', float('nan'))
+               if np.isfinite(dct['m'].get('MAPE', float('nan'))) else 1e9)
+
+    # ── 3 Ô HERO = 3 MÔ HÌNH TỐT NHẤT (MAPE thấp nhất) ─────────────────
     last30  = df['Close'].values[-30:] * 1000
-    ci_vals = [
-        _ci95(r1['yte'], r1['pte']) * 1000,
-        _ci95(r2['yte'], r2['pte']) * 1000,
-        _ci95(r3['yte'], r3['pte']) * 1000,
-    ]
-    _card_bg = {
-        f'AR({ar_order})': _T['grad_ar'],
-        'MLR':             _T['grad_mlr'],
-        'ARIMA':           _T['grad_arima'],
-    }
-    mc1, mc2, mc3 = st.columns(3)
-    model_defs = [
-        (f'AR({ar_order})', r1['next_pred'], m1, '#1565C0'),
-        ('MLR',             r2['next_pred'], m2, '#6A1B9A'),
-        ('ARIMA',           r3['next_pred'], m3, '#0891B2'),
-    ]
-    for mi, (mcol, (lbl, npred, mm, col_m)) in enumerate(zip([mc1, mc2, mc3], model_defs)):
+    _medal_lbl = [t('dash.best_badge'), t('dash.second_badge'), t('dash.third_badge')]
+    _top3 = _all7[:3]
+    _hcols = st.columns(len(_top3) if _top3 else 1)
+    _sp_bg = 'rgba(255,255,255,0.12)' if st.session_state.get('theme_mode', 'light') == 'dark' else 'rgba(255,255,255,0.65)'
+    for _i, (mcol, md) in enumerate(zip(_hcols, _top3)):
+        lbl = md['name']; npred = md['npred']; mm = md['m']; col_m = md['color']
+        _lo, _hi = md['ci']
         npred_d  = npred * 1000
         chg      = npred_d - T['Close'] * 1000
-        pct      = chg / (T['Close'] * 1000) * 100
+        pct      = chg / (T['Close'] * 1000) * 100 if T['Close'] else 0
         arr      = '▲' if chg >= 0 else '▼'
         chg_col  = '#1B6B2F' if chg >= 0 else '#C62828'
         chg_bg   = 'rgba(27,107,47,.12)' if chg >= 0 else 'rgba(198,40,40,.12)'
-        ci_d     = ci_vals[mi]
         rng_lo   = min(last30); rng_hi = max(last30)
         sp_svg   = sparkline_svg(last30, col_m)
-        _stars   = _star(mm['MAPE'])
-        _rank_here = [int(np.argmin([m1['MAPE'], m2['MAPE'], m3['MAPE']])),
-                      int(np.argsort([m1['MAPE'], m2['MAPE'], m3['MAPE']])[1]),
-                      int(np.argsort([m1['MAPE'], m2['MAPE'], m3['MAPE']])[2])]
-        _my_rank = _rank_here.index(mi) if mi in _rank_here else 2
-        if _my_rank == 0:
-            best_bd = (
-                f'<div style="display:inline-block;margin-top:10px;'
-                f'background:linear-gradient(135deg,#F9A825 0%,#FFC107 100%);'
-                f'color:#1A2A4A;font-size:10px;font-weight:800;'
-                f'padding:4px 12px;border-radius:6px;letter-spacing:.5px;'
-                f'box-shadow:0 2px 8px rgba(249,168,37,0.4)">'
-                f'{t("dash.best_badge")} {_stars}</div>'
-            )
-        elif _my_rank == 1:
-            best_bd = (
-                f'<div style="display:inline-block;margin-top:10px;'
-                f'background:rgba(148,163,184,0.18);color:{_T["text_secondary"]};'
-                f'font-size:10px;font-weight:800;padding:4px 12px;border-radius:6px;letter-spacing:.5px">'
-                f'{t("dash.second_badge")} {_stars}</div>'
-            )
+        _stars   = _star(mm['MAPE']) if np.isfinite(mm.get('MAPE', float('nan'))) else ''
+        if _i == 0:
+            best_bd = (f'<div style="display:inline-block;margin-top:10px;'
+                       f'background:linear-gradient(135deg,#F9A825 0%,#FFC107 100%);'
+                       f'color:#1A2A4A;font-size:10px;font-weight:800;padding:4px 12px;'
+                       f'border-radius:6px;letter-spacing:.5px;box-shadow:0 2px 8px rgba(249,168,37,0.4)">'
+                       f'{_medal_lbl[0]} {_stars}</div>')
+        elif _i == 1:
+            best_bd = (f'<div style="display:inline-block;margin-top:10px;'
+                       f'background:rgba(148,163,184,0.18);color:{_T["text_secondary"]};'
+                       f'font-size:10px;font-weight:800;padding:4px 12px;border-radius:6px;letter-spacing:.5px">'
+                       f'{_medal_lbl[1]} {_stars}</div>')
         else:
-            best_bd = (
-                f'<div style="display:inline-block;margin-top:10px;'
-                f'background:rgba(180,83,9,0.15);color:{_T["warning"]};'
-                f'font-size:10px;font-weight:800;padding:4px 12px;border-radius:6px;letter-spacing:.5px">'
-                f'{t("dash.third_badge")} {_stars}</div>'
-            )
-        best_border = f'border:2px solid {_T["warning"]};' if mi == best_i else f'border:1px solid {_T["border"]};'
-        best_class  = 'best-model-card' if mi == best_i else ''
-        _sp_bg = 'rgba(255,255,255,0.12)' if st.session_state.get('theme_mode','light')=='dark' else 'rgba(255,255,255,0.65)'
+            best_bd = (f'<div style="display:inline-block;margin-top:10px;'
+                       f'background:rgba(180,83,9,0.15);color:{_T["warning"]};'
+                       f'font-size:10px;font-weight:800;padding:4px 12px;border-radius:6px;letter-spacing:.5px">'
+                       f'{_medal_lbl[2]} {_stars}</div>')
+        _border = f'border:2px solid {_T["warning"]};' if _i == 0 else f'border:1px solid {_T["border"]};'
+        _ci_html = ''
+        if _lo is not None and _hi is not None and np.isfinite(_lo) and np.isfinite(_hi):
+            _ci_html = (f'<div style="font-size:10px;color:{_T["text_muted"]};margin-top:6px">'
+                        f'{t("dash.ci95")}: <b style="color:{chg_col}">'
+                        f'[{_lo*1000:,.0f} – {_hi*1000:,.0f}]</b></div>')
         with mcol:
             st.markdown(
-                f'<div class="{best_class}" style="background:{_card_bg[lbl]};border-radius:16px;padding:20px 18px;'
-                f'{best_border}position:relative;overflow:hidden">'
+                f'<div style="background:{_T["bg_card"]};border-radius:16px;padding:20px 18px;'
+                f'border-top:5px solid {col_m};{_border}position:relative;overflow:hidden">'
                 f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">'
                 f'<div style="font-size:11px;font-weight:600;color:{_T["text_secondary"]};letter-spacing:1.2px;'
                 f'text-transform:uppercase">{t("col.model")}</div>'
                 f'<div style="font-size:10px;color:{_T["text_muted"]};font-weight:500">MAPE test {mm["MAPE"]:.2f}%</div>'
                 f'</div>'
-                f'<div style="font-size:26px;font-weight:800;color:{_T["text_primary"]};letter-spacing:-.5px">{lbl}</div>'
+                f'<div style="font-size:26px;font-weight:800;color:{col_m};letter-spacing:-.5px">{lbl}</div>'
                 f'<div style="font-size:34px;font-weight:800;color:{_T["text_primary"]};line-height:1;margin:10px 0 0">'
                 f'{npred_d:,.0f} <span style="font-size:16px;color:{_T["text_secondary"]};font-weight:500">đ</span></div>'
                 f'<div style="display:inline-block;background:{chg_bg};color:{chg_col};font-size:13px;'
                 f'font-weight:700;padding:5px 14px;border-radius:20px;margin:8px 0 0">'
                 f'{arr} {abs(chg):,.0f} đ ({pct:+.2f}%)</div>'
-                f'<div style="margin:12px 0 0;padding:10px;background:{_sp_bg};'
-                f'border-radius:10px">'
-                f'{sp_svg}'
-                f'</div>'
+                f'<div style="margin:12px 0 0;padding:10px;background:{_sp_bg};border-radius:10px">{sp_svg}</div>'
                 f'<div style="display:flex;justify-content:space-between;margin-top:8px;'
                 f'font-size:10.5px;color:{_T["text_secondary"]}">'
                 f'<span>{t("dash.last_30")}</span>'
-                f'<span style="font-weight:600">Range: {rng_lo:,.0f}–{rng_hi:,.0f}</span>'
-                f'</div>'
-                f'<div style="font-size:10px;color:{_T["text_muted"]};margin-top:6px">'
-                f'{t("dash.ci95")}: <b style="color:{chg_col}">[{npred_d-ci_d:,.0f} – {npred_d+ci_d:,.0f}]</b>'
-                f'</div>'
-                f'{best_bd}'
+                f'<span style="font-weight:600">Range: {rng_lo:,.0f}–{rng_hi:,.0f}</span></div>'
+                f'{_ci_html}{best_bd}'
                 f'</div>', unsafe_allow_html=True)
 
     # ── Labels i18n 4 tầng Ichimoku cho AI Insight ──────────────────────
@@ -486,11 +503,12 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     else:
         _fut_lbl = t('ichi.future.na')
 
-    # Dự báo best model
-    _best_model_name = [f'AR({ar_order})', 'MLR', 'ARIMA'][best_i]
-    _best_metrics    = [m1, m2, m3][best_i]
-    _best_next_pred  = [r1, r2, r3][best_i]['next_pred']
-    _best_pct        = (_best_next_pred - _close_now) / _close_now * 100.0
+    # Dự báo best model = mô hình MAPE thấp nhất trong 7 (đầu danh sách _all7)
+    _best = _all7[0] if _all7 else dict(name='ARIMA', m=m3, npred=r3['next_pred'])
+    _best_model_name = _best['name']
+    _best_metrics    = _best['m']
+    _best_next_pred  = _best['npred']
+    _best_pct        = (_best_next_pred - _close_now) / _close_now * 100.0 if _close_now else 0.0
 
     st.markdown(render_ai_insight(
         ticker=ticker,
@@ -518,41 +536,8 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     # Chart trong fragment → toggle/timeframe đổi KHÔNG rerun KPI/forecast
     _candlestick_section(df, ticker, _T, _is_en_cmp)
 
-    # ════════════════════════════════════════════════════════════════════
-    #  DỰ BÁO ĐA MÔ HÌNH — đầy đủ 7 mô hình (AR/MLR/ARIMA + nâng cao)
-    # ════════════════════════════════════════════════════════════════════
-    _is_en_d = st.session_state.get('lang', 'VI') == 'EN'
-    _spin_d = ('Đang tính các mô hình thống kê nâng cao...'
-               if not _is_en_d else 'Computing advanced statistical models...')
-    with st.spinner(_spin_d):
-        from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
-        _rs = run_sarima(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
-        _re = run_ets(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
-        _rg = run_garch(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
-        _rx = run_sarimax(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
-
-    def _sm(res):
-        yte = np.asarray(res['yte'], float); pte = np.asarray(res['pte'], float)
-        fin = np.isfinite(pte) & np.isfinite(yte)
-        if fin.sum() < 3:
-            return dict(MAPE=float('nan'), RMSE=float('nan'), MAE=float('nan'), R2adj=float('nan'))
-        return calc_metrics(yte[fin], pte[fin], k=2)
-
-    def _ci_lin(res):
-        c = _ci95(res['yte'], res['pte']); n = float(res['next_pred'])
-        return n - c, n + c
-
+    # ── DỰ BÁO ĐA MÔ HÌNH — dùng lại _all7 (đã tính + sắp xếp MAPE ở trên) ──
     _last_c = float(T['Close'])
-    _all7 = [
-        (f'AR({ar_order})', float(r1['next_pred']), m1, _ci_lin(r1)),
-        ('MLR',             float(r2['next_pred']), m2, _ci_lin(r2)),
-        ('ARIMA',           float(r3['next_pred']), m3, (r3.get('next_lower'), r3.get('next_upper'))),
-        ('SARIMA',          float(_rs['next_pred']), _sm(_rs), (_rs.get('next_lower'), _rs.get('next_upper'))),
-        ('Holt-Winters',    float(_re['next_pred']), _sm(_re), (_re.get('next_lower'), _re.get('next_upper'))),
-        ('GARCH',           float(_rg['next_pred']), _sm(_rg), (_rg.get('next_lower'), _rg.get('next_upper'))),
-        ('SARIMAX',         float(_rx['next_pred']), _sm(_rx), (_rx.get('next_lower'), _rx.get('next_upper'))),
-    ]
-    _all7 = [m for m in _all7 if np.isfinite(m[1])]
 
     st.markdown("<div style='margin:12px 0 8px'></div>", unsafe_allow_html=True)
     st.markdown(
@@ -562,11 +547,11 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         f'({len(_all7)} {"mô hình" if not _is_en_d else "models"})</span></div>',
         unsafe_allow_html=True)
     _frows = ''
-    for _nm, _npd, _mm, _ci in _all7:
+    for _md in _all7:
+        _nm = _md['name']; _npd = _md['npred']; _mm = _md['m']; _lo, _hi = _md['ci']
         _chg = (_npd - _last_c) / _last_c * 100 if _last_c else 0
         _cc = _T['success'] if _chg >= 0 else _T['danger']
         _arr = '▲' if _chg >= 0 else '▼'
-        _lo, _hi = _ci
         _ci_s = (f'[{_lo*1000:,.0f} – {_hi*1000:,.0f}]'
                  if (_lo is not None and _hi is not None and np.isfinite(_lo) and np.isfinite(_hi))
                  else '—')
@@ -593,8 +578,8 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     # ── Xếp hạng độ chính xác (toàn bộ mô hình theo MAPE test) ───────────
     st.markdown("<div style='margin:14px 0 8px'></div>", unsafe_allow_html=True)
     st.markdown(f'<div class="sec-hdr">{t("dash.rank")}</div>', unsafe_allow_html=True)
-    _rank_list = [(_nm, _mm) for _nm, _npd, _mm, _ci in _all7
-                  if np.isfinite(_mm.get('MAPE', float('nan')))]
+    _rank_list = [(_md['name'], _md['m']) for _md in _all7
+                  if np.isfinite(_md['m'].get('MAPE', float('nan')))]
     _rank_list.sort(key=lambda x: x[1]['MAPE'])
     _max_mape = max([mm['MAPE'] for _, mm in _rank_list] + [1e-9])
     _medal_html = [

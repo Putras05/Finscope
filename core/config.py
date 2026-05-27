@@ -1,7 +1,7 @@
 PAGE_TITLE  = "Dự Báo Giá Cổ Phiếu · HOSE"
 PAGE_ICON   = "📈"
 LAYOUT      = "wide"
-SIDEBAR_STATE = "expanded"  # luôn mở sidebar khi vào app (desktop); mobile vẫn có nút toggle
+SIDEBAR_STATE = "collapsed"  # sidebar không dùng — điều hướng + tham số ở topbar main area
 DATA_START  = "2012-01-01"
 DATA_END    = "2030-12-31"
 DATA_SOURCE = "KBS"
