@@ -13,5 +13,9 @@ scikit-learn==1.5.2
 statsmodels==0.14.4
 arch==8.0.0
 vnstock>=3.0,<4.0
-google-genai==1.5.0
 requests==2.32.3
+
+# Học sâu (LSTM) — TÙY CHỌN. Local có TensorFlow → chạy LSTM thật.
+# Trên Streamlit Cloud RAM thấp: BỎ TRỐNG dòng dưới → app tự fallback sang
+# sklearn MLP (đã có scikit-learn), KHÔNG vỡ. Bỏ '#' nếu muốn LSTM trên cloud:
+# tensorflow-cpu==2.17.0

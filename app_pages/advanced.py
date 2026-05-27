@@ -12,6 +12,7 @@ from data.metrics import calc_metrics, _ci95
 from charts.base import _PLOTLY_CONFIG
 from charts.arima_diag import chart_fan_ci
 from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
+from models.deep import run_lstm
 
 
 def _safe_metrics(res, k=2):
@@ -31,12 +32,12 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     st.markdown(
         f'<div class="page-header">'
         f'<h1>{"Mô hình Thống kê Nâng cao" if not is_en else "Advanced Statistical Models"} — {ticker}</h1>'
-        f'<p>{"Bộ 7 mô hình dự báo & khoảng tin cậy 80%/95% cho phiên kế tiếp" if not is_en else "Seven forecasting models & 80%/95% confidence intervals for the next session"}</p>'
+        f'<p>{"Bộ 8 mô hình dự báo (gồm học sâu LSTM) & khoảng tin cậy 80%/95% cho phiên kế tiếp" if not is_en else "Eight forecasting models (incl. deep-learning LSTM) & 80%/95% confidence intervals"}</p>'
         f'</div>', unsafe_allow_html=True)
 
     _spin = ('Đang ước lượng SARIMA · Holt-Winters · GARCH · SARIMAX...'
              if not is_en else
-             'Estimating SARIMA · Holt-Winters · GARCH · SARIMAX...')
+             'Estimating SARIMA · Holt-Winters · GARCH · SARIMAX · Deep Learning...')
     with st.spinner(_spin):
         rs = run_sarima(ticker, train_ratio, p=ar_order,
                         date_from=date_from, date_to=date_to)
@@ -46,6 +47,12 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                        date_from=date_from, date_to=date_to)
         rx = run_sarimax(ticker, train_ratio, p=ar_order,
                          date_from=date_from, date_to=date_to)
+    _spin2 = ('Đang huấn luyện mô hình học sâu (LSTM)...' if not is_en
+              else 'Training deep-learning model (LSTM)...')
+    with st.spinner(_spin2):
+        rl = run_lstm(ticker, train_ratio, p=ar_order,
+                      date_from=date_from, date_to=date_to)
+    _lstm_name = rl.get('name', 'Deep Learning (LSTM)')
 
     last_close = float(df['Close'].iloc[-1])
 
@@ -74,11 +81,13 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         _wrap_stat(re_, 'Holt-Winters'),
         _wrap_stat(rg, 'GARCH'),
         _wrap_stat(rx, 'SARIMAX'),
+        _wrap_stat(rl, _lstm_name),
     ]
     metr = {
         f'AR({ar_order})': m1, 'MLR': m2, 'ARIMA': m3,
         'SARIMA': _safe_metrics(rs), 'Holt-Winters': _safe_metrics(re_),
         'GARCH': _safe_metrics(rg), 'SARIMAX': _safe_metrics(rx),
+        _lstm_name: _safe_metrics(rl),
     }
 
     # ════════════════════════════════════════════════════════════════════
@@ -140,7 +149,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
     _fan_models = [
         ('ARIMA', r3), ('SARIMA', rs), ('Holt-Winters', re_),
-        ('GARCH', rg), ('SARIMAX', rx),
+        ('GARCH', rg), ('SARIMAX', rx), (_lstm_name, rl),
     ]
     _tabs = st.tabs([f'  {nm}  ' for nm, _ in _fan_models])
     for _tab, (nm, res) in zip(_tabs, _fan_models):
