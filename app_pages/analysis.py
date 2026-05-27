@@ -60,11 +60,38 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         except Exception as _e:
             _adv_res[_nm] = None
 
+    # ── Dựng FinScope Ensemble từ 8 mô hình đã tính (trọng số ∝ 1/MAPE) ──
+    def _mape_of(_res):
+        if _res is None:
+            return float('nan')
+        _y = np.asarray(_res.get('yte', []), float); _p = np.asarray(_res.get('pte', []), float)
+        _f = np.isfinite(_y) & np.isfinite(_p)
+        if _f.sum() < 3:
+            return float('nan')
+        return calc_metrics(_y[_f], _p[_f], k=2)['MAPE']
+
+    _ens_members = [
+        {'name': f'AR({ar_order})', 'res': r1, 'mape': m1['MAPE']},
+        {'name': 'MLR', 'res': r2, 'mape': m2['MAPE']},
+        {'name': 'ARIMA', 'res': r3, 'mape': m3['MAPE']},
+    ]
+    for _nm in ('SARIMA', 'Holt-Winters', 'GARCH', 'SARIMAX', 'Gradient Boosting'):
+        _rr = _adv_res.get(_nm)
+        if _rr is not None:
+            _ens_members.append({'name': _nm, 'res': _rr, 'mape': _mape_of(_rr)})
+    try:
+        from models.ensemble import build_ensemble
+        _ens_res = build_ensemble(_ens_members, df)
+    except Exception:
+        _ens_res = None
+
     (tab_ar1, tab_mlr, tab_cart,
-     tab_sar, tab_ets, tab_garch, tab_sarx, tab_gbr) = st.tabs([
+     tab_sar, tab_ets, tab_garch, tab_sarx, tab_gbr,
+     tab_lstm, tab_ens) = st.tabs([
         f'  AR({ar_order})  ', '  MLR  ', '  ARIMA  ',
         '  SARIMA  ', '  Holt-Winters  ', '  GARCH  ', '  SARIMAX  ',
-        '  Gradient Boosting  '])
+        '  Gradient Boosting  ', '  Deep Learning (LSTM)  ',
+        '  FinScope Ensemble  '])
 
     with tab_ar1:
         m_tr1 = calc_metrics(r1['ytr'], r1['ptr'])
@@ -335,6 +362,44 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     with tab_gbr:
         _render_adv_tab(_adv_res.get('Gradient Boosting'), 'Gradient Boosting', ticker, date_from, date_to, _T, _next_lbl)
 
+    # ── TAB HỌC SÂU (LSTM) — tính lười (lazy) để giữ app mượt ───────────
+    with tab_lstm:
+        _is_en_l = st.session_state.get('lang', 'VI') == 'EN'
+        st.markdown(
+            f'<div class="info-box">'
+            + ('Mạng nơ-ron hồi tiếp LSTM huấn luyện chậm hơn các mô hình thống kê '
+               '(~20–40 giây). Tích vào ô bên dưới để huấn luyện và xem phân tích — '
+               'giữ ô tắt để app luôn mượt khi không cần.'
+               if not _is_en_l else
+               'The LSTM recurrent network trains slower than statistical models '
+               '(~20–40s). Tick the box below to train and analyze it — leave it '
+               'off to keep the app snappy when not needed.')
+            + '</div>', unsafe_allow_html=True)
+        if st.checkbox('Huấn luyện & phân tích LSTM' if not _is_en_l
+                       else 'Train & analyze LSTM', key='_an_lstm_run'):
+            with st.spinner('Đang huấn luyện LSTM...' if not _is_en_l
+                            else 'Training LSTM...'):
+                try:
+                    from models.deep import run_lstm
+                    _rl = run_lstm(ticker, train_ratio, p=ar_order,
+                                   date_from=date_from, date_to=date_to)
+                except Exception as _el:
+                    _rl = None
+                    st.error(f'LSTM error: {_el}')
+            if _rl is not None:
+                _render_adv_tab(_rl, _rl.get('name', 'Deep Learning (LSTM)'),
+                                ticker, date_from, date_to, _T, _next_lbl)
+
+    # ── TAB MÔ HÌNH KẾT HỢP (FinScope Ensemble) ─────────────────────────
+    with tab_ens:
+        _is_en_e = st.session_state.get('lang', 'VI') == 'EN'
+        if _ens_res is None:
+            st.warning('Cần ≥2 mô hình hợp lệ để dựng Ensemble.'
+                       if not _is_en_e else 'Need ≥2 valid models to build the ensemble.')
+        else:
+            _render_adv_tab(_ens_res, 'FinScope Ensemble', ticker,
+                            date_from, date_to, _T, _next_lbl)
+
 
 def _render_adv_tab(res, label, ticker, date_from, date_to, _T, _next_lbl):
     """Render 1 tab mô hình nâng cao: metrics + tóm tắt + lịch sử giá + fan chart CI."""
@@ -429,11 +494,70 @@ def _adv_equation(label, res, is_en):
                      r"\phi_p(B)(1-B)^d\,\eta_t=\theta_q(B)\,\varepsilon_t")
             _b1 = _g('x1'); _b2 = _g('x2')
             st.caption(f"β₁ (log Volume) = {_b1:.4f} · β₂ (Range) = {_b2:.4f}")
+        elif label.startswith('Gradient'):
+            st.markdown("**Gradient Boosting Regressor** — "
+                        + ('học máy phi tuyến: cộng dồn nhiều cây quyết định nhỏ để '
+                           'dự báo LỢI SUẤT phiên kế tiếp rồi quy về giá'
+                           if not is_en else
+                           'nonlinear ML: an additive ensemble of shallow trees '
+                           'predicts next-bar RETURN, then maps to price'))
+            st.latex(r"\hat{r}_{t+1}=\sum_{m=1}^{M}\nu\,h_m(\mathbf{x}_t),\qquad"
+                     r"\hat{P}_{t+1}=P_t\,(1+\hat{r}_{t+1})")
+            st.caption(res.get('params', '')
+                       + (' · đặc trưng: Return, Volume_ratio, Range_ratio, '
+                          'MA5/MA20 ratio, RSI14 (× p lag)' if not is_en else
+                          ' · features: Return, Volume_ratio, Range_ratio, '
+                          'MA5/MA20 ratio, RSI14 (× p lags)'))
+        elif ('LSTM' in label) or label.startswith('Neural') or label.startswith('Deep'):
+            _is_lstm = 'LSTM' in label
+            st.markdown(('**LSTM (Long Short-Term Memory)** — '
+                         if _is_lstm else '**Mạng nơ-ron MLP (dự phòng)** — ')
+                        + ('học sâu trên chuỗi LỢI SUẤT chuẩn hoá (cửa sổ trượt) '
+                           'rồi quy về giá phiên kế tiếp'
+                           if not is_en else
+                           'deep learning on normalized RETURN windows, mapped back '
+                           'to next-bar price'))
+            if _is_lstm:
+                st.latex(r"f_t=\sigma(W_f x_t+U_f h_{t-1}+b_f),\;"
+                         r"i_t=\sigma(\cdot),\;o_t=\sigma(\cdot)")
+                st.latex(r"c_t=f_t\odot c_{t-1}+i_t\odot\tanh(W_c x_t+U_c h_{t-1}+b_c),\;"
+                         r"h_t=o_t\odot\tanh(c_t)")
+            st.latex(r"\hat{P}_{t+1}=P_t\,(1+\hat{r}_{t+1})")
+            st.caption(res.get('summary', ''))
+        elif 'Ensemble' in label:
+            st.markdown("**Forecast combination (Bates–Granger)** — "
+                        + ('trung bình có trọng số NGHỊCH-MAPE: mô hình càng chính '
+                           'xác → trọng số càng lớn → dự báo ổn định hơn'
+                           if not is_en else
+                           'inverse-MAPE weighted average: more accurate models get '
+                           'larger weights → more robust forecast'))
+            st.latex(r"\hat{Y}_t=\sum_i w_i\,\hat{Y}_{i,t},\qquad"
+                     r"w_i=\frac{1/(\mathrm{MAPE}_i+0.1)}{\sum_j 1/(\mathrm{MAPE}_j+0.1)}")
+            _w = res.get('weights', {}) or {}
+            if _w:
+                _wh = ('| Mô hình thành phần | Trọng số |\n|---|---|\n' if not is_en
+                       else '| Member model | Weight |\n|---|---|\n')
+                _wr = '\n'.join(f"| {k} | {v*100:.1f}% |"
+                                for k, v in sorted(_w.items(), key=lambda kv: -kv[1]))
+                st.markdown(_wh + _wr)
+            st.caption((f"Gộp {res.get('n_members', '?')} mô hình." if not is_en
+                        else f"Combines {res.get('n_members', '?')} models."))
 
+        # Bảng tham số: ARIMA-họ dùng `coef`; GBR dùng `importances`.
         if coef:
             _hdr = ('| Tham số | Giá trị |\n|---|---|\n' if not is_en
                     else '| Parameter | Value |\n|---|---|\n')
-            _rows = '\n'.join(f"| `{k}` | {v:.6f} |" for k, v in coef.items())
+            _rows = '\n'.join(f"| `{k}` | {float(v):.6f} |" for k, v in coef.items())
             st.markdown(_hdr + _rows)
-        st.caption(f"AIC = {res.get('aic', float('nan')):.1f}  ·  "
-                   f"BIC = {res.get('bic', float('nan')):.1f}")
+        _imp = res.get('importances', {}) or {}
+        if _imp and not coef:
+            _ih = ('| Đặc trưng | Độ quan trọng |\n|---|---|\n' if not is_en
+                   else '| Feature | Importance |\n|---|---|\n')
+            _ir = '\n'.join(f"| `{k}` | {float(v)*100:.1f}% |"
+                            for k, v in sorted(_imp.items(), key=lambda kv: -kv[1]))
+            st.markdown(_ih + _ir)
+
+        _aic = res.get('aic'); _bic = res.get('bic')
+        if _aic is not None and np.isfinite(_aic):
+            _bic_s = f"  ·  BIC = {_bic:.1f}" if (_bic is not None and np.isfinite(_bic)) else ''
+            st.caption(f"AIC = {_aic:.1f}{_bic_s}")
