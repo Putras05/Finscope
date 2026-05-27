@@ -1,4 +1,6 @@
-# Dự Báo Giá Cổ Phiếu — Cuộc thi Ứng dụng AI 2026
+# FinScope — Phân tích & Dự báo Chứng khoán Đa mô hình
+
+> Sản phẩm dự thi **Cuộc thi Ứng dụng AI 2026**
 
 Ứng dụng Streamlit phân tích & dự báo giá cổ phiếu **VN30 (HOSE)** bằng nhiều
 mô hình thống kê + công cụ kỹ thuật, kèm **khoảng tin cậy** và **chiến lược giao dịch**.

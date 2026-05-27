@@ -32,9 +32,10 @@ def render_topbar() -> tuple:
     st.markdown(
         f"<div style='display:flex;align-items:center;justify-content:space-between;"
         f"flex-wrap:wrap;gap:8px;padding:6px 4px 10px'>"
-        f"<div style='display:flex;align-items:center;gap:12px'>"
-        f"<span style='font-size:20px;font-weight:800;color:#1E40AF;letter-spacing:-.3px'>"
+        f"<div style='display:flex;align-items:baseline;gap:10px;flex-wrap:wrap'>"
+        f"<span style='font-size:22px;font-weight:800;color:#1E40AF;letter-spacing:-.5px'>"
         f"📈 {t('app.title')}</span>"
+        f"<span style='font-size:12px;color:#64748B;font-style:italic'>{t('app.tagline')}</span>"
         f"<span style='font-size:11px;font-weight:600;color:#64748B;"
         f"background:#EFF6FF;border:1px solid #DBEAFE;padding:3px 10px;border-radius:999px'>"
         f"{'AI Application Contest 2026' if _is_en else 'Cuộc thi Ứng dụng AI 2026'}</span>"

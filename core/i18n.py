@@ -2,7 +2,9 @@ import streamlit as st
 
 TEXT = {
     # App
-    'app.title':      {'VI': 'Dự Báo Giá Cổ Phiếu', 'EN': 'Stock Price Forecast'},
+    'app.title':      {'VI': 'FinScope', 'EN': 'FinScope'},
+    'app.tagline':    {'VI': 'Phân tích & Dự báo Chứng khoán Đa mô hình',
+                       'EN': 'Multi-model Stock Analysis & Forecasting'},
     # Navigation
     'nav.dashboard':  {'VI': 'Dashboard Tổng quan',  'EN': 'Overview Dashboard'},
     'nav.analysis':   {'VI': 'Phân tích Chi tiết',   'EN': 'Detailed Analysis'},

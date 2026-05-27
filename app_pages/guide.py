@@ -20,9 +20,9 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         {'User Guide' if _is_en else 'Hướng dẫn Sử dụng'}
       </div>
       <div style="font-size:13px;color:{_T['banner_subtext']};margin-top:4px">
-        {'Stock Price Forecasting System · AI Application Contest 2026'
+        {'FinScope · Multi-model Stock Analysis & Forecasting · AI Application Contest 2026'
          if _is_en else
-         'Hệ thống Dự báo Giá Cổ phiếu · Cuộc thi Ứng dụng AI 2026'}
+         'FinScope · Phân tích & Dự báo Chứng khoán Đa mô hình · Cuộc thi Ứng dụng AI 2026'}
       </div>
     </div>
   </div>

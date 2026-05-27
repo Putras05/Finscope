@@ -1,4 +1,4 @@
-PAGE_TITLE  = "Dự Báo Giá Cổ Phiếu · HOSE"
+PAGE_TITLE  = "FinScope · Dự báo Chứng khoán HOSE"
 PAGE_ICON   = "📈"
 LAYOUT      = "wide"
 SIDEBAR_STATE = "collapsed"  # sidebar không dùng — điều hướng + tham số ở topbar main area
