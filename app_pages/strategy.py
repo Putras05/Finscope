@@ -85,15 +85,21 @@ def _tech_signal_series(d: pd.DataFrame) -> pd.Series:
     return long_cond.astype(int)
 
 
-def _backtest_longonly(d: pd.DataFrame, nt: int):
+def _backtest_longonly(d: pd.DataFrame, nt: int, fee_side: float = 0.0015):
     """Backtest long-only: vào lệnh theo tín hiệu kỹ thuật (vào ở phiên kế tiếp).
-    Trả về dict metrics + chuỗi equity (chiến lược vs mua&giữ)."""
+
+    Có tính PHÍ GIAO DỊCH thực tế: mỗi lần đổi trạng thái (vào/thoát) trừ
+    `fee_side` (mặc định 0.15%/chiều → khứ hồi ≈ 0.3%, sát phí + thuế HOSE).
+    Trả về dict metrics + chuỗi equity (chiến lược NET vs mua&giữ)."""
     sig = _tech_signal_series(d)
     pos = sig.shift(1).fillna(0)                 # vào lệnh phiên sau khi có tín hiệu
     ret = d['Close'].pct_change().fillna(0)
-    strat_ret = pos * ret
+    turn = pos.diff().abs().fillna(pos.abs())    # 1 tại mỗi lần vào hoặc thoát lệnh
+    fee = turn * fee_side                        # chi phí giao dịch theo phiên
+    strat_ret = pos * ret - fee                  # lợi suất ĐÃ TRỪ PHÍ
     eq_strat = (1 + strat_ret).cumprod()
     eq_bh = (1 + ret).cumprod()
+    total_fee = float(fee.sum() * 100)           # tổng phí (% trên vốn, xấp xỉ)
     # Số lệnh = số lần chuyển 0→1
     entries = ((pos == 1) & (pos.shift(1) == 0)).sum()
     # Win rate theo "lệnh": gom các đoạn giữ long liên tiếp
@@ -124,6 +130,7 @@ def _backtest_longonly(d: pd.DataFrame, nt: int):
         total_bh=(eq_bh.iloc[-1] - 1) * 100,
         n_trades=int(len(trades)), win_rate=win_rate,
         max_dd=float(dd), sharpe=float(sharpe),
+        total_fee=total_fee, fee_side=fee_side,
         sig=sig,
     )
 
@@ -370,6 +377,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         (('Tỉ lệ thắng' if not is_en else 'Win rate'), f'{bt["win_rate"]:.0f}%', _T['accent']),
         (('Sụt giảm tối đa' if not is_en else 'Max drawdown'), f'{bt["max_dd"]:.1f}%', _T['danger']),
         (('Sharpe (năm)' if not is_en else 'Sharpe (ann.)'), f'{bt["sharpe"]:.2f}', _T['text_primary']),
+        (('Phí giao dịch' if not is_en else 'Fee drag'), f'-{bt["total_fee"]:.1f}%', _T['warning']),
     ]
     _sc = st.columns(len(_stats))
     for _col, (_l, _v, _c) in zip(_sc, _stats):
@@ -381,7 +389,20 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             f'<div style="font-size:16px;font-weight:800;color:{_c}">{_v}</div></div>',
             unsafe_allow_html=True)
 
+    _fee1 = bt['fee_side'] * 100      # %/chiều
+    _fee2 = bt['fee_side'] * 200      # % khứ hồi
+    if not is_en:
+        _disc = (f'⚠️ Công cụ hỗ trợ phân tích học thuật, KHÔNG phải khuyến nghị '
+                 f'đầu tư. Quy tắc vào lệnh: long khi MA5>MA20, giá>MA50, '
+                 f'MACD>signal và RSI<75; SL/TP theo bội số ATR(14). Backtest ĐÃ '
+                 f'TRỪ phí giao dịch {_fee1:.2f}%/chiều (khứ hồi ≈ {_fee2:.2f}%, '
+                 f'sát phí + thuế HOSE) nhưng chưa tính trượt giá.')
+    else:
+        _disc = (f'⚠️ Academic analysis tool, NOT investment advice. Entry rule: '
+                 f'long when MA5>MA20, price>MA50, MACD>signal and RSI<75; SL/TP '
+                 f'as ATR(14) multiples. Backtest is NET of {_fee1:.2f}%/side fees '
+                 f'(round-trip ≈ {_fee2:.2f}%, close to HOSE fee + tax) but ignores '
+                 f'slippage.')
     st.markdown(
         f'<div style="font-size:11px;color:{_T["text_muted"]};margin-top:14px;line-height:1.6">'
-        f'{"⚠️ Công cụ hỗ trợ phân tích học thuật, KHÔNG phải khuyến nghị đầu tư. Quy tắc vào lệnh: long khi MA5>MA20, giá>MA50, MACD>signal và RSI<75; SL/TP theo bội số ATR(14). Backtest bỏ qua phí giao dịch & trượt giá." if not is_en else "⚠️ Academic analysis tool, NOT investment advice. Entry rule: long when MA5>MA20, price>MA50, MACD>signal and RSI<75; SL/TP as ATR(14) multiples. Backtest ignores fees & slippage."}'
-        f'</div>', unsafe_allow_html=True)
+        f'{_disc}</div>', unsafe_allow_html=True)

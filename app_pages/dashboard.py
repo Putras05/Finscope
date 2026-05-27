@@ -154,6 +154,106 @@ def _candlestick_section(df, ticker, _T, _is_en_cmp):
         st.error(f'Chart error: {_e}')
 
 
+def _align_two(res_a, res_b, df):
+    """Căn 2 chuỗi dự báo test theo NGÀY chung + lấy giá thực tương ứng.
+
+    Trả (y_true, pred_a, pred_b) trên các phiên cả 2 mô hình đều có dự báo,
+    hoặc None nếu < 8 phiên chung (không đủ cho kiểm định)."""
+    try:
+        ia = pd.to_datetime(res_a['dates_te'])
+        ib = pd.to_datetime(res_b['dates_te'])
+        pa = pd.Series(np.asarray(res_a['pte'], float), index=ia)
+        pb = pd.Series(np.asarray(res_b['pte'], float), index=ib)
+        pa = pa[~pa.index.duplicated(keep='last')]
+        pb = pb[~pb.index.duplicated(keep='last')]
+        j = pd.concat([pa, pb], axis=1, join='inner').dropna()
+        if len(j) < 8:
+            return None
+        cmap = pd.Series(df['Close'].values.astype(float),
+                         index=pd.to_datetime(df['Ngay']))
+        cmap = cmap[~cmap.index.duplicated(keep='last')]
+        y = cmap.reindex(j.index).values
+        fin = np.isfinite(y)
+        if fin.sum() < 8:
+            return None
+        return y[fin], j.iloc[:, 0].values[fin], j.iloc[:, 1].values[fin]
+    except Exception:
+        return None
+
+
+def _render_dm_section(all_models, df, _T, is_en=False):
+    """Kiểm định Diebold–Mariano: mô hình tốt nhất có vượt trội ĐÁNG KỂ không?
+
+    So mô hình MAPE thấp nhất với từng mô hình còn lại trên phiên test chung.
+    Fail-safe: thiếu mẫu/lỗi → bỏ qua section, không sập trang."""
+    from data.metrics import diebold_mariano
+    valid = [m for m in all_models
+             if np.isfinite(m['m'].get('MAPE', float('nan')))
+             and len(np.asarray(m['res'].get('pte', []))) > 0]
+    if len(valid) < 2:
+        return
+    best = valid[0]
+    rows = []
+    for other in valid[1:]:
+        aligned = _align_two(best['res'], other['res'], df)
+        if aligned is None:
+            continue
+        y, fb, fo = aligned
+        dm = diebold_mariano(y, fb, fo, h=1, loss='MSE')
+        if not dm.get('ok'):
+            continue
+        # dbar<0 nghĩa best có sai số bình phương NHỎ hơn → best tốt hơn
+        better = dm['dbar'] < 0
+        sig = dm['p'] < 0.05
+        if sig and better:
+            verdict = ('Tốt hơn đáng kể' if not is_en else 'Significantly better')
+            vcol = '#16A34A'
+        elif sig and not better:
+            verdict = ('Kém hơn đáng kể' if not is_en else 'Significantly worse')
+            vcol = '#DC2626'
+        else:
+            verdict = ('Khác biệt không ý nghĩa' if not is_en else 'Not significant')
+            vcol = _T['text_muted']
+        rows.append((other['name'], dm['dm'], dm['p'], dm['n'], verdict, vcol))
+
+    if not rows:
+        return
+
+    st.markdown("<div style='margin:16px 0 8px'></div>", unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="sec-hdr">'
+        f'{"Kiểm định Diebold–Mariano" if not is_en else "Diebold–Mariano test"}'
+        f' <span style="font-size:11px;font-weight:600;color:{_T["text_muted"]}">'
+        f'{"— %s có vượt trội đáng kể?" % best["name"] if not is_en else "— is %s significantly better?" % best["name"]}'
+        f'</span></div>', unsafe_allow_html=True)
+
+    _hdr = (['Đối chứng', 'DM', 'p-value', 'n phiên', 'Kết luận (α=5%)'] if not is_en
+            else ['Compared model', 'DM', 'p-value', 'n obs', 'Verdict (α=5%)'])
+    _tr = ''
+    for nm, dm, p, n, verdict, vcol in rows:
+        _pstr = '< 0.001' if p < 0.001 else f'{p:.3f}'
+        _tr += (
+            f'<tr style="border-top:1px solid {_T["divider"]};color:{_T["text_primary"]}">'
+            f'<td style="padding:8px 12px;font-weight:600">{best["name"]} vs {nm}</td>'
+            f'<td style="padding:8px 12px;font-family:monospace">{dm:+.3f}</td>'
+            f'<td style="padding:8px 12px;font-family:monospace">{_pstr}</td>'
+            f'<td style="padding:8px 12px;color:{_T["text_secondary"]}">{n}</td>'
+            f'<td style="padding:8px 12px;font-weight:700;color:{vcol}">{verdict}</td>'
+            f'</tr>')
+    st.markdown(
+        f'<div style="border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;'
+        f'border:1px solid {_T["border"]}">'
+        f'<table style="width:100%;border-collapse:collapse;font-size:13px">'
+        f'<thead><tr style="background:{_T["accent"]};color:#fff">'
+        + ''.join(f'<th style="padding:8px 12px;text-align:left">{h}</th>' for h in _hdr)
+        + f'</tr></thead><tbody>{_tr}</tbody></table></div>',
+        unsafe_allow_html=True)
+    st.markdown(
+        f'<div style="font-size:11px;color:{_T["text_muted"]};margin-top:8px;line-height:1.6">'
+        f'{"H₀: hai mô hình có độ chính xác bằng nhau. DM âm ⇒ %s sai số nhỏ hơn. p<0.05 ⇒ bác bỏ H₀ (khác biệt có ý nghĩa thống kê). Hàm tổn thất: sai số bình phương (MSE), tầm dự báo 1 phiên, hiệu chỉnh mẫu nhỏ HLN." % best["name"] if not is_en else "H₀: equal forecast accuracy. Negative DM ⇒ %s has lower error. p<0.05 ⇒ reject H₀ (statistically significant). Loss: squared error (MSE), 1-step horizon, HLN small-sample correction." % best["name"]}'
+        f'</div>', unsafe_allow_html=True)
+
+
 def _render_news_sentiment_card(ticker, _T, is_en=False):
     """Thẻ TÂM LÝ TIN TỨC — đọc RSS thị trường, chấm sentiment có trọng số.
 
@@ -810,3 +910,6 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         f'<th style="padding:10px 12px;text-align:left">R²adj</th>'
         f'</tr></thead><tbody>{_rows_html}</tbody></table></div>',
         unsafe_allow_html=True)
+
+    # ── Kiểm định Diebold–Mariano: best vs các mô hình khác ──────────────
+    _render_dm_section(_all7, df, _T, _is_en_d)
