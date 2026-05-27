@@ -38,10 +38,10 @@ def _compute_indicators(df: pd.DataFrame) -> pd.DataFrame:
     d['BB_up'] = ma20 + 2 * sd20
     d['BB_lo'] = ma20 - 2 * sd20
     d['BB_pctB'] = (close - d['BB_lo']) / (d['BB_up'] - d['BB_lo']).replace(0, np.nan)
-    # ATR (14)
+    # ATR (14) — làm trơn Wilder (RMA, alpha=1/14) đúng chuẩn Wilder 1978
     prev_c = close.shift(1)
     tr = pd.concat([(high - low), (high - prev_c).abs(), (low - prev_c).abs()], axis=1).max(axis=1)
-    d['ATR'] = tr.rolling(14).mean()
+    d['ATR'] = tr.ewm(alpha=1 / 14, adjust=False, min_periods=14).mean()
     return d
 
 

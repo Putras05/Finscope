@@ -4,7 +4,7 @@ import numpy as np
 from core.config import DATA_START, DATA_END, DATA_SOURCE, CACHE_TTL
 
 
-@st.cache_data(ttl=CACHE_TTL, show_spinner=False)
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False, persist="disk")
 def _fetch_raw(ticker: str) -> pd.DataFrame:
     """Fetch raw từ vnstock + indicator technical. Cache theo ticker (không
     phụ thuộc date_from/date_to) → đổi date range KHÔNG gọi lại network.

@@ -44,7 +44,24 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         f'({_src_desc})</span>'
     )
 
-    tab_ar1, tab_mlr, tab_cart = st.tabs([f'  AR({ar_order})  ', '  MLR  ', '  ARIMA  '])
+    # 7 mô hình đầy đủ — 4 mô hình nâng cao tính từ cache (đã warm ở topbar/app)
+    from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
+    _adv_specs = [
+        ('SARIMA', run_sarima), ('Holt-Winters', run_ets),
+        ('GARCH', run_garch), ('SARIMAX', run_sarimax),
+    ]
+    _adv_res = {}
+    for _nm, _fn in _adv_specs:
+        try:
+            _adv_res[_nm] = _fn(ticker, train_ratio, p=ar_order,
+                                date_from=date_from, date_to=date_to)
+        except Exception as _e:
+            _adv_res[_nm] = None
+
+    (tab_ar1, tab_mlr, tab_cart,
+     tab_sar, tab_ets, tab_garch, tab_sarx) = st.tabs([
+        f'  AR({ar_order})  ', '  MLR  ', '  ARIMA  ',
+        '  SARIMA  ', '  Holt-Winters  ', '  GARCH  ', '  SARIMAX  '])
 
     with tab_ar1:
         m_tr1 = calc_metrics(r1['ytr'], r1['ptr'])
@@ -302,3 +319,57 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                     st.caption(f'⚠ {_ed}')
         except Exception as _e:
             st.error(t('error.arima_chart', e=_e))
+
+    # ── 4 TAB MÔ HÌNH NÂNG CAO (SARIMA · Holt-Winters · GARCH · SARIMAX) ──
+    with tab_sar:
+        _render_adv_tab(_adv_res.get('SARIMA'), 'SARIMA', ticker, date_from, date_to, _T, _next_lbl)
+    with tab_ets:
+        _render_adv_tab(_adv_res.get('Holt-Winters'), 'Holt-Winters', ticker, date_from, date_to, _T, _next_lbl)
+    with tab_garch:
+        _render_adv_tab(_adv_res.get('GARCH'), 'GARCH', ticker, date_from, date_to, _T, _next_lbl)
+    with tab_sarx:
+        _render_adv_tab(_adv_res.get('SARIMAX'), 'SARIMAX', ticker, date_from, date_to, _T, _next_lbl)
+
+
+def _render_adv_tab(res, label, ticker, date_from, date_to, _T, _next_lbl):
+    """Render 1 tab mô hình nâng cao: metrics + tóm tắt + lịch sử giá + fan chart CI."""
+    is_en = st.session_state.get('lang', 'VI') == 'EN'
+    if res is None or not res.get('ok', True):
+        st.warning((res.get('summary') if res else None)
+                   or ('Mô hình hiện không khả dụng.' if not is_en else 'Model unavailable.'))
+        return
+    yte = np.asarray(res['yte'], float); pte = np.asarray(res['pte'], float)
+    fin = np.isfinite(pte) & np.isfinite(yte)
+    if fin.sum() < 3:
+        st.warning('Không đủ dữ liệu hợp lệ.' if not is_en else 'Not enough valid data.')
+        return
+    m = calc_metrics(yte[fin], pte[fin], k=2)
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric(t('metric.mape_test'), f"{m['MAPE']:.2f}%")
+    c2.metric("RMSE", f"{m['RMSE']:.4f}")
+    c3.metric("MAE", f"{m['MAE']:.4f}")
+    c4.metric("R²adj", f"{m['R2adj']:.4f}")
+    _np = res.get('next_pred', float('nan'))
+    c5.metric('Dự báo phiên tới' if not is_en else 'Next forecast',
+              f"{_np*1000:,.0f} đ" if np.isfinite(_np) else 'N/A')
+    _nlo = res.get('next_lower'); _nhi = res.get('next_upper')
+    _ci_txt = (f' &nbsp;·&nbsp; {t("arima.ci95")}: '
+               f'<b>[{_nlo*1000:,.0f} – {_nhi*1000:,.0f}] đ</b>'
+               if (_nlo is not None and np.isfinite(_nlo)) else '')
+    st.markdown(
+        f'<div class="info-box"><b>{label}</b> · {res.get("summary", "")}'
+        f' &nbsp;·&nbsp; engine: {res.get("engine", "")}{_ci_txt}{_next_lbl}</div>',
+        unsafe_allow_html=True)
+    try:
+        figh = chart_price_history_plotly(res, ticker, date_from, date_to, T=_T)
+        st.plotly_chart(figh, use_container_width=True, config={
+            **_PLOTLY_CONFIG, 'toImageButtonOptions': {
+                **_PLOTLY_CONFIG['toImageButtonOptions'],
+                'filename': f'{ticker}_{label}_history'}})
+        figf = chart_fan_ci(res, ticker, T=_T, method_label=label, is_en=is_en)
+        st.plotly_chart(figf, use_container_width=True, config={
+            **_PLOTLY_CONFIG, 'toImageButtonOptions': {
+                **_PLOTLY_CONFIG['toImageButtonOptions'],
+                'filename': f'{ticker}_{label}_CI'}})
+    except Exception as _e:
+        st.error(f'Chart error: {_e}')

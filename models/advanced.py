@@ -65,7 +65,7 @@ def _empty_like(name, engine, y, dates, nt, msg):
 # ════════════════════════════════════════════════════════════════════════════
 #  SARIMA
 # ════════════════════════════════════════════════════════════════════════════
-@st.cache_data(ttl=1800, show_spinner=False)
+@st.cache_data(ttl=21600, show_spinner=False, persist="disk")
 def run_sarima(ticker: str, train_ratio: float, p: int = 1,
                date_from=None, date_to=None) -> dict:
     df, N, y, dates, nt = _split(ticker, train_ratio, date_from, date_to)
@@ -117,7 +117,7 @@ def run_sarima(ticker: str, train_ratio: float, p: int = 1,
 # ════════════════════════════════════════════════════════════════════════════
 #  Holt-Winters / ETS (Exponential Smoothing — statespace)
 # ════════════════════════════════════════════════════════════════════════════
-@st.cache_data(ttl=1800, show_spinner=False)
+@st.cache_data(ttl=21600, show_spinner=False, persist="disk")
 def run_ets(ticker: str, train_ratio: float, p: int = 1,
             date_from=None, date_to=None) -> dict:
     import pandas as pd
@@ -171,7 +171,7 @@ def run_ets(ticker: str, train_ratio: float, p: int = 1,
 # ════════════════════════════════════════════════════════════════════════════
 #  GARCH — AR(1) mean + GARCH(1,1) volatility
 # ════════════════════════════════════════════════════════════════════════════
-@st.cache_data(ttl=1800, show_spinner=False)
+@st.cache_data(ttl=21600, show_spinner=False, persist="disk")
 def run_garch(ticker: str, train_ratio: float, p: int = 1,
               date_from=None, date_to=None) -> dict:
     df, N, y, dates, nt = _split(ticker, train_ratio, date_from, date_to)
@@ -275,7 +275,7 @@ def _garch_ewma_fallback(y, ret, dates, nt):
 # ════════════════════════════════════════════════════════════════════════════
 #  SARIMAX — ARIMA + biến ngoại sinh (Volume, Range)
 # ════════════════════════════════════════════════════════════════════════════
-@st.cache_data(ttl=1800, show_spinner=False)
+@st.cache_data(ttl=21600, show_spinner=False, persist="disk")
 def run_sarimax(ticker: str, train_ratio: float, p: int = 1,
                 date_from=None, date_to=None) -> dict:
     df, N, y, dates, nt = _split(ticker, train_ratio, date_from, date_to)

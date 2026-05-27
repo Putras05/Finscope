@@ -112,7 +112,7 @@ def _np_ar_fallback(y, nt, p, dates):
     )
 
 
-@st.cache_data(ttl=1800, show_spinner=False)
+@st.cache_data(ttl=21600, show_spinner=False, persist="disk")
 def run_arima(ticker: str, train_ratio: float, p: int = 1,
               date_from=None, date_to=None) -> dict:
     """ARIMA(p,d,q) dự báo 1 phiên kế tiếp trên giá đóng cửa.
