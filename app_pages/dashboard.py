@@ -154,6 +154,101 @@ def _candlestick_section(df, ticker, _T, _is_en_cmp):
         st.error(f'Chart error: {_e}')
 
 
+def _render_news_sentiment_card(ticker, _T, is_en=False):
+    """Thẻ TÂM LÝ TIN TỨC — đọc RSS thị trường, chấm sentiment có trọng số.
+
+    Fail-safe tuyệt đối: mọi lỗi (mạng/parse) → caption nhẹ, KHÔNG sập trang.
+    Dữ liệu đã được warm ngầm ở trang bìa nên thường hiện tức thì.
+    """
+    try:
+        from data.news import news_sentiment
+        ns = news_sentiment(ticker)
+    except Exception:
+        ns = None
+
+    if not ns or not ns.get('ok'):
+        _note = (ns or {}).get('note') if ns else None
+        st.markdown(
+            f'<div style="font-size:11px;color:{_T["text_muted"]};'
+            f'margin:0 0 14px;padding:8px 14px;background:{_T["bg_card"]};'
+            f'border:1px dashed {_T["border"]};border-radius:10px">'
+            f'{"News sentiment temporarily unavailable" if is_en else "Tâm lý tin tức tạm thời chưa khả dụng"}'
+            f'{f" · {_note}" if _note else ""}</div>',
+            unsafe_allow_html=True)
+        return
+
+    _vote = int(ns.get('vote', 0))
+    _mkt  = int(ns.get('market_score', 0))
+    _tks  = int(ns.get('ticker_score', 0))
+    _tkn  = int(ns.get('ticker_n', 0))
+    _n    = int(ns.get('n', 0))
+
+    if _vote > 0:
+        _lbl = 'Bullish' if is_en else 'Tích cực'
+        _col, _bg, _arr = '#16A34A', 'rgba(22,163,74,.10)', '▲'
+    elif _vote < 0:
+        _lbl = 'Bearish' if is_en else 'Tiêu cực'
+        _col, _bg, _arr = '#DC2626', 'rgba(220,38,38,.10)', '▼'
+    else:
+        _lbl = 'Neutral' if is_en else 'Trung lập'
+        _col, _bg, _arr = '#D97706', 'rgba(217,119,6,.10)', '─'
+
+    # Tin nổi bật theo mã (nếu có) để hiển thị 1 dòng ngữ cảnh
+    _items = ns.get('items', [])
+    _tk_item = next((i for i in _items if i.get('is_ticker')), None)
+    _head = (_tk_item or (_items[0] if _items else {})).get('title', '')
+    _head = (_head[:90] + '…') if len(_head) > 90 else _head
+    _src  = (_tk_item or (_items[0] if _items else {})).get('source', '')
+
+    _ctx = (f'{ticker}: {_tkn} ' + ('related headlines' if is_en else 'tin theo mã')
+            if _tkn >= 1 else ('market-wide' if is_en else 'tổng quan thị trường'))
+    _title = 'NEWS SENTIMENT' if is_en else 'TÂM LÝ TIN TỨC THỊ TRƯỜNG'
+    _feed_txt = (f'{_n} ' + ('headlines · RSS' if is_en else 'tin · nguồn RSS'))
+    _influence = ('Feeds the trading-signal vote' if is_en
+                  else 'Tham gia phiếu tín hiệu giao dịch')
+
+    # SVG icon: tờ báo (newspaper)
+    _svg = (
+        f'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" '
+        f'stroke="{_col}" stroke-width="2" stroke-linecap="round" '
+        f'stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>'
+        f'<path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8z"/></svg>')
+
+    _head_html = (
+        f'<div style="font-size:11.5px;color:{_T["text_secondary"]};margin-top:8px;'
+        f'line-height:1.5">“{_head}” '
+        f'<span style="color:{_T["text_muted"]};font-size:10px">— {_src}</span></div>'
+        if _head else '')
+
+    st.markdown(
+        f'<div style="background:{_T["bg_card"]};border:1px solid {_T["border"]};'
+        f'border-left:4px solid {_col};border-radius:12px;padding:14px 20px;'
+        f'margin:0 0 16px;box-shadow:{_T["shadow_md"]}">'
+        f'<div style="display:flex;align-items:center;justify-content:space-between;'
+        f'flex-wrap:wrap;gap:10px">'
+        f'<div style="display:flex;align-items:center;gap:10px">'
+        f'{_svg}'
+        f'<span style="font-size:11px;font-weight:800;color:{_T["text_secondary"]};'
+        f'letter-spacing:1px">{_title}</span>'
+        f'<span style="display:inline-flex;align-items:center;gap:5px;'
+        f'background:{_bg};color:{_col};font-weight:800;font-size:13px;'
+        f'padding:4px 14px;border-radius:20px">{_arr} {_lbl}</span>'
+        f'</div>'
+        f'<div style="font-size:10.5px;color:{_T["text_muted"]};text-align:right">'
+        f'{_feed_txt} · {_ctx}</div>'
+        f'</div>'
+        f'<div style="display:flex;gap:22px;flex-wrap:wrap;margin-top:10px;'
+        f'font-size:12px;color:{_T["text_secondary"]}">'
+        f'<span>{"Market score" if is_en else "Điểm thị trường"}: '
+        f'<b style="color:{"#16A34A" if _mkt>0 else ("#DC2626" if _mkt<0 else _T["text_secondary"])}">{_mkt:+d}</b></span>'
+        f'<span>{ticker} {"score" if is_en else "điểm mã"}: '
+        f'<b style="color:{"#16A34A" if _tks>0 else ("#DC2626" if _tks<0 else _T["text_secondary"])}">{_tks:+d}</b></span>'
+        f'<span style="color:{_T["text_muted"]}">{_influence}</span>'
+        f'</div>'
+        f'{_head_html}'
+        f'</div>', unsafe_allow_html=True)
+
+
 def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, _T,
            ar_order=1):
     col_t = CLR[ticker]
@@ -583,6 +678,9 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     ), unsafe_allow_html=True)
 
     st.markdown("<div style='margin:8px 0 12px'></div>", unsafe_allow_html=True)
+
+    # ── TÂM LÝ TIN TỨC THỊ TRƯỜNG (sentiment) — bổ trợ tín hiệu, fail-safe ──
+    _render_news_sentiment_card(ticker, _T, _is_en_d)
 
     st.markdown(f'<div class="sec-hdr">{t("dash.comparison")}</div>', unsafe_allow_html=True)
     _is_en_cmp = st.session_state.get('lang', 'VI') == 'EN'

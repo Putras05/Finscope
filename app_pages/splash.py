@@ -43,6 +43,13 @@ def render():
                         _fn(tk, 0.80, p=1)
                     except Exception:
                         pass
+                # Warm tin tức RSS + sentiment (cache 30') để thẻ "Tâm lý
+                # tin tức" trên Dashboard hiện tức thì, không chờ mạng.
+                try:
+                    from data.news import news_sentiment
+                    news_sentiment(tk)
+                except Exception:
+                    pass
             except Exception:
                 pass
         _th.Thread(target=_warm_default, daemon=True).start()

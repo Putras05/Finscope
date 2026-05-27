@@ -7,6 +7,8 @@
 """
 import re
 import html
+import email.utils
+import datetime
 import urllib.request
 import xml.etree.ElementTree as ET
 
@@ -21,24 +23,39 @@ _FEEDS = [
 ]
 _HDR = {'User-Agent': 'Mozilla/5.0 (FinScope news reader)'}
 
-# ── Từ điển cảm xúc tài chính tiếng Việt ────────────────────────────────────
+# ── Từ điển cảm xúc tài chính tiếng Việt (có trọng số mạnh/yếu) ──────────────
+# Trọng số ±2 = tín hiệu mạnh, ±1 = tín hiệu thường.
+_POS_STRONG = [
+    'kịch trần', 'tăng trần', 'bứt phá', 'kỷ lục', 'lãi kỷ lục', 'vượt đỉnh',
+    'tăng mạnh', 'tăng vọt', 'lãi lớn', 'mua ròng mạnh', 'bùng nổ', 'lập đỉnh',
+]
 _POS = [
-    'tăng trưởng', 'tăng mạnh', 'tăng', 'bứt phá', 'khởi sắc', 'hồi phục',
-    'phục hồi', 'lợi nhuận', 'lãi', 'sinh lời', 'kỷ lục', 'cao nhất', 'vượt đỉnh',
-    'vượt kế hoạch', 'vượt', 'mua ròng', 'dòng tiền', 'lạc quan', 'tích cực',
-    'đột phá', 'hiệu quả', 'cổ tức', 'thưởng', 'mở rộng', 'trúng thầu', 'ký kết',
-    'tăng trần', 'kịch trần', 'sắc xanh', 'khả quan', 'thăng hoa', 'dẫn dắt',
-    'hút vốn', 'nâng hạng', 'thắng', 'đẩy mạnh', 'ổn định', 'bền vững',
+    'tăng trưởng', 'tăng', 'khởi sắc', 'hồi phục', 'phục hồi', 'lợi nhuận',
+    'lãi', 'sinh lời', 'cao nhất', 'vượt kế hoạch', 'vượt', 'mua ròng',
+    'dòng tiền', 'lạc quan', 'tích cực', 'đột phá', 'hiệu quả', 'cổ tức',
+    'thưởng', 'mở rộng', 'trúng thầu', 'ký kết', 'sắc xanh', 'khả quan',
+    'thăng hoa', 'dẫn dắt', 'hút vốn', 'nâng hạng', 'thắng', 'đẩy mạnh',
+    'ổn định', 'bền vững', 'phục vụ', 'hợp tác', 'đầu tư', 'mở bán', 'niêm yết',
+]
+_NEG_STRONG = [
+    'giảm sàn', 'kịch sàn', 'bán tháo', 'lao dốc', 'vỡ nợ', 'phá sản',
+    'khủng hoảng', 'thua lỗ nặng', 'sụt mạnh', 'giảm mạnh', 'đỏ lửa',
+    'tháo chạy', 'bốc hơi', 'lao đao', 'bán ròng mạnh',
 ]
 _NEG = [
-    'giảm mạnh', 'lao dốc', 'giảm sàn', 'kịch sàn', 'giảm', 'lao đao', 'thua lỗ',
-    'thua', 'lỗ', 'rủi ro', 'bán tháo', 'bán ròng', 'tiêu cực', 'sụt', 'sụt giảm',
-    'sắc đỏ', 'cảnh báo', 'vỡ nợ', 'phá sản', 'suy thoái', 'ảm đạm', 'bi quan',
-    'áp lực', 'điều chỉnh giảm', 'thoái vốn', 'đình chỉ', 'xử phạt', 'gian lận',
-    'nợ xấu', 'khủng hoảng', 'sa sút', 'mất giá', 'tháo chạy', 'đỏ lửa', 'bốc hơi',
-    'thâm hụt', 'đáy', 'cắt lỗ', 'siết', 'điều tra', 'thâu tóm',
+    'giảm', 'thua lỗ', 'thua', 'lỗ', 'rủi ro', 'bán tháo', 'bán ròng',
+    'tiêu cực', 'sụt', 'sụt giảm', 'sắc đỏ', 'cảnh báo', 'suy thoái', 'ảm đạm',
+    'bi quan', 'áp lực', 'điều chỉnh giảm', 'thoái vốn', 'đình chỉ', 'xử phạt',
+    'gian lận', 'nợ xấu', 'sa sút', 'mất giá', 'thâm hụt', 'đáy', 'cắt lỗ',
+    'siết', 'điều tra', 'chậm', 'hoãn', 'đình trệ', 'thu hồi',
 ]
 _NEGATORS = ['không', 'chưa', 'khó', 'thiếu', 'hạn chế']  # đảo dấu nếu đứng ngay trước
+
+# Bảng tra (phrase, trọng số có dấu), sắp giảm dần độ dài để khớp cụm dài/mạnh trước.
+_LEX = sorted(
+    [(w, 2) for w in _POS_STRONG] + [(w, 1) for w in _POS]
+    + [(w, -2) for w in _NEG_STRONG] + [(w, -1) for w in _NEG],
+    key=lambda kv: -len(kv[0]))
 
 # Tên/từ khoá doanh nghiệp VN30 để lọc tin theo mã (bổ sung mã code).
 _TICKER_KW = {
@@ -100,18 +117,39 @@ def _fetch_all_news(limit_per_feed: int = 20):
 
 
 def score_text(text: str) -> int:
-    """Điểm cảm xúc 1 dòng tin: (#tích cực − #tiêu cực), có xử lý phủ định."""
+    """Điểm cảm xúc 1 dòng tin theo từ điển có trọng số (±2 mạnh, ±1 thường).
+
+    Quét cụm dài/mạnh trước rồi "xoá" vùng đã khớp (thay bằng khoảng trắng) để
+    không đếm trùng cụm con (vd. 'tăng mạnh' đã tính thì không tính lại 'tăng').
+    Xử lý phủ định: nếu ngay trước cụm (≤18 ký tự) có từ phủ định → đảo dấu.
+    """
     t = ' ' + (text or '').lower() + ' '
     score = 0
-    for w in _POS:
-        for m in re.finditer(re.escape(w), t):
-            pre = t[max(0, m.start() - 18):m.start()]
-            score += -1 if any(n in pre for n in _NEGATORS) else 1
-    for w in _NEG:
-        for m in re.finditer(re.escape(w), t):
-            pre = t[max(0, m.start() - 18):m.start()]
-            score += 1 if any(n in pre for n in _NEGATORS) else -1
+    for w, wt in _LEX:
+        while w in t:
+            i = t.index(w)
+            pre = t[max(0, i - 18):i]
+            sign = -1 if any(n in pre for n in _NEGATORS) else 1
+            score += sign * wt
+            t = t[:i] + ' ' * len(w) + t[i + len(w):]   # xoá vùng đã khớp
     return score
+
+
+def _recency_weight(date_str: str) -> float:
+    """Trọng số theo độ mới của tin (half-life ~48h). Tin càng mới càng nặng.
+
+    Không phân tích được ngày → trả 1.0 (coi như mới). Luôn nằm trong (0,1].
+    """
+    try:
+        dt = email.utils.parsedate_to_datetime(date_str)
+        if dt is None:
+            return 1.0
+        now = (datetime.datetime.now(dt.tzinfo) if dt.tzinfo
+               else datetime.datetime.now())
+        age_h = max(0.0, (now - dt).total_seconds() / 3600.0)
+        return float(0.5 ** (age_h / 48.0))
+    except Exception:
+        return 1.0
 
 
 def _label(score: int, is_en: bool = False):
@@ -122,6 +160,7 @@ def _label(score: int, is_en: bool = False):
     return ('Trung lập', '#D97706') if not is_en else ('Neutral', '#D97706')
 
 
+@st.cache_data(ttl=1800, show_spinner=False)
 def news_sentiment(ticker: str, max_items: int = 14) -> dict:
     """Trả về tâm lý tin tức: tổng quan thị trường + lọc theo mã.
 
@@ -141,13 +180,16 @@ def news_sentiment(ticker: str, max_items: int = 14) -> dict:
 
     kws = _TICKER_KW.get(ticker.upper(), [ticker.lower()])
     market_sum = 0
+    market_w = 0.0           # tổng có trọng số độ-mới (dùng cho phiếu)
     items = []
     ticker_items = []
     for it in allnews:
         blob = (it['title'] + ' ' + it.get('summary', '')).lower()
         s = score_text(it['title'] + ' ' + it.get('summary', ''))
-        it = {**it, 'score': s}
+        rw = _recency_weight(it.get('date', ''))
+        it = {**it, 'score': s, 'rw': rw}
         market_sum += s
+        market_w += s * rw
         is_tk = any(k in blob for k in kws)
         it['is_ticker'] = is_tk
         items.append(it)
@@ -159,12 +201,11 @@ def news_sentiment(ticker: str, max_items: int = 14) -> dict:
     items_sorted = items_sorted[:max_items]
 
     ticker_sum = sum(i['score'] for i in ticker_items)
-    # Phiếu: ưu tiên tâm lý theo mã nếu có đủ tin, ngược lại dùng thị trường
-    if len(ticker_items) >= 2:
-        vote_src = ticker_sum
-    else:
-        vote_src = market_sum
-    vote = 1 if vote_src > 1 else (-1 if vote_src < -1 else 0)
+    ticker_w = sum(i['score'] * i['rw'] for i in ticker_items)
+    # Phiếu: ưu tiên tâm lý theo mã (đã trọng số độ mới) nếu đủ tin,
+    # ngược lại dùng tâm lý thị trường có trọng số.
+    vote_src = ticker_w if len(ticker_items) >= 2 else market_w
+    vote = 1 if vote_src > 1.0 else (-1 if vote_src < -1.0 else 0)
 
     return {
         'ok': True, 'note': '',
