@@ -375,6 +375,62 @@ def hide_streamlit_badges_js() -> None:
 """, height=0, scrolling=False)
 
 
+def cleanup_splash_overlay_js() -> None:
+    """Gỡ CSS của trang bìa (splash) còn sót lại sau khi vào app chính.
+
+    Splash chèn `[data-testid="stSidebar"],[data-testid="collapsedControl"]
+    {display:none}` qua st.markdown. Streamlit KHÔNG luôn GC style này khi
+    rời splash → sidebar + nút mở biến mất, user không điều hướng được.
+    Hàm này (CHỈ gọi ở app chính) xoá hẳn các <style> của splash và bỏ ẩn
+    sidebar (inline !important thắng CSS ngoài). Chạy nhiều lần phòng re-render.
+    """
+    _components.html("""
+<script>
+(function() {
+    var doc, win;
+    try { doc = window.parent.document; win = window.parent; } catch(e) { return; }
+    if (!doc) return;
+    function cleanup() {
+        // 0) Gỡ style splash ở <head> theo id (chính xác, không cần đoán).
+        var byId = doc.getElementById('__splash_css__');
+        if (byId) { try { byId.remove(); } catch(e) {} }
+        // 1) Xoá các <style> của splash (nhận diện qua class .splash-wrap hoặc
+        //    rule ẩn sidebar+collapsedControl).
+        doc.querySelectorAll('style').forEach(function(s) {
+            var t = s.textContent || '';
+            if (t.indexOf('splash-wrap') !== -1 ||
+                (t.indexOf('collapsedControl') !== -1 &&
+                 t.indexOf('stSidebar') !== -1 &&
+                 t.indexOf('display: none') !== -1)) {
+                try { s.remove(); } catch(e) {}
+            }
+        });
+        // 2) Bỏ ẩn sidebar (desktop force hiện; mobile để Streamlit auto + toggle JS)
+        var sb = doc.querySelector('[data-testid="stSidebar"]');
+        if (sb) {
+            sb.style.removeProperty('visibility');
+            if (win.innerWidth >= 769) {
+                sb.style.setProperty('display', 'flex', 'important');
+            } else {
+                sb.style.removeProperty('display');
+            }
+        }
+        // 3) Bỏ ẩn nút mở sidebar
+        ['[data-testid="stSidebarCollapsedControl"]',
+         '[data-testid="collapsedControl"]'].forEach(function(sel) {
+            doc.querySelectorAll(sel).forEach(function(el) {
+                el.style.removeProperty('display');
+                el.style.removeProperty('visibility');
+            });
+        });
+    }
+    cleanup();
+    [120, 400, 1000, 2000].forEach(function(ms) { setTimeout(cleanup, ms); });
+})();
+</script>
+""", height=0, scrolling=False)
+
+
 def force_sidebar_open_js() -> None:
     """Sidebar behavior (v21, 2026-05-20):
     Toggle button enabled trên CẢ desktop và mobile.

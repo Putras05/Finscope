@@ -1,7 +1,7 @@
 PAGE_TITLE  = "Dự Báo Giá Cổ Phiếu · HOSE"
 PAGE_ICON   = "📈"
 LAYOUT      = "wide"
-SIDEBAR_STATE = "auto"  # auto: Streamlit tự collapse trên mobile (<768px), expand desktop
+SIDEBAR_STATE = "expanded"  # luôn mở sidebar khi vào app (desktop); mobile vẫn có nút toggle
 DATA_START  = "2012-01-01"
 DATA_END    = "2030-12-31"
 DATA_SOURCE = "KBS"

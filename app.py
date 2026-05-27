@@ -14,7 +14,8 @@ from models.mlr   import run_mlr
 from models.arima import run_arima
 from core.validate import validate_params
 from ui.css import inject_global_css, inject_theme_css
-from ui.js import inject_theme_js, force_sidebar_open_js, hide_streamlit_badges_js
+from ui.js import (inject_theme_js, force_sidebar_open_js,
+                   hide_streamlit_badges_js, cleanup_splash_overlay_js)
 from ui.sidebar import render_sidebar
 
 # v40 PERF: Lazy page imports — chỉ load module khi user navigate đến.
@@ -69,6 +70,9 @@ if not st.session_state.get('_splash_done'):
     from app_pages import splash as _pg_splash
     _pg_splash.render()
     st.stop()
+
+# Đã rời splash → gỡ CSS splash sót lại (ẩn sidebar) để menu điều hướng hiện lại
+cleanup_splash_overlay_js()
 
 # Preload 3 tickers 1 lần duy nhất mỗi session → UX mượt hơn
 from core.preload import preload_all_tickers, trigger_bg_arima

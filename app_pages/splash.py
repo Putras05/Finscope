@@ -18,9 +18,23 @@ def render():
     tdt_b64 = _img_b64('TDT_logo.png')
     khoa_b64 = _img_b64('khoa_logo.png')
 
+    # Ẩn sidebar TRONG splash bằng style ở parent <head> có id riêng →
+    # app chính gỡ chính xác theo id (không để CSS sót lại che sidebar).
+    import streamlit.components.v1 as _components
+    _components.html("""
+<script>
+(function(){
+  try{ var doc = window.parent.document; }catch(e){ return; }
+  if(!doc || doc.getElementById('__splash_css__')) return;
+  var s = doc.createElement('style'); s.id='__splash_css__';
+  s.textContent='[data-testid=\\"stSidebar\\"],[data-testid=\\"collapsedControl\\"],[data-testid=\\"stSidebarCollapsedControl\\"]{display:none !important;}';
+  (doc.head||doc.documentElement).appendChild(s);
+})();
+</script>
+""", height=0)
+
     # ── CSS — raw triple-string, no f-string, no indent traps ──
     css = """<style>
-[data-testid="stSidebar"], [data-testid="collapsedControl"] { display: none !important; }
 html body .stApp, html body [data-testid="stAppViewContainer"], html body [data-testid="stMain"], html body section.main {
 background: radial-gradient(ellipse at 20% 0%, rgba(59,130,246,0.08) 0, transparent 55%), radial-gradient(ellipse at 80% 100%, rgba(30,64,175,0.06) 0, transparent 60%), linear-gradient(165deg, #FFFFFF 0%, #F8FAFC 50%, #F1F5F9 100%) !important;
 background-attachment: fixed !important;
@@ -91,9 +105,11 @@ div[data-testid="stButton"] > button:hover { transform: translateY(-3px) scale(1
     logo_html = ''.join(html_parts)
     st.markdown(logo_html, unsafe_allow_html=True)
 
-    if st.button('VÀO NGAY', key='splash_enter'):
-        st.session_state['_splash_done'] = True
-        st.rerun()
+    _bc1, _bc2, _bc3 = st.columns([1, 1.1, 1])
+    with _bc2:
+        if st.button('VÀO NGAY', key='splash_enter', use_container_width=True):
+            st.session_state['_splash_done'] = True
+            st.rerun()
 
     footer_html = (
         '<div class="splash-footer">'
