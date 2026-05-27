@@ -37,6 +37,29 @@ def _split(ticker, train_ratio, date_from, date_to):
     return df, N, y, dates, nt
 
 
+def _params_dict(res) -> dict:
+    """Trích tham số ước lượng thành dict {tên: giá trị}, chịu được cả
+    pandas Series (arch/statsmodels input pandas) lẫn numpy ndarray
+    (SARIMAX fit từ numpy → dùng res.param_names)."""
+    p = getattr(res, 'params', None)
+    if p is None:
+        return {}
+    names = list(getattr(res, 'param_names', []) or [])
+    try:
+        vals = np.asarray(getattr(p, 'values', p), dtype=float).ravel()
+    except Exception:
+        vals = None
+    # Ưu tiên param_names (tên mô tả: smoothing_level, ar.L1...) khi khớp độ dài.
+    if names and vals is not None and len(names) == len(vals):
+        return {str(n): float(v) for n, v in zip(names, vals)}
+    if hasattr(p, 'items'):  # pandas Series (vd. arch — index đã là tên)
+        try:
+            return {str(k): float(v) for k, v in p.items()}
+        except Exception:
+            pass
+    return {}
+
+
 def _ci_from_sigma(point, sigma):
     """Fallback CI khi mô hình không cho khoảng giải tích trực tiếp."""
     point = np.asarray(point, dtype=float)
@@ -95,7 +118,7 @@ def run_sarima(ticker: str, train_ratio: float, p: int = 1,
         npred = float(np.asarray(fc.predicted_mean, dtype=float)[0])
         n95 = np.asarray(fc.conf_int(alpha=0.05), dtype=float)[0]
         n80 = np.asarray(fc.conf_int(alpha=0.20), dtype=float)[0]
-        _coef = {str(k): float(v) for k, v in res.params.items()}
+        _coef = _params_dict(res)
         return dict(
             name='SARIMA', engine='statsmodels SARIMAX', ok=True,
             params=f'order={order} · seasonal={seasonal_order}',
@@ -151,7 +174,7 @@ def run_ets(ticker: str, train_ratio: float, p: int = 1,
         nlo95, nhi95 = float(sfn['pi_lower'].iloc[0]), float(sfn['pi_upper'].iloc[0])
         nlo80, nhi80 = float(sfn80['pi_lower'].iloc[0]), float(sfn80['pi_upper'].iloc[0])
 
-        _coef = {str(k): float(v) for k, v in res_tr.params.items()}
+        _coef = _params_dict(res_tr)
         return dict(
             name='Holt-Winters (ETS)', engine='statsmodels ETSModel', ok=True,
             params='error=add · trend=add · damped',
@@ -223,7 +246,7 @@ def run_garch(ticker: str, train_ratio: float, p: int = 1,
         nlo80 = last * (1.0 + (mn - _Z80 * sn) / 100.0)
         nhi80 = last * (1.0 + (mn + _Z80 * sn) / 100.0)
 
-        _coef = {str(k): float(v) for k, v in res.params.items()}
+        _coef = _params_dict(res)
         return dict(
             name='GARCH', engine='arch · AR(1)+GARCH(1,1)', ok=True,
             params='mean=AR(1) · vol=GARCH(1,1) · dist=Normal',
@@ -322,7 +345,7 @@ def run_sarimax(ticker: str, train_ratio: float, p: int = 1,
         npred = float(np.asarray(fc.predicted_mean, dtype=float)[0])
         n95 = np.asarray(fc.conf_int(alpha=0.05), dtype=float)[0]
         n80 = np.asarray(fc.conf_int(alpha=0.20), dtype=float)[0]
-        _coef = {str(k): float(v) for k, v in res.params.items()}
+        _coef = _params_dict(res)
         return dict(
             name='SARIMAX', engine='statsmodels SARIMAX', ok=True,
             params=f'order={order} · exog=[log(Volume), Range]',
