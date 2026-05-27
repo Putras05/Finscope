@@ -113,6 +113,61 @@ def _np_ar_fallback(y, nt, p, dates):
 
 
 @st.cache_data(ttl=21600, show_spinner=False, persist="disk")
+def arima_future(ticker: str, p: int = 1, H: int = 10,
+                 date_from=None, date_to=None) -> dict:
+    """Dự báo H phiên TỚI (out-of-sample) bằng ARIMA fit trên TOÀN bộ dữ liệu.
+
+    Trả về điểm dự báo + khoảng dự báo 80%/95% loe rộng dần theo horizon,
+    kèm dữ liệu gần đây để vẽ fan chart. None nếu không khả dụng.
+    """
+    import datetime as _dt
+    df = fetch_data(ticker, date_from, date_to)
+    N = len(df)
+    y = df['Close'].values.astype(float)
+    dates = list(df['Ngay'].values)
+    if N < 60:
+        return None
+    try:
+        from statsmodels.tsa.arima.model import ARIMA  # noqa: F401
+    except Exception:
+        return None
+    best = _auto_order(y, min(max(int(p), 1), _P_CEIL), _Q_CEIL)
+    if best is None:
+        return None
+    _, order, res = best
+    try:
+        fc = res.get_forecast(steps=H)
+        mean = np.asarray(fc.predicted_mean, dtype=float)
+        c95 = np.asarray(fc.conf_int(alpha=0.05), dtype=float)
+        c80 = np.asarray(fc.conf_int(alpha=0.20), dtype=float)
+    except Exception:
+        return None
+
+    # Ngày giao dịch kế tiếp (bỏ T7/CN)
+    _last = dates[-1]
+    if isinstance(_last, str):
+        _last = _dt.datetime.strptime(_last, '%Y-%m-%d').date()
+    fut_dates = []
+    d = _last
+    while len(fut_dates) < H:
+        d = d + _dt.timedelta(days=1)
+        if d.weekday() < 5:
+            fut_dates.append(d)
+
+    R = min(60, N)
+    return dict(
+        order=order, H=H,
+        last_close=float(y[-1]), last_date=_last,
+        future_dates=fut_dates,
+        mean=mean, lo95=c95[:, 0], hi95=c95[:, 1],
+        lo80=c80[:, 0], hi80=c80[:, 1],
+        recent_dates=[(_dt.datetime.strptime(x, '%Y-%m-%d').date()
+                       if isinstance(x, str) else x) for x in dates[-R:]],
+        recent_close=y[-R:],
+    )
+
+
+@st.cache_data(ttl=21600, show_spinner=False, persist="disk")
 def run_arima(ticker: str, train_ratio: float, p: int = 1,
               date_from=None, date_to=None) -> dict:
     """ARIMA(p,d,q) dự báo 1 phiên kế tiếp trên giá đóng cửa.

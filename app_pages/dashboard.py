@@ -242,7 +242,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
         # Mini-icon cho 4 tầng
         def _mini_icon(code):
-            if 'counter' in code: return '⚡'
+            if 'counter' in code: return '⇅'
             if any(x in code for x in ('bull', 'buy')):  return '▲'
             if any(x in code for x in ('bear', 'sell')): return '▼'
             return '─'
@@ -460,8 +460,13 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             f'box-shadow:0 4px 16px rgba(15,118,110,.35)">'
             f'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'
             f'<div>'
-            f'<div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.85">'
-            f'🎯 {"Dự báo Kết hợp · FinScope Ensemble" if not _is_en_d else "Combined Forecast · FinScope Ensemble"}</div>'
+            f'<div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.92;'
+            f'display:flex;align-items:center;gap:7px">'
+            f'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" '
+            f'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+            f'<polygon points="12 2 2 7 12 12 22 7 12 2"/>'
+            f'<polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>'
+            f'{"Dự báo Kết hợp · FinScope Ensemble" if not _is_en_d else "Combined Forecast · FinScope Ensemble"}</div>'
             f'<div style="font-size:30px;font-weight:800;line-height:1.1;margin-top:4px">'
             f'{_en*1000:,.0f} <span style="font-size:15px;opacity:.85">đ</span> '
             f'<span style="font-size:16px;color:{_ec}">{_earr} {abs(_echg):.2f}%</span></div>'
@@ -584,6 +589,41 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
     # Chart trong fragment → toggle/timeframe đổi KHÔNG rerun KPI/forecast
     _candlestick_section(df, ticker, _T, _is_en_cmp)
+
+    # ── DỰ BÁO NHIỀU PHIÊN TỚI (multi-step ARIMA + dải tin cậy loe rộng) ──
+    _H = 10
+    try:
+        from models.arima import arima_future
+        from charts.arima_diag import chart_future_fan
+        _fr = arima_future(ticker, p=ar_order, H=_H, date_from=date_from, date_to=date_to)
+    except Exception:
+        _fr = None
+    if _fr is not None:
+        st.markdown("<div style='margin:14px 0 6px'></div>", unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="sec-hdr">'
+            f'{f"Dự báo {_H} phiên tới" if not _is_en_cmp else f"Next {_H} sessions forecast"}'
+            f' <span style="font-size:11px;font-weight:600;color:{_T["text_muted"]}">'
+            f'ARIMA{tuple(_fr["order"])} · {"dải tin cậy loe rộng theo thời gian" if not _is_en_cmp else "intervals widen with horizon"}</span></div>',
+            unsafe_allow_html=True)
+        try:
+            _figf = chart_future_fan(_fr, ticker, T=_T, is_en=_is_en_cmp)
+            st.plotly_chart(_figf, use_container_width=True, config={
+                **_PLOTLY_CONFIG, 'toImageButtonOptions': {
+                    **_PLOTLY_CONFIG['toImageButtonOptions'],
+                    'filename': f'{ticker}_forecast_{_H}d'}})
+            _mfin = _fr['mean'][-1]
+            _chgH = (_mfin - _fr['last_close']) / _fr['last_close'] * 100 if _fr['last_close'] else 0
+            _cH = _T['success'] if _chgH >= 0 else _T['danger']
+            st.markdown(
+                f'<div style="font-size:11.5px;color:{_T["text_muted"]};margin-top:2px">'
+                f'{"Sau" if not _is_en_cmp else "After"} {_H} {"phiên" if not _is_en_cmp else "sessions"} '
+                f'({_fr["future_dates"][-1]}): <b style="color:{_cH}">{_mfin*1000:,.0f} đ '
+                f'({_chgH:+.2f}%)</b> · KTC 95% [{_fr["lo95"][-1]*1000:,.0f} – {_fr["hi95"][-1]*1000:,.0f}]. '
+                f'{"Lưu ý: dự báo nhiều bước có độ bất định tăng nhanh." if not _is_en_cmp else "Note: multi-step uncertainty grows quickly."}'
+                f'</div>', unsafe_allow_html=True)
+        except Exception as _ef:
+            st.caption(f'⚠ {_ef}')
 
     # ── DỰ BÁO ĐA MÔ HÌNH — dùng lại _all7 (đã tính + sắp xếp MAPE ở trên) ──
     _last_c = float(T['Close'])

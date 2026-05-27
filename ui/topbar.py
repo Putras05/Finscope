@@ -21,6 +21,14 @@ _ICONS = [
     'activity', 'clock-history', 'briefcase', 'book-half',
 ]
 
+# Logo FinScope — SVG tự build (đường giá đi lên), không dùng emoji.
+_LOGO_SVG = (
+    "<svg width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='#1E40AF' "
+    "stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round'>"
+    "<path d='M3 3v16a2 2 0 0 0 2 2h16'/>"
+    "<path d='M7 14l4-4 3 3 5-6'/><path d='M19 7v3h-3'/></svg>"
+)
+
 
 def render_topbar() -> tuple:
     """Render header + nav + controls ở main area. Trả về:
@@ -32,9 +40,10 @@ def render_topbar() -> tuple:
     st.markdown(
         f"<div style='display:flex;align-items:center;justify-content:space-between;"
         f"flex-wrap:wrap;gap:8px;padding:6px 4px 10px'>"
-        f"<div style='display:flex;align-items:baseline;gap:10px;flex-wrap:wrap'>"
-        f"<span style='font-size:22px;font-weight:800;color:#1E40AF;letter-spacing:-.5px'>"
-        f"📈 {t('app.title')}</span>"
+        f"<div style='display:flex;align-items:center;gap:10px;flex-wrap:wrap'>"
+        f"<span style='display:inline-flex;align-items:center;gap:8px;font-size:22px;"
+        f"font-weight:800;color:#1E40AF;letter-spacing:-.5px'>"
+        f"{_LOGO_SVG}{t('app.title')}</span>"
         f"<span style='font-size:12px;color:#64748B;font-style:italic'>{t('app.tagline')}</span>"
         f"<span style='font-size:11px;font-weight:600;color:#64748B;"
         f"background:#EFF6FF;border:1px solid #DBEAFE;padding:3px 10px;border-radius:999px'>"
@@ -108,7 +117,7 @@ def render_topbar() -> tuple:
     c[5].markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
     c[6].markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
     c[7].markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
-    if c[5].button('☀' if _is_dark else '🌙', key='tb_dark',
+    if c[5].button('Sáng' if _is_dark else 'Tối', key='tb_dark',
                    use_container_width=True, help='Dark / Light'):
         st.session_state.theme_mode = 'light' if _is_dark else 'dark'
         st.rerun()

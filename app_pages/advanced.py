@@ -247,7 +247,12 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     _mapes = [metr[n].get('MAPE', float('nan')) for n in _names]
     _order = list(np.argsort([m if np.isfinite(m) else 1e9 for m in _mapes]))
     _max_mape = max([m for m in _mapes if np.isfinite(m)] + [1e-9])
-    _medal = ['🥇', '🥈', '🥉']
+    _medal_bg = ['#F9A825', '#94A3B8', '#CD7F32']  # vàng/bạc/đồng
+    def _rank_badge(rk):
+        if rk < 3:
+            return (f'<span style="background:{_medal_bg[rk]};color:#fff;font-weight:800;'
+                    f'padding:2px 9px;border-radius:7px;font-size:11px">{rk+1}</span>')
+        return f'<span style="color:{_T["text_muted"]};font-weight:700">{rk+1}</span>'
     _rows2 = ''
     for _rank, _i in enumerate(_order):
         n = _names[_i]; mm = metr[n]
@@ -255,7 +260,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         if not np.isfinite(mp):
             badge = '—'; bar = 0
         else:
-            badge = _medal[_rank] if _rank < 3 else f'{_rank+1}'
+            badge = _rank_badge(_rank)
             bar = 100 - (mp / _max_mape * 75)
         _mc = _T['success'] if mp < 1.5 else (_T['warning'] if mp < 2 else _T['danger'])
         _bg = f'background:{_T["warning_bg"]}' if _rank == 0 else (

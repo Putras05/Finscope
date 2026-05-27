@@ -115,6 +115,64 @@ def chart_fan_ci(res: dict, ticker: str, T: dict = None,
     return fig
 
 
+def chart_future_fan(fr: dict, ticker: str, T: dict = None,
+                     is_en: bool = False) -> go.Figure:
+    """Fan chart dự báo H phiên TỚI: lịch sử gần đây + dự báo + dải 80%/95% loe rộng."""
+    if T is None:
+        T = theme()
+    is_dark = T.get('is_dark', False)
+    rdt = list(pd.to_datetime(fr['recent_dates']).to_pydatetime())
+    rcl = np.asarray(fr['recent_close'], float) * 1000.0
+    fdt = list(pd.to_datetime(fr['future_dates']).to_pydatetime())
+    mean = np.asarray(fr['mean'], float) * 1000.0
+    lo95 = np.asarray(fr['lo95'], float) * 1000.0
+    hi95 = np.asarray(fr['hi95'], float) * 1000.0
+    lo80 = np.asarray(fr['lo80'], float) * 1000.0
+    hi80 = np.asarray(fr['hi80'], float) * 1000.0
+
+    # Nối liền điểm cuối lịch sử với dự báo
+    bx = [rdt[-1]] + fdt
+    b_mean = np.concatenate([[rcl[-1]], mean])
+    b_lo95 = np.concatenate([[rcl[-1]], lo95]); b_hi95 = np.concatenate([[rcl[-1]], hi95])
+    b_lo80 = np.concatenate([[rcl[-1]], lo80]); b_hi80 = np.concatenate([[rcl[-1]], hi80])
+
+    actual_c = '#F1F5F9' if is_dark else '#0F172A'
+    fc_c = '#22D3EE' if is_dark else '#0891B2'
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=bx, y=b_hi95, mode='lines', line=dict(width=0),
+                             hoverinfo='skip', showlegend=False))
+    fig.add_trace(go.Scatter(x=bx, y=b_lo95, mode='lines', line=dict(width=0),
+                             fill='tonexty', fillcolor='rgba(8,145,178,0.12)',
+                             name='95% CI', hoverinfo='skip'))
+    fig.add_trace(go.Scatter(x=bx, y=b_hi80, mode='lines', line=dict(width=0),
+                             hoverinfo='skip', showlegend=False))
+    fig.add_trace(go.Scatter(x=bx, y=b_lo80, mode='lines', line=dict(width=0),
+                             fill='tonexty', fillcolor='rgba(8,145,178,0.24)',
+                             name='80% CI', hoverinfo='skip'))
+    fig.add_trace(go.Scatter(x=rdt, y=rcl, mode='lines',
+                             line=dict(color=actual_c, width=1.8),
+                             name='Thực tế' if not is_en else 'Actual',
+                             hovertemplate='<b>%{x|%Y-%m-%d}</b><br>%{y:,.0f} đ<extra></extra>'))
+    fig.add_trace(go.Scatter(x=bx, y=b_mean, mode='lines+markers',
+                             line=dict(color=fc_c, width=2, dash='dot'),
+                             marker=dict(size=5, color=fc_c),
+                             name='Dự báo' if not is_en else 'Forecast',
+                             hovertemplate='<b>%{x|%Y-%m-%d}</b><br>%{y:,.0f} đ<extra></extra>'))
+    fig.add_vline(x=rdt[-1], line=dict(color=T['text_muted'], width=1, dash='dash'))
+    fig.update_layout(
+        height=400, margin=dict(l=46, r=16, t=20, b=44),
+        paper_bgcolor=T['bg_card'], plot_bgcolor=T['bg_card'],
+        font=dict(family='Inter', size=11, color=T['text_primary']),
+        hovermode='x unified',
+        legend=dict(orientation='h', yanchor='bottom', y=-0.2, xanchor='center', x=0.5,
+                    bgcolor='rgba(0,0,0,0)', font=dict(size=10.5, color=T['text_primary'])))
+    _plotly_axes_style(fig, T)
+    fig.update_xaxes(tickformat='%d/%m')
+    fig.update_yaxes(title=dict(text=('Giá (nghìn đ)' if not is_en else 'Price (k VND)'),
+                                font=dict(size=11, color=T['text_secondary'])))
+    return fig
+
+
 def chart_acf_pacf(resid: np.ndarray, T: dict = None, nlags: int = 20,
                    is_en: bool = False) -> go.Figure:
     """ACF & PACF của phần dư với dải tin cậy ±1.96/√n."""
