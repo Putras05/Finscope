@@ -49,10 +49,6 @@ def _fit_keras_lstm(Xtr, Ytr, Xte, x_next):
     random.seed(_SEED); np.random.seed(_SEED)
     import tensorflow as tf
     tf.random.set_seed(_SEED)
-    try:
-        tf.config.threading.set_intra_op_parallelism_threads(2)
-    except Exception:
-        pass
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import LSTM, Dense, Input
     from tensorflow.keras.callbacks import EarlyStopping
@@ -60,8 +56,8 @@ def _fit_keras_lstm(Xtr, Ytr, Xte, x_next):
     model = Sequential([Input(shape=(Xtr.shape[1], 1)),
                         LSTM(32), Dense(1)])
     model.compile(optimizer='adam', loss='mse')
-    es = EarlyStopping(patience=5, restore_best_weights=True, monitor='loss')
-    model.fit(Xtr[..., None], Ytr, epochs=30, batch_size=64,
+    es = EarlyStopping(patience=4, restore_best_weights=True, monitor='loss')
+    model.fit(Xtr[..., None], Ytr, epochs=20, batch_size=128,
               verbose=0, callbacks=[es])
     pte = model.predict(Xte[..., None], verbose=0).ravel()
     nxt = float(model.predict(x_next[None, ..., None], verbose=0).ravel()[0])

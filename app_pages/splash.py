@@ -34,10 +34,11 @@ def render():
                 from models.arima import run_arima
                 from models.advanced import (run_sarima, run_ets,
                                              run_garch, run_sarimax)
+                from models.ml import run_gbr
                 tk = TICKERS[0]
                 fetch_data(tk)  # warm raw data (1 network call) trước
                 for _fn in (run_ar, run_mlr, run_arima, run_sarima,
-                            run_ets, run_garch, run_sarimax):
+                            run_ets, run_garch, run_sarimax, run_gbr):
                     try:
                         _fn(tk, 0.80, p=1)
                     except Exception:

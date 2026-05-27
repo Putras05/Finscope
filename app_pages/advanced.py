@@ -37,9 +37,9 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         f'<p>{"Bộ mô hình dự báo (thống kê · Gradient Boosting · học sâu LSTM · mô hình KẾT HỢP) & khoảng tin cậy 80%/95%" if not is_en else "Forecasting suite (statistical · Gradient Boosting · deep-learning LSTM · ENSEMBLE) & 80%/95% confidence intervals"}</p>'
         f'</div>', unsafe_allow_html=True)
 
-    _spin = ('Đang ước lượng SARIMA · Holt-Winters · GARCH · SARIMAX...'
+    _spin = ('Đang ước lượng SARIMA · Holt-Winters · GARCH · SARIMAX · GBR...'
              if not is_en else
-             'Estimating SARIMA · Holt-Winters · GARCH · SARIMAX · Deep Learning...')
+             'Estimating SARIMA · Holt-Winters · GARCH · SARIMAX · GBR...')
     with st.spinner(_spin):
         rs = run_sarima(ticker, train_ratio, p=ar_order,
                         date_from=date_from, date_to=date_to)
@@ -51,12 +51,22 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                          date_from=date_from, date_to=date_to)
         rgb = run_gbr(ticker, train_ratio, p=ar_order,
                       date_from=date_from, date_to=date_to)
-    _spin2 = ('Đang huấn luyện mô hình học sâu (LSTM)...' if not is_en
-              else 'Training deep-learning model (LSTM)...')
-    with st.spinner(_spin2):
-        rl = run_lstm(ticker, train_ratio, p=ar_order,
-                      date_from=date_from, date_to=date_to)
-    _lstm_name = rl.get('name', 'Deep Learning (LSTM)')
+
+    # LSTM (học sâu) — TÙY CHỌN để trang load mượt; chỉ train khi user bật.
+    _use_lstm = st.checkbox(
+        ('🧠 Bao gồm mô hình HỌC SÂU (LSTM) — huấn luyện ~15–30s lần đầu, sau đó lưu cache'
+         if not is_en else
+         'Include DEEP-LEARNING model (LSTM) — ~15–30s first run, then cached'),
+        value=st.session_state.get('_adv_use_lstm', False), key='_adv_use_lstm')
+    rl = None
+    _lstm_name = 'Deep Learning (LSTM)'
+    if _use_lstm:
+        _spin2 = ('Đang huấn luyện mô hình học sâu (LSTM)...' if not is_en
+                  else 'Training deep-learning model (LSTM)...')
+        with st.spinner(_spin2):
+            rl = run_lstm(ticker, train_ratio, p=ar_order,
+                          date_from=date_from, date_to=date_to)
+        _lstm_name = rl.get('name', 'Deep Learning (LSTM)')
 
     last_close = float(df['Close'].iloc[-1])
 
@@ -86,22 +96,25 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         _wrap_stat(rg, 'GARCH'),
         _wrap_stat(rx, 'SARIMAX'),
         _wrap_stat(rgb, 'Gradient Boosting'),
-        _wrap_stat(rl, _lstm_name),
     ]
     metr = {
         f'AR({ar_order})': m1, 'MLR': m2, 'ARIMA': m3,
         'SARIMA': _safe_metrics(rs), 'Holt-Winters': _safe_metrics(re_),
         'GARCH': _safe_metrics(rg), 'SARIMAX': _safe_metrics(rx),
-        'Gradient Boosting': _safe_metrics(rgb), _lstm_name: _safe_metrics(rl),
+        'Gradient Boosting': _safe_metrics(rgb),
     }
+    _ens_members = [(f'AR({ar_order})', r1), ('MLR', r2), ('ARIMA', r3),
+                    ('SARIMA', rs), ('Holt-Winters', re_), ('GARCH', rg),
+                    ('SARIMAX', rx), ('Gradient Boosting', rgb)]
+    if rl is not None:
+        rows.append(_wrap_stat(rl, _lstm_name))
+        metr[_lstm_name] = _safe_metrics(rl)
+        _ens_members.append((_lstm_name, rl))
 
     # ── Mô hình KẾT HỢP (Ensemble) gộp tất cả ───────────────────────────
     _ens = build_ensemble(
         [{'name': k, 'res': r_, 'mape': metr[k].get('MAPE', float('nan'))}
-         for k, r_ in [(f'AR({ar_order})', r1), ('MLR', r2), ('ARIMA', r3),
-                       ('SARIMA', rs), ('Holt-Winters', re_), ('GARCH', rg),
-                       ('SARIMAX', rx), ('Gradient Boosting', rgb),
-                       (_lstm_name, rl)]], df)
+         for k, r_ in _ens_members], df)
     if _ens is not None:
         rows.insert(0, _wrap_stat(_ens, 'FinScope Ensemble'))
         metr['FinScope Ensemble'] = _safe_metrics(_ens)
@@ -166,8 +179,9 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     _fan_models = [
         ('ARIMA', r3), ('SARIMA', rs), ('Holt-Winters', re_),
         ('GARCH', rg), ('SARIMAX', rx), ('Gradient Boosting', rgb),
-        (_lstm_name, rl),
     ]
+    if rl is not None:
+        _fan_models.append((_lstm_name, rl))
     if _ens is not None:
         _fan_models.insert(0, ('FinScope Ensemble', _ens))
     _tabs = st.tabs([f'  {nm}  ' for nm, _ in _fan_models])

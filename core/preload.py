@@ -33,7 +33,8 @@ def _bg_arima(ticker: str, ar_order: int,
     hình trước, rồi mới warm các combo ARIMA còn lại."""
     from models.arima import run_arima
     from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
-    _adv = (run_sarima, run_ets, run_garch, run_sarimax)
+    from models.ml import run_gbr
+    _adv = (run_sarima, run_ets, run_garch, run_sarimax, run_gbr)
     try:
         run_arima(ticker, 0.80, p=1, date_from=date_from, date_to=date_to)
         for _fn in _adv:
