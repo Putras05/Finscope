@@ -12,7 +12,6 @@ from data.metrics import calc_metrics, _ci95
 from charts.base import _PLOTLY_CONFIG
 from charts.arima_diag import chart_fan_ci
 from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
-from models.deep import run_lstm
 from models.ml import run_gbr
 from models.ensemble import build_ensemble
 
@@ -34,7 +33,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     st.markdown(
         f'<div class="page-header">'
         f'<h1>{"Mô hình Thống kê Nâng cao" if not is_en else "Advanced Statistical Models"} — {ticker}</h1>'
-        f'<p>{"Bộ mô hình dự báo (thống kê · Gradient Boosting · học sâu LSTM · mô hình KẾT HỢP) & khoảng tin cậy 80%/95%" if not is_en else "Forecasting suite (statistical · Gradient Boosting · deep-learning LSTM · ENSEMBLE) & 80%/95% confidence intervals"}</p>'
+        f'<p>{"Bộ mô hình dự báo (thống kê · Gradient Boosting · mô hình KẾT HỢP) & khoảng tin cậy 80%/95%" if not is_en else "Forecasting suite (statistical · Gradient Boosting · ENSEMBLE) & 80%/95% confidence intervals"}</p>'
         f'</div>', unsafe_allow_html=True)
 
     _spin = ('Đang ước lượng SARIMA · Holt-Winters · GARCH · SARIMAX · GBR...'
@@ -51,22 +50,6 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                          date_from=date_from, date_to=date_to)
         rgb = run_gbr(ticker, train_ratio, p=ar_order,
                       date_from=date_from, date_to=date_to)
-
-    # LSTM (học sâu) — TÙY CHỌN để trang load mượt; chỉ train khi user bật.
-    _use_lstm = st.checkbox(
-        ('🧠 Bao gồm mô hình HỌC SÂU (LSTM) — huấn luyện ~15–30s lần đầu, sau đó lưu cache'
-         if not is_en else
-         'Include DEEP-LEARNING model (LSTM) — ~15–30s first run, then cached'),
-        value=st.session_state.get('_adv_use_lstm', False), key='_adv_use_lstm')
-    rl = None
-    _lstm_name = 'Deep Learning (LSTM)'
-    if _use_lstm:
-        _spin2 = ('Đang huấn luyện mô hình học sâu (LSTM)...' if not is_en
-                  else 'Training deep-learning model (LSTM)...')
-        with st.spinner(_spin2):
-            rl = run_lstm(ticker, train_ratio, p=ar_order,
-                          date_from=date_from, date_to=date_to)
-        _lstm_name = rl.get('name', 'Deep Learning (LSTM)')
 
     last_close = float(df['Close'].iloc[-1])
 
@@ -106,10 +89,6 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     _ens_members = [(f'AR({ar_order})', r1), ('MLR', r2), ('ARIMA', r3),
                     ('SARIMA', rs), ('Holt-Winters', re_), ('GARCH', rg),
                     ('SARIMAX', rx), ('Gradient Boosting', rgb)]
-    if rl is not None:
-        rows.append(_wrap_stat(rl, _lstm_name))
-        metr[_lstm_name] = _safe_metrics(rl)
-        _ens_members.append((_lstm_name, rl))
 
     # ── Mô hình KẾT HỢP (Ensemble) gộp tất cả ───────────────────────────
     _ens = build_ensemble(
@@ -180,8 +159,6 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         ('ARIMA', r3), ('SARIMA', rs), ('Holt-Winters', re_),
         ('GARCH', rg), ('SARIMAX', rx), ('Gradient Boosting', rgb),
     ]
-    if rl is not None:
-        _fan_models.append((_lstm_name, rl))
     if _ens is not None:
         _fan_models.insert(0, ('FinScope Ensemble', _ens))
     _tabs = st.tabs([f'  {nm}  ' for nm, _ in _fan_models])

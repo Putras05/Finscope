@@ -87,11 +87,10 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
     (tab_ar1, tab_mlr, tab_cart,
      tab_sar, tab_ets, tab_garch, tab_sarx, tab_gbr,
-     tab_lstm, tab_ens) = st.tabs([
+     tab_ens) = st.tabs([
         f'  AR({ar_order})  ', '  MLR  ', '  ARIMA  ',
         '  SARIMA  ', '  Holt-Winters  ', '  GARCH  ', '  SARIMAX  ',
-        '  Gradient Boosting  ', '  Deep Learning (LSTM)  ',
-        '  FinScope Ensemble  '])
+        '  Gradient Boosting  ', '  FinScope Ensemble  '])
 
     with tab_ar1:
         m_tr1 = calc_metrics(r1['ytr'], r1['ptr'])
@@ -362,34 +361,6 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     with tab_gbr:
         _render_adv_tab(_adv_res.get('Gradient Boosting'), 'Gradient Boosting', ticker, date_from, date_to, _T, _next_lbl)
 
-    # ── TAB HỌC SÂU (LSTM) — tính lười (lazy) để giữ app mượt ───────────
-    with tab_lstm:
-        _is_en_l = st.session_state.get('lang', 'VI') == 'EN'
-        st.markdown(
-            f'<div class="info-box">'
-            + ('Mạng nơ-ron hồi tiếp LSTM huấn luyện chậm hơn các mô hình thống kê '
-               '(~20–40 giây). Tích vào ô bên dưới để huấn luyện và xem phân tích — '
-               'giữ ô tắt để app luôn mượt khi không cần.'
-               if not _is_en_l else
-               'The LSTM recurrent network trains slower than statistical models '
-               '(~20–40s). Tick the box below to train and analyze it — leave it '
-               'off to keep the app snappy when not needed.')
-            + '</div>', unsafe_allow_html=True)
-        if st.checkbox('Huấn luyện & phân tích LSTM' if not _is_en_l
-                       else 'Train & analyze LSTM', key='_an_lstm_run'):
-            with st.spinner('Đang huấn luyện LSTM...' if not _is_en_l
-                            else 'Training LSTM...'):
-                try:
-                    from models.deep import run_lstm
-                    _rl = run_lstm(ticker, train_ratio, p=ar_order,
-                                   date_from=date_from, date_to=date_to)
-                except Exception as _el:
-                    _rl = None
-                    st.error(f'LSTM error: {_el}')
-            if _rl is not None:
-                _render_adv_tab(_rl, _rl.get('name', 'Deep Learning (LSTM)'),
-                                ticker, date_from, date_to, _T, _next_lbl)
-
     # ── TAB MÔ HÌNH KẾT HỢP (FinScope Ensemble) ─────────────────────────
     with tab_ens:
         _is_en_e = st.session_state.get('lang', 'VI') == 'EN'
@@ -508,22 +479,6 @@ def _adv_equation(label, res, is_en):
                           'MA5/MA20 ratio, RSI14 (× p lag)' if not is_en else
                           ' · features: Return, Volume_ratio, Range_ratio, '
                           'MA5/MA20 ratio, RSI14 (× p lags)'))
-        elif ('LSTM' in label) or label.startswith('Neural') or label.startswith('Deep'):
-            _is_lstm = 'LSTM' in label
-            st.markdown(('**LSTM (Long Short-Term Memory)** — '
-                         if _is_lstm else '**Mạng nơ-ron MLP (dự phòng)** — ')
-                        + ('học sâu trên chuỗi LỢI SUẤT chuẩn hoá (cửa sổ trượt) '
-                           'rồi quy về giá phiên kế tiếp'
-                           if not is_en else
-                           'deep learning on normalized RETURN windows, mapped back '
-                           'to next-bar price'))
-            if _is_lstm:
-                st.latex(r"f_t=\sigma(W_f x_t+U_f h_{t-1}+b_f),\;"
-                         r"i_t=\sigma(\cdot),\;o_t=\sigma(\cdot)")
-                st.latex(r"c_t=f_t\odot c_{t-1}+i_t\odot\tanh(W_c x_t+U_c h_{t-1}+b_c),\;"
-                         r"h_t=o_t\odot\tanh(c_t)")
-            st.latex(r"\hat{P}_{t+1}=P_t\,(1+\hat{r}_{t+1})")
-            st.caption(res.get('summary', ''))
         elif 'Ensemble' in label:
             st.markdown("**Forecast combination (Bates–Granger)** — "
                         + ('trung bình có trọng số NGHỊCH-MAPE: mô hình càng chính '
