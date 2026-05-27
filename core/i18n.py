@@ -10,6 +10,7 @@ TEXT = {
     'nav.analysis':   {'VI': 'Phân tích Chi tiết',   'EN': 'Detailed Analysis'},
     'nav.advanced':   {'VI': 'Mô hình Nâng cao',     'EN': 'Advanced Models'},
     'nav.strategy':   {'VI': 'Chiến lược Giao dịch', 'EN': 'Trading Strategy'},
+    'nav.news':       {'VI': 'Tin tức Thị trường',   'EN': 'Market News'},
     'nav.history':    {'VI': 'Lịch sử & Dữ liệu',    'EN': 'History & Data'},
     'nav.signals':    {'VI': 'Tín hiệu & Cảnh báo',  'EN': 'Signals & Alerts'},
     'nav.portfolio':  {'VI': 'Danh mục Đầu tư',      'EN': 'Investment Portfolio'},

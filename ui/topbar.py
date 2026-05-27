@@ -13,12 +13,12 @@ from core.i18n import t
 
 _PAGE_KEYS = [
     'Dashboard Tổng quan', 'Phân tích Chi tiết', 'Mô hình Nâng cao',
-    'Chiến lược Giao dịch', 'Tín hiệu & Cảnh báo', 'Lịch sử & Dữ liệu',
-    'Danh mục Đầu tư', 'Hướng dẫn Sử dụng',
+    'Chiến lược Giao dịch', 'Tin tức Thị trường', 'Tín hiệu & Cảnh báo',
+    'Lịch sử & Dữ liệu', 'Danh mục Đầu tư', 'Hướng dẫn Sử dụng',
 ]
 _ICONS = [
-    'speedometer2', 'graph-up-arrow', 'bezier2', 'bullseye', 'activity',
-    'clock-history', 'briefcase', 'book-half',
+    'speedometer2', 'graph-up-arrow', 'bezier2', 'bullseye', 'newspaper',
+    'activity', 'clock-history', 'briefcase', 'book-half',
 ]
 
 
@@ -46,8 +46,8 @@ def render_topbar() -> tuple:
     # ── Navigation ngang ────────────────────────────────────────────────
     _labels = [
         t('nav.dashboard'), t('nav.analysis'),  t('nav.advanced'),
-        t('nav.strategy'),  t('nav.signals'),   t('nav.history'),
-        t('nav.portfolio'), t('nav.guide'),
+        t('nav.strategy'),  t('nav.news'),      t('nav.signals'),
+        t('nav.history'),   t('nav.portfolio'), t('nav.guide'),
     ]
     if '_page_key' not in st.session_state:
         st.session_state['_page_key'] = 'Dashboard Tổng quan'

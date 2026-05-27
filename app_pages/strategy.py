@@ -179,6 +179,14 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     _ichi_vote = (1 if _ov_code in ('strong_bull', 'mild_bull')
                   else -1 if _ov_code in ('strong_bear', 'mild_bear') else 0)
 
+    # ── Tâm lý tin tức (bổ trợ) ─────────────────────────────────────────
+    try:
+        from data.news import news_sentiment
+        _ns = news_sentiment(ticker)
+        _news_vote = int(_ns.get('vote', 0)) if _ns.get('ok') else 0
+    except Exception:
+        _ns = {'ok': False}; _news_vote = 0
+
     # ── Tổng hợp phiếu ──────────────────────────────────────────────────
     tv = _tech_votes(last)
     votes = [
@@ -189,6 +197,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         ('Bollinger %B', tv['bollinger']),
         ('Ichimoku', _ichi_vote),
         ('Đồng thuận dự báo' if not is_en else 'Forecast consensus', _fc_vote),
+        ('Tâm lý tin tức' if not is_en else 'News sentiment', _news_vote),
     ]
     score = sum(v for _, v in votes)
     n_votes = len(votes)

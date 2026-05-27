@@ -244,6 +244,9 @@ elif page == 'Mô hình Nâng cao':
 elif page == 'Chiến lược Giao dịch':
     from app_pages import strategy as _pg_strat
     _pg_strat.render(*_args)
+elif page == 'Tin tức Thị trường':
+    from app_pages import news as _pg_news
+    _pg_news.render(*_args)
 elif page == 'Tín hiệu & Cảnh báo':
     from app_pages import signals as _pg_sig
     _pg_sig.render(*_args)
