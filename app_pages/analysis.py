@@ -44,11 +44,13 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         f'({_src_desc})</span>'
     )
 
-    # 7 mô hình đầy đủ — 4 mô hình nâng cao tính từ cache (đã warm ở topbar/app)
+    # 8 mô hình — các mô hình nâng cao tính từ cache (đã warm ở topbar/app)
     from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
+    from models.ml import run_gbr
     _adv_specs = [
         ('SARIMA', run_sarima), ('Holt-Winters', run_ets),
         ('GARCH', run_garch), ('SARIMAX', run_sarimax),
+        ('Gradient Boosting', run_gbr),
     ]
     _adv_res = {}
     for _nm, _fn in _adv_specs:
@@ -59,9 +61,10 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             _adv_res[_nm] = None
 
     (tab_ar1, tab_mlr, tab_cart,
-     tab_sar, tab_ets, tab_garch, tab_sarx) = st.tabs([
+     tab_sar, tab_ets, tab_garch, tab_sarx, tab_gbr) = st.tabs([
         f'  AR({ar_order})  ', '  MLR  ', '  ARIMA  ',
-        '  SARIMA  ', '  Holt-Winters  ', '  GARCH  ', '  SARIMAX  '])
+        '  SARIMA  ', '  Holt-Winters  ', '  GARCH  ', '  SARIMAX  ',
+        '  Gradient Boosting  '])
 
     with tab_ar1:
         m_tr1 = calc_metrics(r1['ytr'], r1['ptr'])
@@ -329,6 +332,8 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         _render_adv_tab(_adv_res.get('GARCH'), 'GARCH', ticker, date_from, date_to, _T, _next_lbl)
     with tab_sarx:
         _render_adv_tab(_adv_res.get('SARIMAX'), 'SARIMAX', ticker, date_from, date_to, _T, _next_lbl)
+    with tab_gbr:
+        _render_adv_tab(_adv_res.get('Gradient Boosting'), 'Gradient Boosting', ticker, date_from, date_to, _T, _next_lbl)
 
 
 def _render_adv_tab(res, label, ticker, date_from, date_to, _T, _next_lbl):

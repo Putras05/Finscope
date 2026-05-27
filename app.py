@@ -166,13 +166,14 @@ if _need_reload:
     # Mỗi run_* đã @st.cache_data → các trang sau chỉ đọc cache (tức thì).
     # Chạy đồng thời → tổng thời gian ≈ mô hình lâu nhất (ARIMA ~3s) thay vì
     # cộng dồn tuần tự ~13s.
-    _show(1, 3, ('Huấn luyện song song 7 mô hình...'
+    _show(1, 3, ('Huấn luyện song song các mô hình...'
                  if st.session_state.get('lang', 'VI') == 'VI'
-                 else 'Training 7 models in parallel...'))
+                 else 'Training models in parallel...'))
     from concurrent.futures import ThreadPoolExecutor as _TPE
     from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
+    from models.ml import run_gbr
     _mkw = dict(p=ar_order, date_from=date_from, date_to=date_to)
-    with _TPE(max_workers=7) as _ex:
+    with _TPE(max_workers=8) as _ex:
         _futs = {
             'ar':      _ex.submit(run_ar,      ticker, train_ratio, **_mkw),
             'mlr':     _ex.submit(run_mlr,     ticker, train_ratio, **_mkw),
@@ -181,12 +182,13 @@ if _need_reload:
             'ets':     _ex.submit(run_ets,     ticker, train_ratio, **_mkw),
             'garch':   _ex.submit(run_garch,   ticker, train_ratio, **_mkw),
             'sarimax': _ex.submit(run_sarimax, ticker, train_ratio, **_mkw),
+            'gbr':     _ex.submit(run_gbr,     ticker, train_ratio, **_mkw),
         }
         r1 = _futs['ar'].result()
         r2 = _futs['mlr'].result()
         r3 = _futs['arima'].result()
-        # 4 mô hình nâng cao — chỉ cần .result() để warm cache (bỏ qua lỗi lẻ)
-        for _k in ('sarima', 'ets', 'garch', 'sarimax'):
+        # mô hình nâng cao + GBR — chỉ cần .result() để warm cache (bỏ qua lỗi lẻ)
+        for _k in ('sarima', 'ets', 'garch', 'sarimax', 'gbr'):
             try:
                 _futs[_k].result()
             except Exception:

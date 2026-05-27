@@ -148,9 +148,11 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
              else 'Aggregating model forecasts...')
     with st.spinner(_spin):
         from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
+        from models.ml import run_gbr
         _adv = {}
         for _nm, _fn in [('SARIMA', run_sarima), ('Holt-Winters', run_ets),
-                         ('GARCH', run_garch), ('SARIMAX', run_sarimax)]:
+                         ('GARCH', run_garch), ('SARIMAX', run_sarimax),
+                         ('Gradient Boosting', run_gbr)]:
             try:
                 _adv[_nm] = _fn(ticker, train_ratio, p=ar_order,
                                 date_from=date_from, date_to=date_to)
@@ -159,7 +161,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
     _fc = [(f'AR({ar_order})', float(r1['next_pred'])), ('MLR', float(r2['next_pred'])),
            ('ARIMA', float(r3['next_pred']))]
-    for _nm in ('SARIMA', 'Holt-Winters', 'GARCH', 'SARIMAX'):
+    for _nm in ('SARIMA', 'Holt-Winters', 'GARCH', 'SARIMAX', 'Gradient Boosting'):
         _rr = _adv.get(_nm)
         if _rr is not None and np.isfinite(_rr.get('next_pred', np.nan)):
             _fc.append((_nm, float(_rr['next_pred'])))

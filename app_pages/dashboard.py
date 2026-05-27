@@ -382,13 +382,18 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
     # ── Tính ĐỦ 7 mô hình 1 lần (cache đã warm ở app.py → tức thì) ──────
     _is_en_d = st.session_state.get('lang', 'VI') == 'EN'
-    with st.spinner('Đang tổng hợp 7 mô hình...' if not _is_en_d
-                    else 'Aggregating 7 models...'):
+    with st.spinner('Đang tổng hợp các mô hình...' if not _is_en_d
+                    else 'Aggregating models...'):
         from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
+        from models.ml import run_gbr
         _rs = run_sarima(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
         _re = run_ets(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
         _rg = run_garch(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
         _rx = run_sarimax(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
+        try:
+            _rgb = run_gbr(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
+        except Exception:
+            _rgb = None
 
     def _sm(res):
         yte = np.asarray(res['yte'], float); pte = np.asarray(res['pte'], float)
@@ -403,7 +408,8 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
     _MCLR = {'AR': '#1565C0', 'MLR': '#6A1B9A', 'ARIMA': '#0891B2',
              'SARIMA': '#0D9488', 'Holt-Winters': '#EA580C',
-             'GARCH': '#DC2626', 'SARIMAX': '#4338CA'}
+             'GARCH': '#DC2626', 'SARIMAX': '#4338CA', 'GBR': '#7C3AED',
+             'Ensemble': '#0F766E'}
     _raw7 = [
         (f'AR({ar_order})', 'AR',  r1, m1, _ci_lin(r1)),
         ('MLR', 'MLR',              r2, m2, _ci_lin(r2)),
@@ -413,6 +419,9 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         ('GARCH', 'GARCH',          _rg, _sm(_rg), (_rg.get('next_lower'), _rg.get('next_upper'))),
         ('SARIMAX', 'SARIMAX',      _rx, _sm(_rx), (_rx.get('next_lower'), _rx.get('next_upper'))),
     ]
+    if _rgb is not None and np.isfinite(_rgb.get('next_pred', float('nan'))):
+        _raw7.append(('Gradient Boosting', 'GBR', _rgb, _sm(_rgb),
+                      (_rgb.get('next_lower'), _rgb.get('next_upper'))))
     _all7 = []
     for _disp, _base, _res, _mm, _ci in _raw7:
         _np = float(_res.get('next_pred', float('nan')))
@@ -420,8 +429,48 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             continue
         _all7.append(dict(name=_disp, base=_base, res=_res, m=_mm, npred=_np,
                           ci=_ci, color=_MCLR.get(_base, '#1565C0')))
+
+    # ── MÔ HÌNH KẾT HỢP (Ensemble) — gộp tất cả theo trọng số 1/MAPE ──────
+    from models.ensemble import build_ensemble
+    _ens = build_ensemble(
+        [{'name': d['name'], 'res': d['res'], 'mape': d['m'].get('MAPE', float('nan'))}
+         for d in _all7], df)
+    if _ens is not None:
+        _ens_m = _sm(_ens)
+        _all7.append(dict(name='FinScope Ensemble', base='Ensemble', res=_ens,
+                          m=_ens_m, npred=float(_ens['next_pred']),
+                          ci=(_ens.get('next_lower'), _ens.get('next_upper')),
+                          color=_MCLR['Ensemble']))
     _all7.sort(key=lambda dct: dct['m'].get('MAPE', float('nan'))
                if np.isfinite(dct['m'].get('MAPE', float('nan'))) else 1e9)
+
+    # ── BANNER DỰ BÁO KẾT HỢP (FinScope Ensemble) — nổi bật ─────────────
+    if _ens is not None and np.isfinite(_ens.get('next_pred', float('nan'))):
+        _en = float(_ens['next_pred']); _ecur = float(T['Close'])
+        _echg = (_en - _ecur) / _ecur * 100 if _ecur else 0
+        _ec = '#16A34A' if _echg >= 0 else '#FCA5A5'
+        _earr = '▲' if _echg >= 0 else '▼'
+        _elo, _ehi = _ens.get('next_lower'), _ens.get('next_upper')
+        _ci_e = (f'[{_elo*1000:,.0f} – {_ehi*1000:,.0f}] đ'
+                 if (_elo is not None and np.isfinite(_elo)) else '—')
+        _emape = _ens_m.get('MAPE', float('nan'))
+        st.markdown(
+            f'<div style="background:linear-gradient(135deg,#0F766E 0%,#0891B2 100%);'
+            f'border-radius:14px;padding:16px 24px;margin-bottom:14px;color:#fff;'
+            f'box-shadow:0 4px 16px rgba(15,118,110,.35)">'
+            f'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'
+            f'<div>'
+            f'<div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.85">'
+            f'🎯 {"Dự báo Kết hợp · FinScope Ensemble" if not _is_en_d else "Combined Forecast · FinScope Ensemble"}</div>'
+            f'<div style="font-size:30px;font-weight:800;line-height:1.1;margin-top:4px">'
+            f'{_en*1000:,.0f} <span style="font-size:15px;opacity:.85">đ</span> '
+            f'<span style="font-size:16px;color:{_ec}">{_earr} {abs(_echg):.2f}%</span></div>'
+            f'</div>'
+            f'<div style="text-align:right;font-size:12px;opacity:.92;line-height:1.7">'
+            f'{"Gộp" if not _is_en_d else "Combines"} <b>{_ens.get("n_members","?")}</b> {"mô hình · trọng số ∝ 1/MAPE" if not _is_en_d else "models · weights ∝ 1/MAPE"}<br>'
+            f'{"KTC 95%" if not _is_en_d else "95% CI"}: <b>{_ci_e}</b><br>'
+            f'MAPE test: <b>{_emape:.2f}%</b></div>'
+            f'</div></div>', unsafe_allow_html=True)
 
     # ── 3 Ô HERO = 3 MÔ HÌNH TỐT NHẤT (MAPE thấp nhất) ─────────────────
     last30  = df['Close'].values[-30:] * 1000

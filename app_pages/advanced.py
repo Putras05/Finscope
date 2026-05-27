@@ -13,6 +13,8 @@ from charts.base import _PLOTLY_CONFIG
 from charts.arima_diag import chart_fan_ci
 from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
 from models.deep import run_lstm
+from models.ml import run_gbr
+from models.ensemble import build_ensemble
 
 
 def _safe_metrics(res, k=2):
@@ -32,7 +34,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     st.markdown(
         f'<div class="page-header">'
         f'<h1>{"Mô hình Thống kê Nâng cao" if not is_en else "Advanced Statistical Models"} — {ticker}</h1>'
-        f'<p>{"Bộ 8 mô hình dự báo (gồm học sâu LSTM) & khoảng tin cậy 80%/95% cho phiên kế tiếp" if not is_en else "Eight forecasting models (incl. deep-learning LSTM) & 80%/95% confidence intervals"}</p>'
+        f'<p>{"Bộ mô hình dự báo (thống kê · Gradient Boosting · học sâu LSTM · mô hình KẾT HỢP) & khoảng tin cậy 80%/95%" if not is_en else "Forecasting suite (statistical · Gradient Boosting · deep-learning LSTM · ENSEMBLE) & 80%/95% confidence intervals"}</p>'
         f'</div>', unsafe_allow_html=True)
 
     _spin = ('Đang ước lượng SARIMA · Holt-Winters · GARCH · SARIMAX...'
@@ -47,6 +49,8 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                        date_from=date_from, date_to=date_to)
         rx = run_sarimax(ticker, train_ratio, p=ar_order,
                          date_from=date_from, date_to=date_to)
+        rgb = run_gbr(ticker, train_ratio, p=ar_order,
+                      date_from=date_from, date_to=date_to)
     _spin2 = ('Đang huấn luyện mô hình học sâu (LSTM)...' if not is_en
               else 'Training deep-learning model (LSTM)...')
     with st.spinner(_spin2):
@@ -81,14 +85,26 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         _wrap_stat(re_, 'Holt-Winters'),
         _wrap_stat(rg, 'GARCH'),
         _wrap_stat(rx, 'SARIMAX'),
+        _wrap_stat(rgb, 'Gradient Boosting'),
         _wrap_stat(rl, _lstm_name),
     ]
     metr = {
         f'AR({ar_order})': m1, 'MLR': m2, 'ARIMA': m3,
         'SARIMA': _safe_metrics(rs), 'Holt-Winters': _safe_metrics(re_),
         'GARCH': _safe_metrics(rg), 'SARIMAX': _safe_metrics(rx),
-        _lstm_name: _safe_metrics(rl),
+        'Gradient Boosting': _safe_metrics(rgb), _lstm_name: _safe_metrics(rl),
     }
+
+    # ── Mô hình KẾT HỢP (Ensemble) gộp tất cả ───────────────────────────
+    _ens = build_ensemble(
+        [{'name': k, 'res': r_, 'mape': metr[k].get('MAPE', float('nan'))}
+         for k, r_ in [(f'AR({ar_order})', r1), ('MLR', r2), ('ARIMA', r3),
+                       ('SARIMA', rs), ('Holt-Winters', re_), ('GARCH', rg),
+                       ('SARIMAX', rx), ('Gradient Boosting', rgb),
+                       (_lstm_name, rl)]], df)
+    if _ens is not None:
+        rows.insert(0, _wrap_stat(_ens, 'FinScope Ensemble'))
+        metr['FinScope Ensemble'] = _safe_metrics(_ens)
 
     # ════════════════════════════════════════════════════════════════════
     #  1) BẢNG KHOẢNG TIN CẬY — DỰ BÁO PHIÊN KẾ TIẾP
@@ -149,8 +165,11 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
     _fan_models = [
         ('ARIMA', r3), ('SARIMA', rs), ('Holt-Winters', re_),
-        ('GARCH', rg), ('SARIMAX', rx), (_lstm_name, rl),
+        ('GARCH', rg), ('SARIMAX', rx), ('Gradient Boosting', rgb),
+        (_lstm_name, rl),
     ]
+    if _ens is not None:
+        _fan_models.insert(0, ('FinScope Ensemble', _ens))
     _tabs = st.tabs([f'  {nm}  ' for nm, _ in _fan_models])
     for _tab, (nm, res) in zip(_tabs, _fan_models):
         with _tab:
