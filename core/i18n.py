@@ -62,8 +62,8 @@ TEXT = {
     'history.stats_std': {'VI': 'Độ lệch chuẩn', 'EN': 'Std Dev'},
     # Signals
     'signal.title':      {'VI': 'Tín hiệu & Cảnh báo',   'EN': 'Signals & Alerts'},
-    'signal.subtitle':   {'VI': 'Hệ cảnh báo Ichimoku Kinko Hyo · tham số chuẩn 9·26·52 · {ticker}',
-                          'EN': 'Ichimoku Kinko Hyo alerts · standard 9·26·52 · {ticker}'},
+    'signal.subtitle':   {'VI': 'Cảnh báo đa chỉ báo + Ichimoku · 11 nguồn tín hiệu được theo dõi liên tục · {ticker}',
+                          'EN': 'Multi-indicator alerts + Ichimoku · 11 signal sources continuously monitored · {ticker}'},
     'signal.tech_hdr':   {'VI': 'TÍN HIỆU KỸ THUẬT',     'EN': 'TECHNICAL SIGNALS'},
     'signal.summary_hdr':{'VI': 'TÓM TẮT PHÂN TÍCH TỔNG HỢP', 'EN': 'COMPREHENSIVE ANALYSIS SUMMARY'},
     'signal.overall':    {'VI': 'Đánh giá tổng thể',     'EN': 'Overall Assessment'},
