@@ -107,10 +107,12 @@ def render_topbar() -> tuple:
     st.session_state['_page_key'] = page
 
     # ── Hàng điều khiển: mã · train · p · từ · đến · nút ────────────────
-    c = st.columns([1.5, 1.6, 1.0, 1.5, 1.5, 0.7, 0.7, 0.8])
+    # Nới rộng cột mã (1.5→2.2) để label "ACB · Ngân hàng" không bị cụt thành
+    # "Ngân ...". Format MÃ trước · ngành sau → mã LUÔN nhìn thấy dù bị cắt.
+    c = st.columns([2.2, 1.4, 0.9, 1.3, 1.3, 0.7, 0.7, 0.8])
     ticker = c[0].selectbox(
         t('sidebar.ticker'), _TICKER_ORDER, key='tb_ticker',
-        format_func=lambda tk: f'{_sector_short(tk)} · {tk}',
+        format_func=lambda tk: f'{tk} · {_sector_short(tk)}',
     )
     train_ratio = c[1].slider(t('sidebar.train_ratio'), 70, 90, 80, step=5,
                               format='%d%%', key='tb_ratio') / 100

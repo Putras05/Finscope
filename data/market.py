@@ -28,8 +28,10 @@ def market_snapshot(symbols: tuple) -> pd.DataFrame:
     Giá ở đơn vị đồng (raw từ price_board). value_M = triệu đ; market_cap_B =
     tỷ đ.
     """
+    import contextlib, io
     from vnstock import Trading
-    pb = Trading(source='VCI').price_board(symbols_list=list(symbols))
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        pb = Trading(source='VCI').price_board(symbols_list=list(symbols))
     rows = []
     for _, r in pb.iterrows():
         try:

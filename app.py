@@ -1,3 +1,14 @@
+import sys, os
+# Windows console mặc định cp1252 → vnstock in tiếng Việt ra stdout sẽ bốc
+# UnicodeEncodeError ('charmap codec can't encode'). Ép utf-8 sớm + errors=replace
+# để không bao giờ vỡ luồng fetch.
+os.environ.setdefault('PYTHONIOENCODING', 'utf-8')
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
+
 import streamlit as st
 import warnings
 import matplotlib

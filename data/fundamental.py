@@ -60,10 +60,12 @@ def fetch_financials(ticker: str) -> dict:
     Trả {'ok', 'note', 'periods': [...], 'income': df, 'balance': df}.
     Lỗi mạng/API → ok=False, không ném exception."""
     try:
+        import contextlib, io
         from vnstock import Vnstock
-        s = Vnstock().stock(symbol=ticker.upper(), source='VCI')
-        inc = s.finance.income_statement(period='quarter', lang='vi')
-        bal = s.finance.balance_sheet(period='quarter', lang='vi')
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            s = Vnstock().stock(symbol=ticker.upper(), source='VCI')
+            inc = s.finance.income_statement(period='quarter', lang='vi')
+            bal = s.finance.balance_sheet(period='quarter', lang='vi')
         periods = [c for c in inc.columns if c not in ('item', 'item_en', 'item_id')]
         return {'ok': True, 'note': '', 'periods': periods,
                 'income': inc, 'balance': bal}

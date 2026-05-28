@@ -8,10 +8,16 @@ from core.config import DATA_START, DATA_END, DATA_SOURCE, CACHE_TTL
 def _fetch_raw(ticker: str) -> pd.DataFrame:
     """Fetch raw từ vnstock + indicator technical. Cache theo ticker (không
     phụ thuộc date_from/date_to) → đổi date range KHÔNG gọi lại network.
+
+    Bọc redirect_stdout(StringIO) để NUỐT các thông báo tiếng Việt vnstock
+    spam ra console (quảng cáo Insiders + cảnh báo update). Trên Windows
+    cp1252 các ký tự đó gây UnicodeEncodeError → vỡ fetch (đã thấy ở ACB).
     """
+    import contextlib, io
     from vnstock import Vnstock
-    s  = Vnstock().stock(symbol=ticker, source=DATA_SOURCE)
-    df = s.quote.history(start=DATA_START, end=DATA_END, interval='1D')
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        s  = Vnstock().stock(symbol=ticker, source=DATA_SOURCE)
+        df = s.quote.history(start=DATA_START, end=DATA_END, interval='1D')
     df = df.rename(columns={
         'time': 'Ngay', 'close': 'Close', 'open': 'Open',
         'high': 'High', 'low': 'Low', 'volume': 'Volume',
