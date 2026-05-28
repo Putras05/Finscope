@@ -61,6 +61,21 @@ def render():
                     news_sentiment(tk)
                 except Exception:
                     pass
+                # Warm Phân tích Cơ bản (income + balance, cache 1h) — fetch
+                # song song income+balance đã giảm còn ~3s; pre-warm ở đây để
+                # khi user click vào trang là tức thì.
+                try:
+                    from data.fundamental import fetch_financials
+                    fetch_financials(tk)
+                except Exception:
+                    pass
+                # Warm Tổng quan Thị trường (price_board 53 mã, cache 5')
+                try:
+                    from data.market import market_snapshot
+                    from core.constants import TICKERS as _TICKERS
+                    market_snapshot(tuple(_TICKERS))
+                except Exception:
+                    pass
             except Exception:
                 pass
         _th.Thread(target=_warm_default, daemon=True).start()

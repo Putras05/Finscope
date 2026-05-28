@@ -61,11 +61,17 @@ def fetch_financials(ticker: str) -> dict:
     Lỗi mạng/API → ok=False, không ném exception."""
     try:
         import contextlib, io
+        from concurrent.futures import ThreadPoolExecutor
         from vnstock import Vnstock
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             s = Vnstock().stock(symbol=ticker.upper(), source='VCI')
-            inc = s.finance.income_statement(period='quarter', lang='vi')
-            bal = s.finance.balance_sheet(period='quarter', lang='vi')
+            # Income + Balance SONG SONG → giảm chờ network từ ~6s xuống ~3s
+            # (vnstock 4 mỗi call mất ~2-3s; chạy đồng thời chỉ tốn max).
+            with ThreadPoolExecutor(max_workers=2) as _ex:
+                _f_inc = _ex.submit(s.finance.income_statement, period='quarter', lang='vi')
+                _f_bal = _ex.submit(s.finance.balance_sheet, period='quarter', lang='vi')
+                inc = _f_inc.result()
+                bal = _f_bal.result()
         periods = [c for c in inc.columns if c not in ('item', 'item_en', 'item_id')]
         return {'ok': True, 'note': '', 'periods': periods,
                 'income': inc, 'balance': bal}
