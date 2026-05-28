@@ -82,7 +82,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     st.markdown(
         f'<div class="page-header">'
         f'<h1>{t("nav.signals")} — {ticker}</h1>'
-        f'<p>{t("signal.subtitle", ticker=ticker) if "signal.subtitle" in __import__("core.i18n", fromlist=["TEXT"]).TEXT else "Hệ cảnh báo dựa trên Ichimoku Kinko Hyo — tham số chuẩn (9·26·52)."}</p>'
+        f'<p>{t("signal.subtitle", ticker=ticker)}</p>'
         f'</div>', unsafe_allow_html=True)
 
     is_dark  = _T.get('is_dark', False)

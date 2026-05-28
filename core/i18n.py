@@ -61,7 +61,8 @@ TEXT = {
     'history.stats_std': {'VI': 'Độ lệch chuẩn', 'EN': 'Std Dev'},
     # Signals
     'signal.title':      {'VI': 'Tín hiệu & Cảnh báo',   'EN': 'Signals & Alerts'},
-    'signal.subtitle':   {'VI': 'Phân tích kỹ thuật · {ticker}', 'EN': 'Technical Analysis · {ticker}'},
+    'signal.subtitle':   {'VI': 'Hệ cảnh báo Ichimoku Kinko Hyo · tham số chuẩn 9·26·52 · {ticker}',
+                          'EN': 'Ichimoku Kinko Hyo alerts · standard 9·26·52 · {ticker}'},
     'signal.tech_hdr':   {'VI': 'TÍN HIỆU KỸ THUẬT',     'EN': 'TECHNICAL SIGNALS'},
     'signal.summary_hdr':{'VI': 'TÓM TẮT PHÂN TÍCH TỔNG HỢP', 'EN': 'COMPREHENSIVE ANALYSIS SUMMARY'},
     'signal.overall':    {'VI': 'Đánh giá tổng thể',     'EN': 'Overall Assessment'},
@@ -244,9 +245,9 @@ TEXT = {
     'portfolio.kpi_best_ytd':   {'VI': 'Hiệu suất YTD tốt nhất', 'EN': 'Best Performer (YTD)'},
     'portfolio.kpi_worst_ytd':  {'VI': 'Hiệu suất YTD kém nhất', 'EN': 'Worst Performer (YTD)'},
     'portfolio.kpi_sharpe':     {'VI': 'Sharpe cao nhất',         'EN': 'Best Sharpe Ratio'},
-    'portfolio.kpi_rec':        {'VI': 'Khuyến nghị',             'EN': 'Recommendation'},
-    'portfolio.rec_accumulate': {'VI': 'Tích lũy {tk}',           'EN': 'Accumulate {tk}'},
-    'portfolio.rec_caution':    {'VI': 'Thận trọng {tk}',         'EN': 'Caution {tk}'},
+    'portfolio.kpi_rec':        {'VI': 'Gợi ý quan sát',          'EN': 'Watch idea'},
+    'portfolio.rec_accumulate': {'VI': '{tk} dẫn dắt nhóm',       'EN': '{tk} leads group'},
+    'portfolio.rec_caution':    {'VI': '{tk} cần theo dõi',       'EN': 'Watch {tk}'},
     'portfolio.toggle_date_filter': {
         'VI': 'Áp dụng khoảng thời gian từ sidebar',
         'EN': 'Apply date range from sidebar',
