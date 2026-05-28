@@ -71,11 +71,23 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         st.warning('Không trích được dữ liệu từ BCTC.')
         return
 
-    # ── KPI strip (P/E, P/B, EPS, ROE, ROA, Net margin, Market cap) ────
+    # ── KPI strip — NGƯỠNG khác cho NGÂN HÀNG (D/E cao + ROA thấp là CHUẨN) ──
+    _is_bank = 'Ngân hàng' in ticker_sector(ticker)
     _roe_col = _T['success'] if kpi['roe'] > 15 else _T['warning'] if kpi['roe'] > 10 else _T['danger']
-    _roa_col = _T['success'] if kpi['roa'] > 8 else _T['warning'] if kpi['roa'] > 4 else _T['danger']
+    if _is_bank:
+        # Bank: ROA 0.8-2.5% là bình thường (do leverage cao); D/E 5-12x chuẩn
+        # ngành (tiền gửi khách hàng tính là nợ). Áp ngưỡng riêng để không
+        # đánh đỏ sai mọi mã ngân hàng.
+        _roa_col = _T['success'] if kpi['roa'] > 1.5 else _T['warning'] if kpi['roa'] > 1.0 else _T['danger']
+        _de_col  = _T['success'] if kpi['debt_equity'] < 8 else _T['warning'] if kpi['debt_equity'] < 12 else _T['danger']
+        _roa_hint = '>1.5% tốt (ngân hàng)' if not is_en else '>1.5% good (bank)'
+        _de_hint  = ('Nợ/VCSH · bank thường 5-12x' if not is_en else 'D/E · banks typically 5-12x')
+    else:
+        _roa_col = _T['success'] if kpi['roa'] > 8 else _T['warning'] if kpi['roa'] > 4 else _T['danger']
+        _de_col  = _T['success'] if kpi['debt_equity'] < 1 else _T['warning'] if kpi['debt_equity'] < 2 else _T['danger']
+        _roa_hint = '>8% tốt' if not is_en else '>8% good'
+        _de_hint  = ('Nợ/VCSH; <1 an toàn' if not is_en else 'D/E; <1 safe')
     _pe_col = _T['accent'] if kpi['pe'] == kpi['pe'] else _T['text_muted']
-    _de_col = _T['success'] if kpi['debt_equity'] < 1 else _T['warning'] if kpi['debt_equity'] < 2 else _T['danger']
 
     _cards1 = ''.join([
         _kpi_card('P/E', f'{kpi["pe"]:.2f}x' if kpi["pe"]==kpi["pe"] else '—',
@@ -94,15 +106,14 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                   _roe_col, _T, '>15% tốt'),
         _kpi_card('ROA',
                   f'{kpi["roa"]:.1f}%' if kpi['roa']==kpi['roa'] else '—',
-                  _roa_col, _T, '>8% tốt'),
+                  _roa_col, _T, _roa_hint),
         _kpi_card(('Vốn hóa' if not is_en else 'Market cap'),
                   _fmt_money(kpi['market_cap'], 'nghìn_tỷ'),
                   '#0F766E', _T,
                   f'= {kpi["last_price"]:,.0f} đ × {kpi["listed_share"]/1e6:,.0f}M cp' if listed_share else ''),
         _kpi_card('D/E',
                   f'{kpi["debt_equity"]:.2f}' if kpi['debt_equity']==kpi['debt_equity'] else '—',
-                  _de_col, _T,
-                  ('Nợ/VCSH; <1 an toàn' if not is_en else 'Debt/Equity; <1 safe')),
+                  _de_col, _T, _de_hint),
     ])
     st.markdown(
         f'<div style="display:flex;gap:10px;flex-wrap:wrap">{_cards1}</div>',
@@ -193,10 +204,18 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     st.markdown("<div style='margin:18px 0 6px'></div>", unsafe_allow_html=True)
     st.markdown(f'<div class="sec-hdr">{"Biên lợi nhuận & Tăng trưởng" if not is_en else "Margins & Growth"}</div>',
                 unsafe_allow_html=True)
+    # Nhãn margin theo loại doanh nghiệp (bank dùng "biên LN trước trích lập")
+    _gross_lbl = ('Biên LN trước trích lập' if _is_bank and not is_en else
+                  'Pre-provision margin' if _is_bank else
+                  'Biên LN gộp' if not is_en else 'Gross margin')
+    _gross_hint = ('LN HĐ trước dự phòng / Tổng TN HĐ (TTM)' if _is_bank and not is_en else
+                   'Pre-prov. profit / Total op. income (TTM)' if _is_bank else
+                   'LN gộp / Doanh thu TTM' if not is_en else
+                   'Gross profit / Revenue (TTM)')
     _cards2 = ''.join([
-        _kpi_card(('Biên LN gộp' if not is_en else 'Gross margin'),
+        _kpi_card(_gross_lbl,
                   f'{kpi["gross_margin"]:.1f}%' if kpi['gross_margin']==kpi['gross_margin'] else '—',
-                  _T['accent'], _T, 'LN gộp / Doanh thu TTM'),
+                  _T['accent'], _T, _gross_hint),
         _kpi_card(('Biên LN ròng' if not is_en else 'Net margin'),
                   f'{kpi["net_margin"]:.1f}%' if kpi['net_margin']==kpi['net_margin'] else '—',
                   _T['success'] if kpi['net_margin']>10 else _T['warning'], _T,
