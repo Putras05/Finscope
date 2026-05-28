@@ -30,8 +30,18 @@ def market_snapshot(symbols: tuple) -> pd.DataFrame:
     """
     import contextlib, io
     from vnstock import Trading
-    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        pb = Trading(source='VCI').price_board(symbols_list=list(symbols))
+    # ── Fail-safe: nếu VCI Trading down hoặc trả None/schema lạ → DataFrame
+    # rỗng có schema đúng. CACHE sẽ giữ failure 5 phút → tránh dồn retry,
+    # nhưng app KHÔNG vỡ (các trang gọi market_snapshot sẽ thấy empty df).
+    _empty_cols = ['ticker','sector','ref_price','last_price','change',
+                   'change_pct','volume','value_M','market_cap_B','listed_share']
+    try:
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            pb = Trading(source='VCI').price_board(symbols_list=list(symbols))
+        if pb is None or len(pb) == 0:
+            return pd.DataFrame(columns=_empty_cols)
+    except Exception:
+        return pd.DataFrame(columns=_empty_cols)
     rows = []
     for _, r in pb.iterrows():
         try:

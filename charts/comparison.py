@@ -368,9 +368,10 @@ def _resample_ohlc(df: pd.DataFrame, freq: str | None) -> pd.DataFrame:
 # Cache figure layer này: Streamlit `@st.cache_data` deepcopy ~5-10ms vs
 # rebuild ~30-80ms (resample + Ichimoku + 9 traces + layout). Hash:
 # - df: fingerprint O(1) (first/last date, len, last_close)
-# - T: id() — theme() đã cache same dict ref per mode → stable
-# - ticker/interval/show_sma/show_ichimoku: primitives
-# Toggle SMA / Ichimoku / Timeframe lần thứ 2 → cache hit → instant.
+# - T: hash theo is_dark (bool, ổn định qua rerun) thay vì id() — id(T) đổi
+#   nếu theme() trả dict mới mỗi rerun (cache miss → rebuild 50-100ms).
+# - ticker/interval/show_sma/show_ichimoku: primitives → Streamlit auto-hash.
+# Toggle SMA / Ichimoku / Timeframe lần thứ 2 → cache hit thật → instant.
 @st.cache_data(
     show_spinner=False, max_entries=64, ttl=600,
     hash_funcs={
@@ -380,7 +381,7 @@ def _resample_ohlc(df: pd.DataFrame, freq: str | None) -> pd.DataFrame:
             int(len(d)),
             float(d['Close'].iloc[-1]) if len(d) else 0.0,
         ),
-        dict: lambda T: id(T),
+        dict: lambda T: bool(T.get('is_dark', False)),
     },
 )
 def chart_price_candlestick(df: pd.DataFrame, ticker: str, T: dict,

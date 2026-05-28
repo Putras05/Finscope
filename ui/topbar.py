@@ -141,14 +141,16 @@ def render_topbar() -> tuple:
     c = st.columns([1.3, 1.1, 1.2, 0.8, 1.3, 1.3, 0.6, 0.6, 0.7])
 
     # NGÀNH selectbox — option "Tất cả ngành" + 31 ngành sort theo độ phổ biến.
+    _all_lbl_disp = _ALL_LABEL if not _is_en else 'All sectors'
+    _ticker_unit  = 'mã' if not _is_en else 'tickers'
     _SECTOR_OPTS = [_ALL_LABEL] + _ALL_SECTORS
     if 'tb_sector' not in st.session_state:
         st.session_state['tb_sector'] = _ALL_LABEL
     sector = c[0].selectbox(
         'Ngành' if not _is_en else 'Sector',
         _SECTOR_OPTS, key='tb_sector',
-        format_func=lambda s: (s if s == _ALL_LABEL
-                               else f'{s} ({_SECTOR_COUNTS.get(s,0)} mã)'),
+        format_func=lambda s: (_all_lbl_disp if s == _ALL_LABEL
+                               else f'{s} ({_SECTOR_COUNTS.get(s,0)} {_ticker_unit})'),
     )
 
     # MÃ filtered theo ngành — ưu tiên 3 mã default ở đầu nếu chọn "Tất cả".

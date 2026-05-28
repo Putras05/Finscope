@@ -785,7 +785,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                 f'<div style="display:flex;justify-content:space-between;margin-top:8px;'
                 f'font-size:10.5px;color:{_T["text_secondary"]}">'
                 f'<span>{t("dash.last_30")}</span>'
-                f'<span style="font-weight:600">Range: {rng_lo:,.0f}–{rng_hi:,.0f}</span></div>'
+                f'<span style="font-weight:600">{"Range" if _is_en_d else "Biên"}: {rng_lo:,.0f}–{rng_hi:,.0f}</span></div>'
                 f'{_ci_html}{best_bd}'
                 f'</div>', unsafe_allow_html=True)
 
@@ -958,7 +958,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         f'<th style="padding:10px 12px;text-align:left">{t("col.rank")}</th>'
         f'<th style="padding:10px 12px;text-align:left">{t("col.model")}</th>'
         f'<th style="padding:10px 12px;text-align:left">MAPE</th>'
-        f'<th style="padding:10px 14px;text-align:left">Performance</th>'
+        f'<th style="padding:10px 14px;text-align:left">{"Performance" if _is_en_d else "Hiệu năng"}</th>'
         f'<th style="padding:10px 12px;text-align:left">RMSE</th>'
         f'<th style="padding:10px 12px;text-align:left">MAE</th>'
         f'<th style="padding:10px 12px;text-align:left">R²adj</th>'

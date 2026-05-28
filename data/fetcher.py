@@ -35,6 +35,10 @@ def _fetch_raw(ticker: str) -> pd.DataFrame:
     gain  = delta.clip(lower=0).rolling(14).mean()
     loss  = (-delta.clip(upper=0)).rolling(14).mean()
     df['RSI14'] = 100 - 100 / (1 + gain / loss.replace(0, np.nan))
+    # Giá đứng yên 14 phiên (gain==loss==0) → RSI = NaN. dropna() sau đó
+    # sẽ XÓA SẠCH phiên đầu chart cho mã thanh khoản kém → silent data loss.
+    # Fillna 50 (trung tính: không tăng/giảm) → giữ phiên, dùng được L1 lag.
+    df['RSI14'] = df['RSI14'].fillna(50.0)
 
     df['MA5_ratio']    = (df['Close'] / df['MA5']  - 1) * 100
     df['MA20_ratio']   = (df['Close'] / df['MA20'] - 1) * 100
