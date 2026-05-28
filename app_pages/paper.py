@@ -304,6 +304,19 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             (('Lỗ TB / lệnh thua' if not is_en else 'Avg loss'),     f'{stats["avg_loss"]:+,.0f} đ', _T['danger']),
             (('Lệnh thắng lớn nhất' if not is_en else 'Max win'),    f'{stats["max_win"]:+,.0f} đ', _T['success']),
             (('Lệnh thua nặng nhất' if not is_en else 'Max loss'),   f'{stats["max_loss"]:+,.0f} đ', _T['danger']),
+            (('Max Drawdown' if not is_en else 'Max Drawdown'),
+             f'{stats["max_drawdown_pct"]:.2f}%',
+             _T['success'] if stats['max_drawdown_pct'] > -5 else
+             (_T['warning'] if stats['max_drawdown_pct'] > -15 else _T['danger'])),
+            (('Sharpe (annualized)' if not is_en else 'Sharpe (ann.)'),
+             f'{stats["sharpe_ratio"]:.2f}' if stats['sharpe_ratio'] == stats['sharpe_ratio'] else 'N/A',
+             _T['success'] if (stats['sharpe_ratio'] == stats['sharpe_ratio'] and stats['sharpe_ratio'] > 1)
+             else (_T['warning'] if (stats['sharpe_ratio'] == stats['sharpe_ratio'] and stats['sharpe_ratio'] > 0)
+                   else _T['danger'])),
+            (('Phí giao dịch (cộng dồn)' if not is_en else 'Total fees'),
+             f'{stats["total_fees"]:,.0f} đ', _T['text_secondary']),
+            (('Thuế bán (cộng dồn)' if not is_en else 'Sell tax'),
+             f'{stats["total_tax"]:,.0f} đ', _T['text_secondary']),
         ]
         _cells = ''.join(
             f'<div style="flex:1 1 180px;min-width:170px;background:{_T["bg_card"]};'

@@ -119,6 +119,84 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         f'<div style="display:flex;gap:10px;flex-wrap:wrap">{_cards1}</div>',
         unsafe_allow_html=True)
 
+    # ── SO SÁNH PEER cùng ngành — bảng + pill đánh giá vs trung bình ──────
+    st.markdown("<div style='margin:18px 0 6px'></div>", unsafe_allow_html=True)
+    try:
+        from data.fundamental import peer_kpis as _peer_fn
+        _peer = _peer_fn(ticker)
+    except Exception:
+        _peer = {'ok': False}
+    if _peer.get('ok') and _peer['n'] >= 2:
+        _sec = _peer['sector']
+        _is_fb = _peer.get('fallback_bluechip', False)
+        _hdr_title = (("So sánh ngành" if not is_en else "Peer comparison") + f' — {_sec}'
+                      if not _is_fb else
+                      ("So sánh nhóm dẫn dắt" if not is_en else "Peers — bluechips"))
+        _hdr_note = (f'{_peer["n"]} {"mã cùng ngành — trung vị làm chuẩn so sánh" if not is_en else "peers — median benchmark"}'
+                     if not _is_fb else
+                     f'{"Ngành quá hẹp — đối chiếu" if not is_en else "Sector too narrow — compared against"} '
+                     f'{_peer["n"]} {"mã top vốn hóa" if not is_en else "top-mcap tickers"}')
+        st.markdown(
+            f'<div class="sec-hdr">{_hdr_title}'
+            f' <span style="font-size:11px;font-weight:600;color:{_T["text_muted"]};margin-left:8px">'
+            f'{_hdr_note}</span></div>', unsafe_allow_html=True)
+        _avg = _peer['avg']
+        def _cmp_cell(val, avg, prefer='low'):
+            """Pill so sánh val vs avg. prefer='low' (PE/DE) hay 'high' (ROE)."""
+            if not (val == val and avg == avg):
+                return '<span style="color:#94A3B8">—</span>'
+            diff_pct = (val - avg) / abs(avg) * 100 if avg else 0
+            is_better = (val < avg) if prefer == 'low' else (val > avg)
+            _c = '#16A34A' if is_better else '#DC2626'
+            _arr = '▼' if val < avg else '▲'
+            return (f'<span style="color:{_c};font-weight:700">{val:.2f}</span> '
+                    f'<span style="font-size:10px;color:{_T["text_muted"]}">{_arr}{abs(diff_pct):.0f}%</span>')
+        _rows = ''
+        for p in _peer['peers']:
+            _is_cur = (p['ticker'] == ticker)
+            _bg = _T['warning_bg'] if _is_cur else 'transparent'
+            _bold = 'font-weight:800' if _is_cur else 'font-weight:600'
+            _badge = (' <span style="background:#F9A825;color:#1A2A4A;font-size:10px;'
+                      'font-weight:800;padding:2px 8px;border-radius:8px;margin-left:6px">'
+                      f'{"Mã đang xem" if not is_en else "Selected"}</span>') if _is_cur else ''
+            _mcap_s = (f'{p["mcap"]/1e12:,.1f} ' + ("nghìn tỷ" if not is_en else "T VND")
+                       if p['mcap']==p['mcap'] and p['mcap']>0 else '—')
+            _rows += (
+                f'<tr style="background:{_bg};border-top:1px solid {_T["divider"]}">'
+                f'<td style="padding:8px 12px;{_bold};color:{_T["text_primary"]}">'
+                f'{p["ticker"]}{_badge}</td>'
+                f'<td style="padding:8px 12px">{_cmp_cell(p["pe"], _avg["pe"], "low")}</td>'
+                f'<td style="padding:8px 12px">{_cmp_cell(p["pb"], _avg["pb"], "low")}</td>'
+                f'<td style="padding:8px 12px">{_cmp_cell(p["roe"], _avg["roe"], "high")}</td>'
+                f'<td style="padding:8px 12px">{_cmp_cell(p["de"], _avg["de"], "low")}</td>'
+                f'<td style="padding:8px 12px;color:{_T["text_secondary"]};font-size:12px">{_mcap_s}</td>'
+                f'</tr>')
+        # Hàng trung vị ngành
+        _rows += (
+            f'<tr style="background:{_T["bg_elevated"]};border-top:2px solid {_T["accent"]}">'
+            f'<td style="padding:8px 12px;font-weight:800;color:{_T["accent"]}">'
+            f'{"Trung vị ngành" if not is_en else "Industry median"}</td>'
+            f'<td style="padding:8px 12px;font-weight:700">{_avg["pe"]:.2f}' if _avg["pe"]==_avg["pe"] else '<td style="padding:8px 12px">—</td>')
+        _rows += (f'</td><td style="padding:8px 12px;font-weight:700">{_avg["pb"]:.2f}</td>'
+                  if _avg["pb"]==_avg["pb"] else '<td style="padding:8px 12px">—</td>')
+        _rows += (f'<td style="padding:8px 12px;font-weight:700">{_avg["roe"]:.1f}%</td>'
+                  if _avg["roe"]==_avg["roe"] else '<td style="padding:8px 12px">—</td>')
+        _rows += (f'<td style="padding:8px 12px;font-weight:700">{_avg["de"]:.2f}</td>'
+                  if _avg["de"]==_avg["de"] else '<td style="padding:8px 12px">—</td>')
+        _rows += '<td style="padding:8px 12px"></td></tr>'
+        _hdr_pc = (['Mã', 'P/E', 'P/B', 'ROE', 'D/E', 'Vốn hóa'] if not is_en
+                   else ['Ticker', 'P/E', 'P/B', 'ROE', 'D/E', 'Mcap'])
+        st.markdown(
+            f'<div style="border-radius:12px;overflow-x:auto;border:1px solid {_T["border"]}">'
+            f'<table style="width:100%;border-collapse:collapse;font-size:13px">'
+            f'<thead><tr style="background:{_T["accent"]};color:#fff">'
+            + ''.join(f'<th style="padding:9px 12px;text-align:left">{h}</th>' for h in _hdr_pc)
+            + f'</tr></thead><tbody>{_rows}</tbody></table></div>',
+            unsafe_allow_html=True)
+        st.markdown(
+            f'<div style="font-size:11px;color:{_T["text_muted"]};margin-top:6px;line-height:1.55">'
+            f'{"▼ thấp hơn / ▲ cao hơn trung vị ngành; XANH = tốt hơn (P/E·D/E thấp · ROE cao), ĐỎ = kém hơn." if not is_en else "▼ below / ▲ above industry median; GREEN = better (low P/E·D/E · high ROE), RED = worse."}'
+            f'</div>', unsafe_allow_html=True)
     st.markdown("<div style='margin:18px 0 6px'></div>", unsafe_allow_html=True)
 
     # ── KQKD 4 QUÝ — bảng + chart Revenue/Net income ───────────────────

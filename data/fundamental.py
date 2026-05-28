@@ -201,10 +201,80 @@ def compute_kpis(ext: dict, last_price_vnd: float = 0.0,
         'eps_ttm': eps_ttm, 'eps_source': eps_source, 'pretax_ttm': pretax_ttm,
         'gross_margin': gross_margin, 'net_margin': net_margin,
         'roe': roe, 'roa': roa, 'debt_equity': debt_equity,
+        # Alias ngắn cho consumer ngoài (vd dashboard divergence card)
+        'de': debt_equity,
         'total_assets': assets, 'equity': equity, 'total_debt': debt, 'cash': cash,
         'market_cap': mcap, 'pe': pe, 'pb': pb, 'bvps': bvps,
         'last_price': last_price_vnd, 'listed_share': listed_share,
         'rev_qoq': rev_qoq, 'ni_qoq': ni_qoq,
         'oper_cf_ttm': oper_cf_ttm, 'inv_cf_ttm': inv_cf_ttm,
         'fin_cf_ttm': fin_cf_ttm, 'fcf_ttm': fcf_ttm, 'p_fcf': p_fcf,
+    }
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def peer_kpis(ticker: str, max_peers: int = 6) -> dict:
+    """So sánh ticker với tối đa `max_peers` mã CÙNG NGÀNH.
+
+    Trả {ok, peers: [{ticker, pe, pb, roe, de}], avg: {pe, pb, roe, de}, n}.
+    Cache 1h theo ticker. Mỗi peer dùng fetch_financials đã cache 1h → lần 2
+    trở đi tức thì. Fail-safe: thiếu data peer nào → bỏ qua, không sập.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+    from core.constants import TICKERS, ticker_sector
+    from data.market import market_snapshot
+    sec = ticker_sector(ticker) or ''
+    if not sec:
+        return {'ok': False}
+    # Lấy snapshot 1 lần để có last_price + listed_share + sector
+    try:
+        msn_full = market_snapshot(tuple(TICKERS))
+    except Exception:
+        return {'ok': False}
+    if msn_full.empty:
+        return {'ok': False}
+    msn = msn_full[msn_full['sector'] == sec]
+    _fallback = False
+    # Nếu ngành quá hẹp (<2 mã, vd FPT là mã CNTT duy nhất) → fallback so với
+    # 6 mã BLUE-CHIP top vốn hóa toàn TICKERS — không lý tưởng (lệch ngành)
+    # nhưng vẫn có 1 benchmark để hình dung "FPT đang to/nhỏ so với nhóm dẫn dắt".
+    if len(msn) < 2:
+        _fallback = True
+        msn = msn_full.sort_values('market_cap_B', ascending=False).head(max_peers)
+        # Bảo đảm ticker hiện tại nằm trong tập (chèn nếu chưa có)
+        if ticker not in msn['ticker'].tolist():
+            msn = pd.concat([msn_full[msn_full['ticker'] == ticker], msn]).head(max_peers)
+    # Đưa ticker hiện tại lên đầu + giữ tối đa max_peers
+    _peers = [ticker] + [tk for tk in msn['ticker'].tolist()
+                         if tk != ticker][:max_peers - 1]
+    def _one(tk: str):
+        try:
+            row = msn[msn['ticker'] == tk]
+            if row.empty: return None
+            lp = float(row['last_price'].iloc[0])
+            ls = float(row['listed_share'].iloc[0])
+            fin = fetch_financials(tk)
+            if not fin.get('ok'): return None
+            kpi = compute_kpis(extract_series(fin), last_price_vnd=lp, listed_share=ls)
+            if not kpi.get('ok'): return None
+            return {'ticker': tk, 'pe': kpi['pe'], 'pb': kpi['pb'],
+                    'roe': kpi['roe'], 'de': kpi['debt_equity'],
+                    'mcap': kpi['market_cap']}
+        except Exception:
+            return None
+    with ThreadPoolExecutor(max_workers=min(6, len(_peers))) as ex:
+        results = list(ex.map(_one, _peers))
+    peers = [r for r in results if r is not None]
+    if not peers:
+        return {'ok': False}
+    # Trung bình ngành — dùng median để robust với outlier
+    import numpy as _np
+    def _med(field):
+        vs = [p[field] for p in peers if p[field] == p[field]]
+        return float(_np.median(vs)) if vs else float('nan')
+    return {
+        'ok': True, 'sector': sec, 'n': len(peers), 'peers': peers,
+        'fallback_bluechip': _fallback,
+        'avg': {'pe': _med('pe'), 'pb': _med('pb'),
+                'roe': _med('roe'), 'de': _med('de')},
     }

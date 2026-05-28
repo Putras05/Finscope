@@ -13,6 +13,11 @@ from pathlib import Path
 _STATE_FILE = Path(__file__).resolve().parent.parent / 'paper_state.json'
 _DEFAULT_CAPITAL = 100_000_000.0      # 100 triệu đồng
 
+# Phí + thuế HOSE phổ biến (CTCK retail) — sát thực tế để paper trade KHÔNG
+# bị lệch P&L so với giao dịch thật. Có thể chỉnh trong reset_state.
+_FEE_RATE = 0.0015                    # 0.15% phí khớp lệnh (cả mua + bán)
+_TAX_SELL = 0.0010                    # 0.10% thuế thu nhập (chỉ lệnh BÁN)
+
 
 def _empty_state(capital: float = _DEFAULT_CAPITAL) -> dict:
     return {
@@ -56,12 +61,19 @@ def reset_state(capital: float = _DEFAULT_CAPITAL) -> dict:
 
 
 def buy(state: dict, ticker: str, qty: int, price: float) -> tuple:
-    """Đặt lệnh MUA. Trả (state, ok, msg). Giá ở đơn vị ĐỒNG."""
+    """Đặt lệnh MUA. Trả (state, ok, msg). Giá ở đơn vị ĐỒNG.
+
+    Áp PHÍ MUA = qty × price × _FEE_RATE (0.15%) — trừ vào cash, KHÔNG cộng
+    vào avg_price (giữ P&L nội bộ đơn giản, phí coi như chi phí giao dịch).
+    """
     if qty <= 0:
         return state, False, 'Khối lượng phải > 0.'
     cost = qty * price
-    if cost > state['cash'] + 1e-6:
-        return state, False, f'Không đủ tiền: cần {cost:,.0f} đ, có {state["cash"]:,.0f} đ.'
+    fee  = cost * _FEE_RATE
+    total_out = cost + fee
+    if total_out > state['cash'] + 1e-6:
+        return state, False, (f'Không đủ tiền: cần {total_out:,.0f} đ '
+                              f'(gồm phí {fee:,.0f} đ), có {state["cash"]:,.0f} đ.')
     pos = state['positions'].get(ticker)
     if pos is None:
         new_avg = price
@@ -71,18 +83,25 @@ def buy(state: dict, ticker: str, qty: int, price: float) -> tuple:
         new_qty = pos['qty'] + qty
         new_avg = (pos['qty'] * pos['avg_price'] + qty * price) / new_qty
     state['positions'][ticker] = {'qty': int(new_qty), 'avg_price': float(new_avg)}
-    state['cash'] = float(state['cash'] - cost)
+    state['cash'] = float(state['cash'] - total_out)
     state['history'].append({
         'ts': _dt.datetime.now().isoformat(timespec='seconds'),
         'ticker': ticker, 'side': 'BUY', 'qty': int(qty),
-        'price': float(price), 'value': float(cost), 'realized': None,
+        'price': float(price), 'value': float(cost),
+        'fee': float(fee), 'tax': 0.0,
+        'realized': None,
     })
     save_state(state)
-    return state, True, f'Mua {qty} {ticker} @ {price:,.0f} đ ({cost:,.0f} đ).'
+    return state, True, (f'Mua {qty} {ticker} @ {price:,.0f} đ — gốc {cost:,.0f}, '
+                         f'phí {fee:,.0f} → tổng {total_out:,.0f} đ.')
 
 
 def sell(state: dict, ticker: str, qty: int, price: float) -> tuple:
-    """Đặt lệnh BÁN. Trả (state, ok, msg). Tính realized P&L theo avg_price."""
+    """Đặt lệnh BÁN. Trả (state, ok, msg). Tính realized P&L NET sau phí + thuế.
+
+    Phí 0.15% + Thuế 0.10% (HOSE) → tổng 0.25% trên giá trị bán. Realized P&L
+    = (price - avg_price) × qty - phí_bán - thuế_bán → con số NET giống thật.
+    """
     pos = state['positions'].get(ticker)
     if pos is None or pos['qty'] <= 0:
         return state, False, f'Không có vị thế {ticker}.'
@@ -90,23 +109,28 @@ def sell(state: dict, ticker: str, qty: int, price: float) -> tuple:
         return state, False, 'Khối lượng phải > 0.'
     if qty > pos['qty']:
         return state, False, f'Chỉ có {pos["qty"]} {ticker}, không đủ để bán {qty}.'
-    proceeds = qty * price
-    realized = (price - pos['avg_price']) * qty
+    proceeds_gross = qty * price
+    fee  = proceeds_gross * _FEE_RATE
+    tax  = proceeds_gross * _TAX_SELL
+    proceeds_net = proceeds_gross - fee - tax
+    realized = (price - pos['avg_price']) * qty - fee - tax
     pos['qty'] = int(pos['qty'] - qty)
     if pos['qty'] == 0:
         state['positions'].pop(ticker, None)
     else:
         state['positions'][ticker] = pos
-    state['cash'] = float(state['cash'] + proceeds)
+    state['cash'] = float(state['cash'] + proceeds_net)
     state['history'].append({
         'ts': _dt.datetime.now().isoformat(timespec='seconds'),
         'ticker': ticker, 'side': 'SELL', 'qty': int(qty),
-        'price': float(price), 'value': float(proceeds),
+        'price': float(price), 'value': float(proceeds_gross),
+        'fee': float(fee), 'tax': float(tax),
         'realized': float(realized),
     })
     save_state(state)
-    return state, True, (f'Bán {qty} {ticker} @ {price:,.0f} đ '
-                         f'(realized {realized:+,.0f} đ).')
+    return state, True, (f'Bán {qty} {ticker} @ {price:,.0f} đ — gốc {proceeds_gross:,.0f}, '
+                         f'phí+thuế {fee+tax:,.0f} → nhận {proceeds_net:,.0f} đ '
+                         f'(net P&L {realized:+,.0f}).')
 
 
 def equity_curve(state: dict) -> list:
@@ -214,6 +238,30 @@ def compute_stats(state: dict, current_prices: dict) -> dict:
     max_win = max((h['realized'] for h in wins), default=0.0)
     max_loss = min((h['realized'] for h in losses), default=0.0)
 
+    # ── KPI nâng cao từ equity_curve: Max Drawdown + Sharpe ratio ────────
+    # MDD: % rớt sâu nhất từ đỉnh equity tới đáy sau đó — đo rủi ro chịu được.
+    # Sharpe: trung bình return chia độ lệch chuẩn, annualized √252 — đo
+    # hiệu quả/rủi ro. Cần ≥ 3 điểm equity để tính ý nghĩa.
+    mdd = 0.0
+    sharpe = float('nan')
+    try:
+        curve = equity_curve(state)
+        if len(curve) >= 3:
+            import numpy as _np
+            eq = _np.array([c['equity'] for c in curve], float)
+            run_max = _np.maximum.accumulate(eq)
+            dd_pct  = (eq - run_max) / _np.maximum(run_max, 1.0) * 100.0
+            mdd = float(dd_pct.min())                 # ≤ 0 (rớt sâu nhất)
+            rets = _np.diff(eq) / _np.maximum(eq[:-1], 1.0)
+            if rets.std(ddof=0) > 0:
+                sharpe = float((rets.mean() / rets.std(ddof=0)) * (252 ** 0.5))
+    except Exception:
+        pass
+
+    # Tổng phí + thuế đã tốn — minh bạch chi phí giao dịch tích lũy
+    total_fees = sum(float(h.get('fee', 0) or 0) for h in state.get('history', []))
+    total_tax  = sum(float(h.get('tax', 0) or 0) for h in state.get('history', []))
+
     return {
         'cash': cash, 'holdings_value': holdings, 'equity': equity,
         'initial_capital': init,
@@ -225,5 +273,9 @@ def compute_stats(state: dict, current_prices: dict) -> dict:
         'win_rate': win_rate, 'n_wins': len(wins), 'n_losses': len(losses),
         'avg_win': avg_win, 'avg_loss': avg_loss,
         'max_win': max_win, 'max_loss': max_loss,
+        'max_drawdown_pct': mdd,
+        'sharpe_ratio': sharpe,
+        'total_fees': total_fees,
+        'total_tax':  total_tax,
         'positions_rows': pos_rows,
     }

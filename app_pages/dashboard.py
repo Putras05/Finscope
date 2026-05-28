@@ -308,6 +308,123 @@ def _render_dm_section(all_models, df, _T, is_en=False):
         f'</div>', unsafe_allow_html=True)
 
 
+def _render_fund_tech_divergence(ticker, ichi_code, ichi_score, _T, is_en=False):
+    """Card so sánh kết luận CƠ BẢN (P/E + ROE + D/E) vs KỸ THUẬT (Ichimoku).
+
+    Tính điểm cơ bản (-2 đến +2) từ P/E / ROE / D/E và điểm Ichimoku đã có,
+    rồi xác định 4 vùng:
+      - ĐỒNG THUẬN TĂNG: cả 2 đều dương
+      - ĐỒNG THUẬN GIẢM: cả 2 đều âm
+      - DIVERGE_TĂNG: cơ bản tốt, kỹ thuật xấu (chờ thoái lui → vào)
+      - DIVERGE_GIẢM: cơ bản xấu, kỹ thuật tốt (sóng đầu cơ — thận trọng)
+    Fail-safe: thiếu BCTC → caption nhẹ, không sập trang.
+    """
+    try:
+        from data.fundamental import fetch_financials, extract_series, compute_kpis
+        from data.market import market_snapshot
+        from core.constants import ticker_sector
+        _msn = market_snapshot((ticker,))
+        if _msn.empty:
+            return
+        _row = _msn.iloc[0]
+        _fin = fetch_financials(ticker)
+        _ext = extract_series(_fin)
+        _kpi = compute_kpis(_ext, last_price_vnd=_row['last_price'],
+                            listed_share=_row['listed_share'])
+        _pe  = _kpi.get('pe', float('nan'))
+        _roe = _kpi.get('roe', float('nan'))
+        _de  = _kpi.get('de',  float('nan'))
+    except Exception:
+        return
+
+    _is_bank = 'Ngân hàng' in (ticker_sector(ticker) or '')
+    # Tính điểm cơ bản từ 3 chỉ số (mỗi cái ±1):
+    _f_score = 0
+    if _pe == _pe:                                 # not NaN
+        if _is_bank:
+            _f_score += 1 if 5 <= _pe <= 10 else (-1 if (_pe > 15 or _pe < 3) else 0)
+        else:
+            _f_score += 1 if 8 <= _pe <= 15 else (-1 if (_pe > 22 or _pe < 5) else 0)
+    if _roe == _roe:
+        if _is_bank:
+            _f_score += 1 if _roe >= 15 else (-1 if _roe < 8 else 0)
+        else:
+            _f_score += 1 if _roe >= 15 else (-1 if _roe < 5 else 0)
+    if _de == _de:
+        if _is_bank:
+            _f_score += 1 if _de < 8 else (-1 if _de >= 12 else 0)
+        else:
+            _f_score += 1 if _de < 1 else (-1 if _de >= 2 else 0)
+    # ichi_score đã là -5..+5; normalize về -3..+3 để cùng tầm
+    _t_score = max(-3, min(3, ichi_score))
+    _f_bull = _f_score >= 1
+    _f_bear = _f_score <= -1
+    _t_bull = _t_score >= 1
+    _t_bear = _t_score <= -1
+
+    if _f_bull and _t_bull:
+        _verdict_code = 'agree_bull'; _col = '#16A34A'; _icon = '✓✓'
+    elif _f_bear and _t_bear:
+        _verdict_code = 'agree_bear'; _col = '#DC2626'; _icon = '✗✗'
+    elif _f_bull and _t_bear:
+        _verdict_code = 'diverge_value_trap'; _col = '#D97706'; _icon = '⚠'
+    elif _f_bear and _t_bull:
+        _verdict_code = 'diverge_momentum'; _col = '#D97706'; _icon = '⚠'
+    else:
+        _verdict_code = 'mixed'; _col = '#64748B'; _icon = '─'
+
+    _LABELS = {
+        'agree_bull':         ('Đồng thuận TĂNG — cơ bản + kỹ thuật cùng tích cực',
+                               'BOTH BULLISH — fundamental + technical agree'),
+        'agree_bear':         ('Đồng thuận GIẢM — cơ bản + kỹ thuật cùng tiêu cực',
+                               'BOTH BEARISH — fundamental + technical agree'),
+        'diverge_value_trap': ('Lệch chiều — Cơ bản TỐT nhưng Kỹ thuật ĐANG GIẢM (đợi xác nhận đáy)',
+                               'DIVERGENT — strong fundamentals, weak technicals (wait for trend)'),
+        'diverge_momentum':   ('Lệch chiều — Kỹ thuật MẠNH nhưng Cơ bản YẾU (sóng đầu cơ, thận trọng)',
+                               'DIVERGENT — strong momentum, weak fundamentals (caution)'),
+        'mixed':              ('Tín hiệu trung tính — chưa rõ chiều',
+                               'NEUTRAL — no clear direction'),
+    }
+    _label = _LABELS[_verdict_code][1 if is_en else 0]
+
+    def _pill(name, val_str, score_int):
+        _col_p = '#16A34A' if score_int > 0 else ('#DC2626' if score_int < 0 else '#64748B')
+        _bg_p  = ('rgba(22,163,74,.10)' if score_int > 0
+                  else ('rgba(220,38,38,.10)' if score_int < 0 else 'rgba(100,116,139,.10)'))
+        return (f'<span style="display:inline-flex;align-items:center;gap:6px;'
+                f'background:{_bg_p};color:{_col_p};font-weight:700;font-size:11px;'
+                f'padding:3px 10px;border-radius:14px">'
+                f'<b>{name}</b> {val_str}</span>')
+
+    _f_pill = _pill(('Cơ bản' if not is_en else 'Fundamental'),
+                    f'{_f_score:+d}/3', _f_score)
+    _t_pill = _pill(('Kỹ thuật' if not is_en else 'Technical'),
+                    f'{_t_score:+d}/3', _t_score)
+    _title = 'ĐỐI SÁNH CƠ BẢN vs KỸ THUẬT' if not is_en else 'FUNDAMENTAL vs TECHNICAL'
+
+    _hint = ''
+    if _verdict_code.startswith('diverge'):
+        _hint = (f'<div style="font-size:11px;color:{_T["text_muted"]};margin-top:8px;line-height:1.55">'
+                 f'{"Khi 2 phía lệch chiều, ưu tiên đợi xác nhận thay vì vội theo một bên." if not is_en else "When sides diverge, prefer to wait for confirmation rather than chase one side."}'
+                 f'</div>')
+
+    st.markdown(
+        f'<div style="background:{_T["bg_card"]};border:1px solid {_T["border"]};'
+        f'border-left:4px solid {_col};border-radius:12px;padding:14px 20px;'
+        f'margin:0 0 16px;box-shadow:{_T["shadow_md"]}">'
+        f'<div style="display:flex;align-items:center;justify-content:space-between;'
+        f'flex-wrap:wrap;gap:10px">'
+        f'<div style="display:flex;align-items:center;gap:10px">'
+        f'<span style="font-size:18px;color:{_col};font-weight:800">{_icon}</span>'
+        f'<span style="font-size:11px;font-weight:800;color:{_T["text_secondary"]};letter-spacing:1px">{_title}</span>'
+        f'<span style="display:inline-flex;align-items:center;gap:5px;'
+        f'background:{_col}1A;color:{_col};font-weight:800;font-size:12px;'
+        f'padding:4px 12px;border-radius:18px">{_label}</span>'
+        f'</div>'
+        f'<div style="display:flex;gap:8px;flex-wrap:wrap">{_f_pill}{_t_pill}</div>'
+        f'</div>{_hint}</div>', unsafe_allow_html=True)
+
+
 def _render_news_sentiment_card(ticker, _T, is_en=False):
     """Thẻ TÂM LÝ TIN TỨC — đọc RSS thị trường, chấm sentiment có trọng số.
 
@@ -835,6 +952,11 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
     # ── TÂM LÝ TIN TỨC THỊ TRƯỜNG (sentiment) — bổ trợ tín hiệu, fail-safe ──
     _render_news_sentiment_card(ticker, _T, _is_en_d)
+
+    # ── ĐỐI SÁNH CƠ BẢN vs KỸ THUẬT — phát hiện divergence ──────────────────
+    # Cơ bản TỐT + Kỹ thuật BÁN MẠNH (hoặc ngược lại) là vùng cần thận trọng:
+    # ưu tiên đợi xác nhận, không vội theo 1 phía.
+    _render_fund_tech_divergence(ticker, _ov_code, _score, _T, _is_en_d)
 
     st.markdown(f'<div class="sec-hdr">{t("dash.comparison")}</div>', unsafe_allow_html=True)
     _is_en_cmp = st.session_state.get('lang', 'VI') == 'EN'
