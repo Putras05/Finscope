@@ -153,7 +153,8 @@ div[data-testid="stButton"] > button:hover { transform: translateY(-3px) scale(1
         'Trần Huỳnh Nhã Trúc<span class="author-id">— C2300189</span>'
         '<span class="author-role">· Thành viên</span>',
         '<span class="author-email">Liên hệ nhóm trưởng: '
-        '<a href="mailto:thanhdanhgvt@gmail.com">thanhdanhgvt@gmail.com</a></span>',
+        '<a href="mailto:thanhdanhgvt@gmail.com">thanhdanhgvt@gmail.com</a> · '
+        '<a href="tel:+84931740509">0931 740 509</a></span>',
         '</div>',
         '</div>',
         '</div>',
