@@ -1,16 +1,17 @@
 """
-Trang "Tín hiệu & Cảnh báo Ichimoku" — hiển thị:
-  1. Kết luận tổng hợp (consensus score ±5)
-  2. Bốn tầng tín hiệu Ichimoku (Primary, Trading, Chikou, Future Kumo)
-  3. Biểu đồ Ichimoku Kinko Hyo
-  4. Ba đặc trưng dẫn xuất (TK Momentum, Cloud Distance, Chikou Momentum)
+Trang "Tín hiệu & Cảnh báo" — alerts dashboard đa chỉ báo + Ichimoku chi tiết.
 
-Toàn bộ logic dựa trên Ichimoku chuẩn Hosoda (1969) và các bài báo:
-Patel (2010), Gurrib (2016), Deng & Zhao (2021), Shrestha (2022).
-Xem data/ichimoku.py để biết chi tiết công thức và chứng minh anti-leak.
+Cấu trúc:
+  PHẦN 1 — Cảnh báo đang kích hoạt (Active Alerts):
+    RSI · MACD cross · Bollinger break · Stochastic · MA5/20 cross · Volume spike
+    · PSAR flip · ADX trend · Mẫu hình nến · Ichimoku consensus · Tâm lý tin tức
+  PHẦN 2 — Phân tích Ichimoku chi tiết (4 tầng + chart + 3 đặc trưng dẫn xuất).
+
+Ichimoku theo Hosoda (1969) — xem data/ichimoku.py cho công thức + anti-leak.
 """
 import streamlit as st
 import numpy as np
+import pandas as pd
 
 from core.i18n import t
 from charts.base import _PLOTLY_CONFIG
@@ -21,6 +22,9 @@ from data.ichimoku import (
     _donchian_mid, SENKOU_N, DISPLACE,
 )
 from charts.ichimoku import chart_ichimoku_plotly
+from data import technicals as TA
+from data.news import news_sentiment
+from app_pages.strategy import _compute_indicators
 
 
 # ── Bảng phân loại màu/icon — exact set lookup, không dùng substring ────────
@@ -75,6 +79,178 @@ def _sig_icon(code: str) -> str:
     # Neutral — em-dash char (không phải emoji)
     return ('<span style="display:inline-block;font-weight:700;'
             'font-family:monospace">—</span>')
+
+
+def _build_alerts(df, df_ichi, ns, ichi_score, ichi_overall_code, is_en=False) -> list:
+    """Quét toàn bộ chỉ báo + tin tức → trả list các cảnh báo ĐANG triggered.
+
+    Mỗi alert: {'cat', 'name', 'level' (info/warn/danger/success), 'msg', 'val'}.
+    """
+    out = []
+    d = _compute_indicators(df)
+    if len(d) < 2:
+        return out
+    last = d.iloc[-1]
+    prev = d.iloc[-2]
+
+    def _add(cat, name, level, msg, val=''):
+        out.append({'cat': cat, 'name': name, 'level': level, 'msg': msg, 'val': str(val)})
+
+    # ── RSI extremes ─────────────────────────────────────────────────────
+    rsi = last.get('RSI14', np.nan)
+    if rsi == rsi:
+        if rsi > 70:
+            _add('momentum',
+                 'RSI quá mua' if not is_en else 'RSI overbought',
+                 'danger',
+                 'RSI > 70 — rủi ro điều chỉnh giảm' if not is_en else 'RSI > 70 — pullback risk',
+                 f'{rsi:.1f}')
+        elif rsi < 30:
+            _add('momentum',
+                 'RSI quá bán' if not is_en else 'RSI oversold',
+                 'success',
+                 'RSI < 30 — khả năng bật lên' if not is_en else 'RSI < 30 — possible bounce',
+                 f'{rsi:.1f}')
+
+    # ── MACD signal cross (vừa giao cắt trong phiên này) ───────────────
+    if last['MACD'] > last['MACD_signal'] and prev['MACD'] <= prev['MACD_signal']:
+        _add('momentum',
+             'MACD giao cắt tăng (Golden)' if not is_en else 'MACD bullish cross (Golden)',
+             'success',
+             'MACD vừa cắt lên đường tín hiệu — đà tăng' if not is_en else 'MACD just crossed above signal — bullish momentum',
+             f'{last["MACD"]:.4f}')
+    elif last['MACD'] < last['MACD_signal'] and prev['MACD'] >= prev['MACD_signal']:
+        _add('momentum',
+             'MACD giao cắt giảm (Death)' if not is_en else 'MACD bearish cross (Death)',
+             'danger',
+             'MACD vừa cắt xuống — đà giảm' if not is_en else 'MACD just crossed below — bearish momentum',
+             f'{last["MACD"]:.4f}')
+
+    # ── Bollinger band break ───────────────────────────────────────────
+    if not np.isnan(last.get('BB_up', np.nan)):
+        if last['Close'] > last['BB_up']:
+            _add('volatility',
+                 'Vượt dải Bollinger trên' if not is_en else 'Above upper Bollinger',
+                 'warn',
+                 'Giá vượt biên trên — quá mua hoặc breakout' if not is_en else 'Above upper band — overbought or breakout',
+                 f'%B={last.get("BB_pctB",0):.2f}')
+        elif last['Close'] < last['BB_lo']:
+            _add('volatility',
+                 'Thủng dải Bollinger dưới' if not is_en else 'Below lower Bollinger',
+                 'warn',
+                 'Giá thủng biên dưới — quá bán hoặc breakdown' if not is_en else 'Below lower band — oversold or breakdown',
+                 f'%B={last.get("BB_pctB",0):.2f}')
+
+    # ── Stochastic %K, %D extremes ─────────────────────────────────────
+    stoch = TA.stochastic(df)
+    if len(stoch['k']) > 1:
+        k_last = stoch['k'][-1]; d_last = stoch['d'][-1]
+        if k_last == k_last and d_last == d_last:
+            if k_last > 80 and d_last > 80:
+                _add('momentum',
+                     'Stochastic quá mua' if not is_en else 'Stochastic overbought',
+                     'danger',
+                     '%K, %D > 80 — rủi ro đảo chiều' if not is_en else '%K, %D > 80 — reversal risk',
+                     f'{k_last:.0f}/{d_last:.0f}')
+            elif k_last < 20 and d_last < 20:
+                _add('momentum',
+                     'Stochastic quá bán' if not is_en else 'Stochastic oversold',
+                     'success',
+                     '%K, %D < 20 — khả năng đảo chiều tăng' if not is_en else '%K, %D < 20 — bullish reversal possible',
+                     f'{k_last:.0f}/{d_last:.0f}')
+
+    # ── MA5/MA20 cross (vừa cắt) ────────────────────────────────────────
+    if (prev['MA5'] <= prev['MA20'] and last['MA5'] > last['MA20']):
+        _add('trend',
+             'MA5 cắt lên MA20' if not is_en else 'MA5 crosses above MA20',
+             'success', 'Tín hiệu xu hướng ngắn hạn ĐẢO LÊN' if not is_en else 'Short-term trend FLIPS UP',
+             '')
+    elif (prev['MA5'] >= prev['MA20'] and last['MA5'] < last['MA20']):
+        _add('trend',
+             'MA5 cắt xuống MA20' if not is_en else 'MA5 crosses below MA20',
+             'danger', 'Tín hiệu xu hướng ngắn hạn ĐẢO XUỐNG' if not is_en else 'Short-term trend FLIPS DOWN',
+             '')
+
+    # ── Volume spike ─────────────────────────────────────────────────────
+    vr = float(last.get('Volume_ratio', 1) or 1)
+    if vr > 2.0:
+        _add('volume',
+             'Khối lượng đột biến' if not is_en else 'Volume spike',
+             'warn',
+             f'Volume gấp {vr:.1f}× trung bình 5 phiên' if not is_en else f'Volume {vr:.1f}× the 5-bar average',
+             f'×{vr:.1f}')
+
+    # ── ADX trend strength (>25 = strong) ──────────────────────────────
+    adx_arr = TA.adx(df)
+    if len(adx_arr):
+        a = adx_arr[-1]
+        if a == a and a > 25:
+            slope = float(df['Close'].iloc[-1] - df['Close'].iloc[-15]) if len(df) >= 15 else 0.0
+            _add('trend',
+                 ('Xu hướng MẠNH (ADX' + f' {a:.0f})') if not is_en else f'STRONG trend (ADX {a:.0f})',
+                 'info',
+                 ('Xu hướng tăng mạnh' if slope > 0 else 'Xu hướng giảm mạnh')
+                 if not is_en else ('Strong uptrend' if slope > 0 else 'Strong downtrend'),
+                 f'{a:.0f}')
+
+    # ── Parabolic SAR flip (vừa đổi vị trí) ────────────────────────────
+    psar = TA.parabolic_sar(df)
+    if len(psar) >= 2 and psar[-1] == psar[-1] and psar[-2] == psar[-2]:
+        was_above = psar[-2] > df['High'].iloc[-2]
+        now_above = psar[-1] > df['High'].iloc[-1]
+        if was_above and not now_above:
+            _add('trend',
+                 'Parabolic SAR đảo chiều TĂNG' if not is_en else 'Parabolic SAR flips UP',
+                 'success', 'Chấm SAR chuyển xuống dưới giá — xu hướng tăng' if not is_en else 'SAR moved below price — uptrend',
+                 '')
+        elif not was_above and now_above:
+            _add('trend',
+                 'Parabolic SAR đảo chiều GIẢM' if not is_en else 'Parabolic SAR flips DOWN',
+                 'danger', 'Chấm SAR chuyển lên trên giá — xu hướng giảm' if not is_en else 'SAR moved above price — downtrend',
+                 '')
+
+    # ── Mẫu hình nến (1-3 phiên gần nhất) ──────────────────────────────
+    pats = TA.candlestick_patterns(df, lookback=3)
+    if pats:
+        p = pats[-1]
+        if p['dir'] != 0:
+            _nm = p['name_en'] if is_en else p['name']
+            _add('pattern', _nm,
+                 'success' if p['dir'] > 0 else 'danger',
+                 (p['desc_en'] if is_en else p['desc']),
+                 '')
+
+    # ── Ichimoku consensus mạnh (|score| ≥ 3) ──────────────────────────
+    if abs(ichi_score) >= 3:
+        if is_en:
+            _ichi_nm = ('Strong Ichimoku ' +
+                        ('bullish' if ichi_score > 0 else 'bearish') + ' consensus')
+            _ichi_msg = f'All 4 Ichimoku tiers agree ({ichi_score:+d}/5)'
+        else:
+            _ichi_nm = ('Ichimoku đồng thuận MẠNH ' +
+                        ('tăng' if ichi_score > 0 else 'giảm'))
+            _ichi_msg = (f'4 tầng Ichimoku đồng thuận '
+                         f'{"tăng" if ichi_score>0 else "giảm"} ({ichi_score:+d}/5)')
+        _add('cycle', _ichi_nm,
+             'success' if ichi_score > 0 else 'danger',
+             _ichi_msg, f'{ichi_score:+d}')
+
+    # ── Tâm lý tin tức (PhoBERT + lexicon vote) ────────────────────────
+    if ns.get('ok'):
+        nv = ns.get('vote', 0)
+        if nv != 0:
+            src = 'PhoBERT AI' if ns.get('dl_used') else ('Từ điển' if not is_en else 'Lexicon')
+            if is_en:
+                _nws_nm = 'News sentiment ' + ('positive' if nv > 0 else 'negative')
+                _nws_msg = (f'{src} consensus {("up" if nv>0 else "down")} '
+                            f'across {ns.get("n", 0)} headlines')
+            else:
+                _nws_nm = 'Tâm lý tin tức ' + ('tích cực' if nv > 0 else 'tiêu cực')
+                _nws_msg = (f'{src} đồng thuận {("tăng" if nv>0 else "giảm")} '
+                            f'qua {ns.get("n", 0)} tin')
+            _add('news', _nws_nm, 'success' if nv > 0 else 'danger',
+                 _nws_msg, src)
+    return out
 
 
 def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, _T,
@@ -159,7 +335,76 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     }
 
     # ════════════════════════════════════════════════════════════════════
-    # PHẦN 1 — Kết luận tổng hợp
+    # PHẦN 1 — CẢNH BÁO ĐANG KÍCH HOẠT (đa chỉ báo)
+    # ════════════════════════════════════════════════════════════════════
+    _is_en_sig = st.session_state.get('lang', 'VI') == 'EN'
+    try:
+        _ns_for_alerts = news_sentiment(ticker)
+    except Exception:
+        _ns_for_alerts = {'ok': False, 'vote': 0}
+    alerts = _build_alerts(df, df_ichi, _ns_for_alerts, int(score),
+                            overall_code, is_en=_is_en_sig)
+
+    _alerts_subtitle = ('cảnh báo từ chỉ báo kỹ thuật, mẫu hình nến, Ichimoku & tin tức'
+                        if not _is_en_sig else
+                        'from technicals, candlestick, Ichimoku & news')
+    st.markdown(
+        f'<div class="sec-hdr">'
+        f'{"Cảnh báo đang kích hoạt" if not _is_en_sig else "Active Alerts"}'
+        f' <span style="font-size:11px;font-weight:600;color:{_muted};margin-left:8px">'
+        f'{len(alerts)} {_alerts_subtitle}'
+        f'</span></div>', unsafe_allow_html=True)
+
+    if not alerts:
+        st.markdown(
+            f'<div class="info-box" style="margin-bottom:18px;padding:14px 20px">'
+            f'<span style="color:{_T["success"]};font-weight:700">●</span> '
+            f'{"Không có cảnh báo nào đang kích hoạt — thị trường ổn định." if not _is_en_sig else "No active alerts — market is calm."}'
+            f'</div>', unsafe_allow_html=True)
+    else:
+        _LEVEL_CLR = {
+            'success': _T['success'], 'danger': _T['danger'],
+            'warn':    _T['warning'], 'info':   _T['accent'],
+        }
+        _LEVEL_BG = {
+            'success': 'rgba(22,163,74,0.10)', 'danger': 'rgba(220,38,38,0.10)',
+            'warn':    'rgba(217,119,6,0.10)', 'info':   'rgba(8,145,178,0.10)',
+        }
+        _CAT_LBL = {
+            'momentum':   ('Động lượng' if not _is_en_sig else 'Momentum'),
+            'trend':      ('Xu hướng'   if not _is_en_sig else 'Trend'),
+            'volatility': ('Biến động'  if not _is_en_sig else 'Volatility'),
+            'volume':     ('Khối lượng' if not _is_en_sig else 'Volume'),
+            'pattern':    ('Mẫu nến'    if not _is_en_sig else 'Pattern'),
+            'cycle':      ('Chu kỳ'     if not _is_en_sig else 'Cycle'),
+            'news':       ('Tin tức'    if not _is_en_sig else 'News'),
+        }
+        _cards = ''
+        # Sắp theo độ ưu tiên: danger > warn > success > info
+        _ORDER = {'danger': 0, 'warn': 1, 'success': 2, 'info': 3}
+        for a in sorted(alerts, key=lambda x: _ORDER.get(x['level'], 9)):
+            _c = _LEVEL_CLR.get(a['level'], _T['text_primary'])
+            _bg = _LEVEL_BG.get(a['level'], 'rgba(0,0,0,0.04)')
+            _cat = _CAT_LBL.get(a['cat'], a['cat'])
+            _val = (f'<span style="font-size:11px;font-weight:800;color:{_c};'
+                    f'background:{_bg};padding:2px 8px;border-radius:6px;'
+                    f'margin-left:8px">{a["val"]}</span>' if a['val'] else '')
+            _cards += (
+                f'<div style="flex:1 1 280px;min-width:240px;background:{_T["bg_card"]};'
+                f'border:1px solid {_T["border"]};border-left:4px solid {_c};border-radius:10px;'
+                f'padding:12px 14px">'
+                f'<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">'
+                f'<div style="font-size:10px;font-weight:700;color:{_muted};'
+                f'text-transform:uppercase;letter-spacing:.5px">{_cat}</div>{_val}</div>'
+                f'<div style="font-size:13px;font-weight:700;color:{_c};margin-top:5px">{a["name"]}</div>'
+                f'<div style="font-size:11px;color:{_fg_s};margin-top:3px;line-height:1.5">{a["msg"]}</div>'
+                f'</div>')
+        st.markdown(
+            f'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">{_cards}</div>',
+            unsafe_allow_html=True)
+
+    # ════════════════════════════════════════════════════════════════════
+    # PHẦN 2 — Kết luận tổng hợp Ichimoku
     # ════════════════════════════════════════════════════════════════════
     st.markdown(f'<div class="sec-hdr">{t("signal.summary_hdr")}</div>',
                 unsafe_allow_html=True)
