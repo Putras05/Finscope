@@ -1,6 +1,6 @@
 # FinScope — Phân tích & Dự báo Chứng khoán Đa mô hình
 
-> Sản phẩm dự thi **Cuộc thi Ứng dụng AI 2026**
+> Nền tảng phân tích kỹ thuật + dự báo + đọc hiểu tin tức cho HOSE.
 
 Ứng dụng Streamlit phân tích & dự báo giá cổ phiếu **HOSE** bằng **8 mô hình
 thống kê/học máy + mô hình Kết hợp**, kèm **khoảng tin cậy**, **kiểm định

@@ -124,7 +124,7 @@ div[data-testid="stButton"] > button:hover { transform: translateY(-3px) scale(1
         '</div>',
         f'<img src="data:image/png;base64,{khoa_b64}" alt="Faculty"/>',
         '</div>',
-        '<div class="splash-badge">Cuộc thi Ứng dụng Trí tuệ Nhân tạo · 2026</div>',
+        '<div class="splash-badge">Phân tích Chứng khoán Đa mô hình · 2026</div>',
         '<div class="splash-title">',
         ('<span style="font-size:46px;font-weight:800;color:#1E40AF;letter-spacing:-1.5px;'
          'display:inline-flex;align-items:center;gap:14px;justify-content:center">'

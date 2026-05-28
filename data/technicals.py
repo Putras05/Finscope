@@ -237,6 +237,48 @@ def parabolic_sar(df: pd.DataFrame, af0: float = 0.02, af_step: float = 0.02,
     return sar
 
 
+# ── Stochastic Oscillator (%K, %D) — Lane 1957 ──────────────────────────────
+def stochastic(df: pd.DataFrame, k: int = 14, d: int = 3) -> dict:
+    """Stochastic Oscillator: %K=(C-Ln)/(Hn-Ln)·100; %D=SMA(%K,d).
+
+    %K>80 quá mua, <20 quá bán. Trả {'k', 'd'} (np.ndarray)."""
+    H = df['High'].rolling(k, min_periods=k).max()
+    L = df['Low'].rolling(k, min_periods=k).min()
+    denom = (H - L).replace(0, np.nan)
+    K = (df['Close'] - L) / denom * 100.0
+    D = K.rolling(d, min_periods=d).mean()
+    return {'k': K.values, 'd': D.values}
+
+
+# ── ADX (Average Directional Index) — Wilder 1978: cường độ xu hướng ────────
+def adx(df: pd.DataFrame, n: int = 14) -> np.ndarray:
+    """ADX: cường độ xu hướng (KHÔNG phụ thuộc chiều). >25 trend rõ, <20 ngang.
+
+    Tính qua +DI, -DI, DX → ADX = RMA(DX) (smoothing Wilder).
+    """
+    H = df['High'].astype(float); L = df['Low'].astype(float); C = df['Close'].astype(float)
+    up = H.diff(); dn = -L.diff()
+    plus_dm  = ((up > dn) & (up > 0)).astype(float) * up.clip(lower=0)
+    minus_dm = ((dn > up) & (dn > 0)).astype(float) * dn.clip(lower=0)
+    prev_c = C.shift(1)
+    tr = pd.concat([(H - L), (H - prev_c).abs(), (L - prev_c).abs()], axis=1).max(axis=1)
+    atr  = tr.ewm(alpha=1 / n, adjust=False, min_periods=n).mean()
+    p_di = 100 * (plus_dm.ewm(alpha=1 / n, adjust=False, min_periods=n).mean() / atr.replace(0, np.nan))
+    m_di = 100 * (minus_dm.ewm(alpha=1 / n, adjust=False, min_periods=n).mean() / atr.replace(0, np.nan))
+    dx = 100 * (p_di - m_di).abs() / (p_di + m_di).replace(0, np.nan)
+    return dx.ewm(alpha=1 / n, adjust=False, min_periods=n).mean().values
+
+
+# ── OBV (On-Balance Volume) — Granville 1963: xác nhận xu hướng ─────────────
+def obv(df: pd.DataFrame) -> np.ndarray:
+    """OBV: tổng tích lũy Volume theo chiều giá (giá tăng → +V, giảm → −V).
+
+    OBV tăng + giá tăng → xác nhận. Phân kỳ OBV-giá → cảnh báo đảo chiều.
+    """
+    sign = np.sign(df['Close'].diff().fillna(0)).values
+    return np.cumsum(sign * df['Volume'].astype(float).values)
+
+
 # ── Mẫu hình nến (candlestick patterns) ─────────────────────────────────────
 def candlestick_patterns(df: pd.DataFrame, lookback: int = 12) -> list:
     """Nhận dạng các mẫu hình nến phổ biến trong `lookback` phiên gần nhất.

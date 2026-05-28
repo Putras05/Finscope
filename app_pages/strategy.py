@@ -166,10 +166,10 @@ def _technical_analysis_section(df, ticker, _T, is_en):
     # Hàng 2: mẫu nến + VWAP + PSAR (mặc định tắt VWAP/PSAR cho gọn)
     c5, c6, c7, _, _ = st.columns([1, 1, 1, 1, 1.3])
     _pat  = c5.toggle(('Mẫu nến' if not is_en else 'Patterns'),    value=True,  key=f'ta_pat_{ticker}')
-    _vwap = c6.toggle('VWAP',                                       value=False, key=f'ta_vwap_{ticker}',
+    _vwap = c6.toggle('VWAP',                                       value=True,  key=f'ta_vwap_{ticker}',
                       help=('Giá trung bình theo khối lượng 20 phiên'
                             if not is_en else 'Volume-weighted average price (20)'))
-    _psar = c7.toggle('Parabolic SAR',                              value=False, key=f'ta_psar_{ticker}',
+    _psar = c7.toggle('Parabolic SAR',                              value=True,  key=f'ta_psar_{ticker}',
                       help=('Chấm dừng lỗ / điểm đảo chiều (Wilder 1978)'
                             if not is_en else 'Stop-and-Reverse points (Wilder 1978)'))
 
@@ -342,7 +342,41 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     except Exception:
         _pat_vote, _pat_name = 0, None
 
-    # ── Tổng hợp phiếu ──────────────────────────────────────────────────
+    # ── Stochastic / ADX / OBV — 3 chỉ báo cổ điển bổ sung ──────────────
+    try:
+        from data import technicals as _TA2
+        _stoch = _TA2.stochastic(df)
+        _k = float(_stoch['k'][-1]); _d_ = float(_stoch['d'][-1])
+        if _k != _k:               # NaN guard
+            _stoch_vote = 0
+        elif _k < 30 and _d_ < 30:
+            _stoch_vote = 1        # quá bán → cơ hội bật lên
+        elif _k > 70 and _d_ > 70:
+            _stoch_vote = -1       # quá mua → rủi ro
+        else:
+            _stoch_vote = 0
+    except Exception:
+        _stoch_vote = 0
+    try:
+        _adx_arr = _TA2.adx(df); _adx_v = float(_adx_arr[-1])
+        # ADX kết hợp slope giá: trend MẠNH (>20) + slope dương → +1; ngược lại
+        _slope14 = float(df['Close'].iloc[-1] - df['Close'].iloc[-15]) if len(df) >= 15 else 0.0
+        if _adx_v == _adx_v and _adx_v > 20:
+            _adx_vote = 1 if _slope14 > 0 else -1
+        else:
+            _adx_vote = 0          # trend yếu → không bỏ phiếu
+    except Exception:
+        _adx_v = float('nan'); _adx_vote = 0
+    try:
+        _obv_arr = _TA2.obv(df)
+        if len(_obv_arr) >= 15:
+            _obv_vote = 1 if _obv_arr[-1] > _obv_arr[-15] else -1
+        else:
+            _obv_vote = 0
+    except Exception:
+        _obv_vote = 0
+
+    # ── Tổng hợp phiếu (12 phiếu — đầy đủ bộ chỉ báo cổ điển) ──────────
     tv = _tech_votes(last)
     votes = [
         ('Xu hướng (MA50)' if not is_en else 'Trend (MA50)', tv['trend']),
@@ -350,6 +384,9 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         ('MACD', tv['macd']),
         ('RSI14', tv['rsi']),
         ('Bollinger %B', tv['bollinger']),
+        ('Stochastic', _stoch_vote),
+        ('ADX' + (f' ({_adx_v:.0f})' if _adx_v == _adx_v else ''), _adx_vote),
+        ('OBV', _obv_vote),
         ('Ichimoku', _ichi_vote),
         (('Mẫu hình nến' if not is_en else 'Candlestick') + (f' · {_pat_name.split(" (")[0]}' if _pat_name else ''), _pat_vote),
         ('Đồng thuận dự báo' if not is_en else 'Forecast consensus', _fc_vote),
@@ -357,9 +394,10 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     ]
     score = sum(v for _, v in votes)
     n_votes = len(votes)
-    if score >= 3:
+    # Ngưỡng ±4 trên tổng 12 phiếu (~33% đồng thuận ròng) — giữ tín hiệu chắc tay.
+    if score >= 4:
         sig_code, sig_lbl, sig_col = 'buy', ('MUA' if not is_en else 'BUY'), '#16A34A'
-    elif score <= -3:
+    elif score <= -4:
         sig_code, sig_lbl, sig_col = 'sell', ('BÁN' if not is_en else 'SELL'), '#DC2626'
     else:
         sig_code, sig_lbl, sig_col = 'hold', ('GIỮ / QUAN SÁT' if not is_en else 'HOLD / WATCH'), '#D97706'

@@ -28,11 +28,13 @@ _TICKER_ORDER = _DEFAULT_TOP + sorted(
 _PAGE_KEYS = [
     'Dashboard Tổng quan', 'Phân tích Chi tiết', 'Mô hình Nâng cao',
     'Chiến lược Giao dịch', 'Tin tức Thị trường', 'Tín hiệu & Cảnh báo',
-    'Lịch sử & Dữ liệu', 'Danh mục Đầu tư', 'Hướng dẫn Sử dụng',
+    'Lịch sử & Dữ liệu', 'Danh mục Đầu tư', 'Giao dịch Demo',
+    'Hướng dẫn Sử dụng',
 ]
 _ICONS = [
     'speedometer2', 'graph-up-arrow', 'bezier2', 'bullseye', 'newspaper',
-    'activity', 'clock-history', 'briefcase', 'book-half',
+    'activity', 'clock-history', 'briefcase', 'cash-stack',
+    'book-half',
 ]
 
 # Logo FinScope — kính soi tài chính (ui/logo.py), không dùng emoji.
@@ -56,7 +58,7 @@ def render_topbar() -> tuple:
         f"<span style='font-size:12px;color:#64748B;font-style:italic'>{t('app.tagline')}</span>"
         f"<span style='font-size:11px;font-weight:600;color:#64748B;"
         f"background:#EFF6FF;border:1px solid #DBEAFE;padding:3px 10px;border-radius:999px'>"
-        f"{'AI Application Contest 2026' if _is_en else 'Cuộc thi Ứng dụng AI 2026'}</span>"
+        f"{'Multi-model Stock Analysis · 2026' if _is_en else 'Phân tích Chứng khoán Đa mô hình · 2026'}</span>"
         f"</div>"
         f"<span style='font-size:11px;color:#94A3B8'>Nguyễn Thành Danh · Trần Huỳnh Nhã Trúc</span>"
         f"</div>", unsafe_allow_html=True)
@@ -65,7 +67,8 @@ def render_topbar() -> tuple:
     _labels = [
         t('nav.dashboard'), t('nav.analysis'),  t('nav.advanced'),
         t('nav.strategy'),  t('nav.news'),      t('nav.signals'),
-        t('nav.history'),   t('nav.portfolio'), t('nav.guide'),
+        t('nav.history'),   t('nav.portfolio'), t('nav.paper'),
+        t('nav.guide'),
     ]
     if '_page_key' not in st.session_state:
         st.session_state['_page_key'] = 'Dashboard Tổng quan'

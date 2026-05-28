@@ -33,7 +33,7 @@ def render_sidebar() -> tuple:
             f"<div style='font-size:15px;font-weight:800;color:#FFFFFF;"
             f"letter-spacing:0.5px'>{t('app.title')}</div>"
             f"<div style='font-size:10px;font-weight:600;color:rgba(191,219,254,0.75);"
-            f"letter-spacing:1px;margin-top:5px;text-transform:uppercase'>Cuộc thi Ứng dụng AI 2026</div>"
+            f"letter-spacing:1px;margin-top:5px;text-transform:uppercase'>{t('app.tagline')}</div>"
             f"</div>", unsafe_allow_html=True)
         st.markdown("<hr style='border-color:rgba(255,255,255,0.12);margin:0 0 6px'/>",
                     unsafe_allow_html=True)

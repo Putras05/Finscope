@@ -263,6 +263,9 @@ elif page == 'Lịch sử & Dữ liệu':
 elif page == 'Danh mục Đầu tư':
     from app_pages import portfolio as _pg_port
     _pg_port.render(*_args)
+elif page == 'Giao dịch Demo':
+    from app_pages import paper as _pg_paper
+    _pg_paper.render(*_args)
 elif page == 'Hướng dẫn Sử dụng':
     from app_pages import guide as _pg_guide
     _pg_guide.render(*_args)

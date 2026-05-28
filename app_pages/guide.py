@@ -20,9 +20,9 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         {'User Guide' if _is_en else 'Hướng dẫn Sử dụng'}
       </div>
       <div style="font-size:13px;color:{_T['banner_subtext']};margin-top:4px">
-        {'FinScope · Multi-model Stock Analysis & Forecasting · AI Application Contest 2026'
+        {'FinScope · Multi-model Stock Analysis & Forecasting'
          if _is_en else
-         'FinScope · Phân tích & Dự báo Chứng khoán Đa mô hình · Cuộc thi Ứng dụng AI 2026'}
+         'FinScope · Phân tích & Dự báo Chứng khoán Đa mô hình'}
       </div>
     </div>
   </div>
@@ -344,8 +344,8 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     st.markdown(f"""
 <div style="text-align:center;margin-top:20px;padding:14px;
             color:{_T['text_muted']};font-size:11px">
-  {'Hệ thống phát triển cho Cuộc thi Ứng dụng AI 2026 · FinScope · Không phải lời khuyên đầu tư'
+  {'FinScope · Hệ thống phân tích & dự báo chứng khoán đa mô hình · Không phải lời khuyên đầu tư'
    if not _is_en else
-   'Built for the AI Application Contest 2026 · FinScope · Not investment advice'}
+   'FinScope · Multi-model stock analysis & forecasting system · Not investment advice'}
 </div>
 """, unsafe_allow_html=True)

@@ -10,6 +10,9 @@
 .chat_history.json
 .chatbot_cache.json
 
+# Paper trading state — sổ giao dịch ảo riêng từng máy
+paper_state.json
+
 # ═══════════════════════════════════════════════════════════════
 # Python
 # ═══════════════════════════════════════════════════════════════
