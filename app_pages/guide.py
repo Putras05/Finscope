@@ -118,17 +118,19 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         _guide_card(_IC_PORT, '5. Danh mục Đầu tư' if not _is_en else '5. Investment Portfolio',
                     '#10B981', f"""
 <b style="color:{_T['text_primary']}">{'Mục đích:' if not _is_en else 'Purpose:'}</b>
-{'So sánh hiệu quả dự báo và rủi ro của 3 cổ phiếu.'
- if not _is_en else 'Compare forecast performance and risk across 3 stocks.'}<br><br>
+{'So sánh hiệu quả dự báo và rủi ro của <b>2–6 cổ phiếu</b> tuỳ chọn.'
+ if not _is_en else 'Compare forecast performance and risk across <b>2–6 selectable stocks</b>.'}<br><br>
 
 <b style="color:{_T['text_primary']}">{'Nội dung:' if not _is_en else 'Content:'}</b><br>
-{'• Biểu đồ hiệu suất chuẩn hóa 3 mã (Base = 100) — so sánh tương đối<br>'
- '• Bảng MAPE · RMSE · MAE · R²adj cho cả 3 mô hình × 3 mã<br>'
- '• Card sparkline + thống kê Return (mean/std/min/max/up_days) cho mỗi mã'
+{'• Card dự báo phiên tới mỗi mã (AR · MLR · ARIMA + <b>FinScope Ensemble</b>)<br>'
+ '• Biểu đồ hiệu suất chuẩn hóa (Base = 100) — so sánh tương đối<br>'
+ '• Bảng MAPE · RMSE · MAE · R²adj cho 4 mô hình × mỗi mã (đánh dấu mô hình tốt nhất)<br>'
+ '• Thống kê Return (mean/std/min/max/up_days) cho mỗi mã'
  if not _is_en else
+ '• Per-ticker next-session forecast cards (AR · MLR · ARIMA + <b>FinScope Ensemble</b>)<br>'
  '• Normalized performance chart (Base = 100) — relative comparison<br>'
- '• MAPE · RMSE · MAE · R²adj table for 3 models × 3 tickers<br>'
- '• Sparkline cards + Return stats (mean/std/min/max/up_days) per ticker'}
+ '• MAPE · RMSE · MAE · R²adj table for 4 models × each ticker (best model marked)<br>'
+ '• Return stats (mean/std/min/max/up_days) per ticker'}
 """)
 
         _guide_card('newspaper', 'Tin tức & Đọc hiểu' if not _is_en else 'News & AI Reading',

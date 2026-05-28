@@ -21,14 +21,30 @@ def _build_ticker_bundle(tk, train_ratio, p):
     mlr_r  = run_mlr  (tk, train_ratio, p=p)
     cart_r = run_arima(tk, train_ratio, p=p)   # model-3 slot = ARIMA (key giữ 'cart')
     _k3 = sum(cart_r.get('order', (p, 0, 0))) + 1
+    m_ar   = calc_metrics(ar_r['yte'],   ar_r['pte'],   k=p)
+    m_mlr  = calc_metrics(mlr_r['yte'],  mlr_r['pte'],  k=3 * p)
+    m_cart = calc_metrics(cart_r['yte'], cart_r['pte'], k=_k3)
+    # FinScope Ensemble — gộp 3 mô hình lõi (trọng số ∝ 1/MAPE); DERIVED,
+    # không train thêm nên gần như miễn phí. Giữ mô hình kết hợp xuất hiện
+    # nhất quán trên toàn app (kể cả so sánh đa mã).
+    from models.ensemble import build_ensemble
+    ens_r = build_ensemble([
+        {'name': 'AR',    'res': ar_r,   'mape': m_ar['MAPE']},
+        {'name': 'MLR',   'res': mlr_r,  'mape': m_mlr['MAPE']},
+        {'name': 'ARIMA', 'res': cart_r, 'mape': m_cart['MAPE']},
+    ], d)
+    m_ens = (calc_metrics(ens_r['yte'], ens_r['pte'], k=2)
+             if ens_r is not None else None)
     return tk, {
         'data':   d,
         'ar':     ar_r,
         'mlr':    mlr_r,
         'cart':   cart_r,
-        'm_ar':   calc_metrics(ar_r['yte'],   ar_r['pte'],   k=p),
-        'm_mlr':  calc_metrics(mlr_r['yte'],  mlr_r['pte'],  k=3 * p),
-        'm_cart': calc_metrics(cart_r['yte'], cart_r['pte'], k=_k3),
+        'ens':    ens_r,
+        'm_ar':   m_ar,
+        'm_mlr':  m_mlr,
+        'm_cart': m_cart,
+        'm_ens':  m_ens,
     }
 
 
@@ -78,9 +94,11 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     all_ar1    = {tk: _bundle[tk]['ar']     for tk in sel}
     all_mlr    = {tk: _bundle[tk]['mlr']    for tk in sel}
     all_cart   = {tk: _bundle[tk]['cart']   for tk in sel}
+    all_ens    = {tk: _bundle[tk]['ens']    for tk in sel}
     all_m_ar1  = {tk: _bundle[tk]['m_ar']   for tk in sel}
     all_m_mlr  = {tk: _bundle[tk]['m_mlr']  for tk in sel}
     all_m_cart = {tk: _bundle[tk]['m_cart'] for tk in sel}
+    all_m_ens  = {tk: _bundle[tk]['m_ens']  for tk in sel}
 
     _kpi_cols = st.columns(4)
     _ret_ytd = {}
@@ -159,6 +177,8 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         np_ar1  = all_ar1[tk]['next_pred']
         np_mlr  = all_mlr[tk]['next_pred']
         np_cart = all_cart[tk]['next_pred']
+        _ens_tk = all_ens[tk]
+        np_ens  = _ens_tk['next_pred'] if _ens_tk is not None else float('nan')
         _r_tk   = float(T_tk['Return'])
         _rc_tk  = '#1B6B2F' if _r_tk >= 0 else '#C62828'
         _ra_tk  = '▲' if _r_tk >= 0 else '▼'
@@ -168,6 +188,18 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         p1 = (np_ar1  - _base_tk) / _base_tk * 100
         p2 = (np_mlr  - _base_tk) / _base_tk * 100
         p3 = (np_cart - _base_tk) / _base_tk * 100
+        # Dải Ensemble (mô hình kết hợp) — nổi bật bên dưới 3 mô hình lõi
+        if np_ens == np_ens:   # not NaN
+            _pe = (np_ens - _base_tk) / _base_tk * 100
+            _ens_strip = (
+                f'<div style="margin-top:8px;background:linear-gradient(135deg,#0F766E,#0891B2);'
+                f'border-radius:8px;padding:7px 10px;display:flex;justify-content:space-between;'
+                f'align-items:center;color:#fff">'
+                f'<span style="font-size:10px;font-weight:800;letter-spacing:.3px">FinScope Ensemble</span>'
+                f'<span style="font-size:13px;font-weight:800">{np_ens*1000:,.0f} '
+                f'<span style="font-size:11px;opacity:.9">({_pe:+.2f}%)</span></span></div>')
+        else:
+            _ens_strip = ''
         col_w.markdown(
             f'<div style="background:{_T["bg_card"]};border-radius:14px;padding:16px 18px;'
             f'box-shadow:{_T["shadow_md"]};border:1px solid {_T["border"]};border-top:5px solid {CLR[tk]}">'
@@ -201,7 +233,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             f'<div style="font-size:9px;color:{_T["text_secondary"]};font-weight:700">ARIMA</div>'
             f'<div style="font-size:13px;font-weight:700;color:{_T["text_primary"]}">{np_cart*1000:,.0f}</div>'
             f'<div style="font-size:11px;font-weight:600;color:{_pct_col(p3)}">{p3:+.2f}%</div></div>'
-            f'</div></div>', unsafe_allow_html=True)
+            f'</div>{_ens_strip}</div>', unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -219,9 +251,17 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     _MUTED = _T['text_muted']
     _TK_COLORS = get_clr(_T)
 
+    def _models_of(tk):
+        lst = [(f'AR({ar_order})', all_m_ar1[tk]),
+               ('MLR', all_m_mlr[tk]),
+               ('ARIMA', all_m_cart[tk])]
+        if all_m_ens[tk] is not None:
+            lst.append(('FinScope Ensemble', all_m_ens[tk]))
+        return lst
+
     _best_idx = {}
     for tk in sel:
-        mapes = [all_m_ar1[tk]['MAPE'], all_m_mlr[tk]['MAPE'], all_m_cart[tk]['MAPE']]
+        mapes = [md['MAPE'] for _, md in _models_of(tk)]
         _best_idx[tk] = int(np.argmin(mapes))
 
     _th = (f'background:{_BGH};color:{_FGS};font-size:11px;font-weight:700;'
@@ -241,15 +281,14 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
     _rows_html = ''
     for tk in sel:
-        for i, (mn, md) in enumerate([(f'AR({ar_order})', all_m_ar1[tk]),
-                                       ('MLR',             all_m_mlr[tk]),
-                                       ('ARIMA', all_m_cart[tk])]):
+        _mods = _models_of(tk)
+        for i, (mn, md) in enumerate(_mods):
             is_best = (i == _best_idx[tk])
             row_bg  = f'background:{_ACC}18' if is_best else f'background:{_BG}'
             bold    = 'font-weight:700' if is_best else ''
             tick_cell = ''
             if i == 0:
-                tick_cell = (f'<td rowspan="3" style="{_td_base};background:{_BGH};vertical-align:middle;'
+                tick_cell = (f'<td rowspan="{len(_mods)}" style="{_td_base};background:{_BGH};vertical-align:middle;'
                              f'font-weight:800;font-size:14px;color:{_TK_COLORS[tk]};'
                              f'border-right:2px solid {_BRD};text-align:center">{tk}</td>')
             _best_marker = _svg_star if is_best else ''
