@@ -25,6 +25,7 @@ from charts.ichimoku import chart_ichimoku_plotly
 from data import technicals as TA
 from data.news import news_sentiment
 from app_pages.strategy import _compute_indicators
+from charts.technicals import chart_technical
 
 
 # ── Bảng phân loại màu/icon — exact set lookup, không dùng substring ────────
@@ -631,7 +632,32 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             f'</div>', unsafe_allow_html=True)
 
     # ════════════════════════════════════════════════════════════════════
-    # PHẦN 3 — Kết luận tổng hợp Ichimoku
+    # PHẦN 3 — BIỂU ĐỒ KỸ THUẬT TỔNG HỢP (multi-indicator, không chỉ Ichimoku)
+    # ════════════════════════════════════════════════════════════════════
+    st.markdown(
+        f'<div class="sec-hdr">'
+        f'{"Biểu đồ kỹ thuật tổng hợp" if not _is_en_sig else "Comprehensive technical chart"}'
+        f' <span style="font-size:11px;font-weight:600;color:{_muted};margin-left:8px">'
+        f'{"Nến + S/R + Fibonacci + Kênh + Sóng (ZigZag) + Mẫu nến + VWAP + Parabolic SAR (180 phiên)" if not _is_en_sig else "Candles + S/R + Fibonacci + Channel + Waves (ZigZag) + Patterns + VWAP + Parabolic SAR (180 bars)"}'
+        f'</span></div>', unsafe_allow_html=True)
+    try:
+        _fig_tech = chart_technical(
+            df, ticker, _T, window=180,
+            show_sr=True, show_fib=True, show_channel=True,
+            show_zigzag=True, show_patterns=True,
+            show_vwap=True, show_psar=True,
+            is_en=_is_en_sig,
+        )
+        st.plotly_chart(_fig_tech, use_container_width=True,
+                        config={**_PLOTLY_CONFIG, 'scrollZoom': True,
+                                'toImageButtonOptions': {
+                                    **_PLOTLY_CONFIG['toImageButtonOptions'],
+                                    'filename': f'{ticker}_technical_signals'}})
+    except Exception as _e:
+        st.caption(f'⚠ {_e}')
+
+    # ════════════════════════════════════════════════════════════════════
+    # PHẦN 4 — Kết luận tổng hợp Ichimoku (chuyên sâu)
     # ════════════════════════════════════════════════════════════════════
     st.markdown(f'<div class="sec-hdr">{t("signal.summary_hdr")}</div>',
                 unsafe_allow_html=True)
