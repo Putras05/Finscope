@@ -15,19 +15,28 @@ import numpy as np
 # Các tên dòng (item) cần trích ra từ báo cáo. Map: key nội bộ → list các
 # pattern (case-insensitive) trong cột 'item' của vnstock.
 _INC_MAP = {
-    'revenue':       ['Doanh thu thuần'],
-    'gross_profit':  ['Lợi nhuận gộp'],
+    # 'Doanh thu thuần' (DN thường) | 'Tổng thu nhập hoạt động' (ngân hàng)
+    'revenue':       ['Doanh thu thuần', 'Tổng thu nhập hoạt động'],
+    # 'Lợi nhuận gộp' (DN) | bank dùng "LN thuần HĐ trước trích lập" làm gross-tương đương
+    'gross_profit':  ['Lợi nhuận gộp', 'Lợi nhuận thuần hoạt động trước khi trích lập dự phòng'],
     'op_profit':     ['Lãi/(lỗ) từ hoạt động kinh doanh', 'Lợi nhuận thuần từ hoạt động kinh doanh'],
-    'pretax':        ['Lãi/(lỗ) trước thuế', 'Lợi nhuận trước thuế'],
-    'net_income':    ['Lợi nhuận của Cổ đông của Công ty mẹ', 'Lợi nhuận sau thuế'],
+    # bank: 'Tổng lợi nhuận/lỗ trước thuế' | DN: 'Lãi/(lỗ) trước thuế'
+    'pretax':        ['Tổng lợi nhuận/lỗ trước thuế', 'Lãi/(lỗ) trước thuế', 'Lợi nhuận trước thuế'],
+    # bank: 'Cổ đông của Công ty mẹ' | DN: 'Lợi nhuận của Cổ đông của Công ty mẹ'
+    # Pattern ngắn 'Cổ đông của Công ty mẹ' contains-match cả 2 → đúng cho cả 2.
+    'net_income':    ['Cổ đông của Công ty mẹ', 'Lợi nhuận sau thuế'],
     'eps':           ['Lãi cơ bản trên cổ phiếu', 'EPS'],
 }
 _BAL_MAP = {
-    'total_assets':  ['TỔNG CỘNG TÀI SẢN', 'Tổng cộng tài sản'],
-    'equity':        ['Vốn chủ sở hữu'],
-    'total_debt':    ['NỢ PHẢI TRẢ', 'Tổng nợ phải trả'],
-    'short_debt':    ['Nợ ngắn hạn'],
-    'long_debt':     ['Nợ dài hạn'],
+    # DN: 'TỔNG CỘNG TÀI SẢN' | bank: 'TỔNG TÀI SẢN' — match cả 2 qua substring 'TÀI SẢN'... quá rộng;
+    # nên giữ 2 pattern riêng, _find_row trả pattern khớp ĐẦU TIÊN.
+    'total_assets':  ['TỔNG CỘNG TÀI SẢN', 'TỔNG TÀI SẢN'],
+    'equity':        ['Vốn chủ sở hữu'],   # contains-case-insensitive matches cả 'VỐN CHỦ SỞ HỮU'
+    # 'NỢ PHẢI TRẢ' contains-match cả 'NỢ PHẢI TRẢ' (DN) và 'TỔNG NỢ PHẢI TRẢ' (bank).
+    'total_debt':    ['NỢ PHẢI TRẢ'],
+    'short_debt':    ['Nợ ngắn hạn'],         # DN: có · bank: NaN (chấp nhận)
+    'long_debt':     ['Nợ dài hạn'],          # DN: có · bank: NaN
+    # bank không có 'Tiền và tương đương tiền' theo đúng nghĩa → NaN, chấp nhận.
     'cash':          ['Tiền và tương đương tiền'],
 }
 
@@ -128,8 +137,17 @@ def compute_kpis(ext: dict, last_price_vnd: float = 0.0,
     roa          = (ni_ttm / assets * 100) if assets > 0 else float('nan')
     debt_equity  = (debt / equity) if equity > 0 else float('nan')
 
+    # Fallback EPS: nếu vnstock không có EPS sẵn (vd TCB trả 0), tự tính từ
+    # TTM NI / số CP lưu hành. Đánh dấu nguồn để UI biết.
+    eps_source = 'reported'
+    if (eps_ttm == eps_ttm and eps_ttm > 0):
+        pass    # giữ nguyên
+    elif ni_ttm == ni_ttm and listed_share > 0:
+        eps_ttm = ni_ttm / listed_share
+        eps_source = 'computed'   # tính: TTM NI / số CP
+
     mcap = (last_price_vnd * listed_share) if (last_price_vnd > 0 and listed_share > 0) else float('nan')
-    pe   = (last_price_vnd / eps_ttm) if (last_price_vnd > 0 and eps_ttm > 0) else float('nan')
+    pe   = (last_price_vnd / eps_ttm) if (last_price_vnd > 0 and eps_ttm == eps_ttm and eps_ttm > 0) else float('nan')
     bvps = (equity / listed_share) if listed_share > 0 else float('nan')
     pb   = (last_price_vnd / bvps) if (last_price_vnd > 0 and bvps > 0) else float('nan')
 
@@ -147,7 +165,7 @@ def compute_kpis(ext: dict, last_price_vnd: float = 0.0,
     return {
         'ok': True,
         'rev_ttm': rev_ttm, 'gp_ttm': gp_ttm, 'ni_ttm': ni_ttm,
-        'eps_ttm': eps_ttm, 'pretax_ttm': pretax_ttm,
+        'eps_ttm': eps_ttm, 'eps_source': eps_source, 'pretax_ttm': pretax_ttm,
         'gross_margin': gross_margin, 'net_margin': net_margin,
         'roe': roe, 'roa': roa, 'debt_equity': debt_equity,
         'total_assets': assets, 'equity': equity, 'total_debt': debt, 'cash': cash,

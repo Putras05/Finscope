@@ -86,7 +86,9 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                   f'BVPS = {kpi["bvps"]:,.0f} đ' if kpi['bvps']==kpi['bvps'] else ''),
         _kpi_card('EPS (TTM)', f'{kpi["eps_ttm"]:,.0f} đ' if kpi['eps_ttm']==kpi['eps_ttm'] else '—',
                   _T['text_primary'], _T,
-                  ('4 quý gần nhất' if not is_en else 'Last 4 quarters')),
+                  (('4 quý gần nhất' if not is_en else 'Last 4 quarters')
+                   if kpi.get('eps_source') == 'reported' else
+                   ('tự tính: TTM NI / số CP' if not is_en else 'computed: TTM NI / shares'))),
         _kpi_card('ROE',
                   f'{kpi["roe"]:.1f}%' if kpi['roe']==kpi['roe'] else '—',
                   _roe_col, _T, '>15% tốt'),
