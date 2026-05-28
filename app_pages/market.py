@@ -12,6 +12,39 @@ from core.constants import TICKERS
 from data.market import market_snapshot, market_kpis, sector_overview, top_movers
 
 
+@st.cache_data(ttl=300, show_spinner=False)
+def _last5_close_map(symbols: tuple) -> dict:
+    """Map {ticker: [5 close gần nhất]} dùng cho sparkline trong heatmap card.
+
+    Cache 5 phút. Mỗi ticker dùng fetch_data đã cache → lần 2 instant. Parallel
+    10 thread để fetch lần đầu nhanh (~5s cho 53 mã). Fail-safe per-ticker.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+    from data.fetcher import fetch_data
+    def _one(tk):
+        try:
+            df = fetch_data(tk)
+            return tk, [float(v) for v in df['Close'].tail(5).values]
+        except Exception:
+            return tk, []
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        results = list(ex.map(_one, symbols))
+    return {tk: arr for tk, arr in results if arr}
+
+
+def _spark_svg(prices: list, col: str, w: int = 70, h: int = 18) -> str:
+    """SVG polyline mini cho 5-7 điểm — chèn trong card heatmap."""
+    if not prices or len(prices) < 2:
+        return ''
+    pmin = min(prices); pmax = max(prices); rng = max(pmax - pmin, 1e-9)
+    n = len(prices)
+    pts = ' '.join(f'{i*w/(n-1):.1f},{(h-2) - (p-pmin)/rng*(h-4):.1f}'
+                   for i, p in enumerate(prices))
+    return (f'<svg width="{w}" height="{h}" style="display:block">'
+            f'<polyline points="{pts}" fill="none" stroke="{col}" '
+            f'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>')
+
+
 def _pct_color(p: float, _T) -> str:
     """Màu theo % thay đổi — gradient đỏ/xám/xanh."""
     if p > 1:    return '#16A34A'
@@ -146,11 +179,17 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                 f'{"sắp theo vốn hóa giảm dần · màu theo % thay đổi" if not is_en else "sorted by mcap desc · colored by %change"}</span></div>',
                 unsafe_allow_html=True)
     sorted_df = mdf.sort_values('market_cap_B', ascending=False)
+    # Pre-load 5-close cho toàn bộ ticker — cached 5'/per session, fail-safe
+    try:
+        _spark_map = _last5_close_map(tuple(sorted_df['ticker'].tolist()))
+    except Exception:
+        _spark_map = {}
     _cards = ''
     for _, r in sorted_df.iterrows():
         _c = _pct_color(r['change_pct'], _T)
         _bg = _pct_bg(r['change_pct'])
         _arr = '▲' if r['change_pct'] >= 0 else '▼' if r['change_pct'] < -0.05 else '─'
+        _spark_html = _spark_svg(_spark_map.get(r['ticker'], []), _c, w=92, h=20)
         _cards += (
             f'<div style="flex:1 1 130px;min-width:120px;background:{_bg};'
             f'border:1px solid {_T["border"]};border-radius:8px;padding:9px 11px">'
@@ -161,6 +200,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             f'<div style="font-size:13px;color:{_c};font-weight:800;margin-top:2px">{_arr} {r["change_pct"]:+.2f}%</div>'
             f'<div style="font-size:10.5px;color:{_T["text_secondary"]};margin-top:1px">'
             f'{r["last_price"]:,.0f} đ</div>'
+            f'<div style="margin-top:4px">{_spark_html}</div>'
             f'</div>')
     st.markdown(
         f'<div style="display:flex;gap:6px;flex-wrap:wrap">{_cards}</div>',

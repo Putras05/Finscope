@@ -126,10 +126,23 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                     step=100.0, format='%.0f', key='po_px',
                 )
                 _est = int(_qty) * float(_px)
+                # Preview phí + thuế giúp user thấy chi phí thực TRƯỚC khi đặt
+                _fee_rate = PP._FEE_RATE
+                _tax_rate = PP._TAX_SELL
+                _fee_prev = _est * _fee_rate
+                _tax_prev = _est * _tax_rate if _side == 'SELL' else 0.0
+                _net = _est + _fee_prev if _side == 'BUY' else _est - _fee_prev - _tax_prev
+                _net_label = ('Cần trả' if _side == 'BUY' else 'Sẽ nhận') if not is_en else \
+                             ('Total cost' if _side == 'BUY' else 'Net proceeds')
+                _net_col = _T['danger'] if _side == 'BUY' else _T['success']
                 st.markdown(
-                    f'<div style="font-size:12px;color:{_T["text_muted"]};margin-top:-4px">'
-                    f'{"Tổng giá trị" if not is_en else "Total value"}: '
-                    f'<b style="color:{_T["text_primary"]}">{_est:,.0f} đ</b></div>',
+                    f'<div style="font-size:12px;color:{_T["text_muted"]};margin-top:-4px;line-height:1.6">'
+                    f'{"Giá trị gốc" if not is_en else "Gross"}: '
+                    f'<b style="color:{_T["text_primary"]}">{_est:,.0f} đ</b><br>'
+                    f'{"Phí" if not is_en else "Fee"} 0.15%: <b>{_fee_prev:,.0f} đ</b>'
+                    + (f' · {"Thuế bán" if not is_en else "Tax"} 0.10%: <b>{_tax_prev:,.0f} đ</b>' if _side == 'SELL' else '')
+                    + f'<br><span style="color:{_net_col};font-weight:800">{_net_label}: {_net:,.0f} đ</span>'
+                    f'</div>',
                     unsafe_allow_html=True)
                 submitted = st.form_submit_button(
                     ('Đặt lệnh' if not is_en else 'Submit order'),

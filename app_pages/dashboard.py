@@ -999,92 +999,69 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         except Exception as _ef:
             st.caption(f'⚠ {_ef}')
 
-    # ── DỰ BÁO ĐA MÔ HÌNH — dùng lại _all7 (đã tính + sắp xếp MAPE ở trên) ──
+    # ── BẢNG TỔNG HỢP MÔ HÌNH — gộp Dự báo + Xếp hạng độ chính xác ─────────
+    # Trước có 2 bảng tách riêng (Forecast vs Ranking) → trùng list mô hình
+    # + trùng cột MAPE. Gộp 1 bảng duy nhất sort theo MAPE: medal + tên + dự
+    # báo + Δ% + CI95% + MAPE+bar + RMSE/MAE/R²adj. User đọc 1 lần thấy đủ.
     _last_c = float(T['Close'])
-
-    st.markdown("<div style='margin:12px 0 8px'></div>", unsafe_allow_html=True)
-    st.markdown(
-        f'<div class="sec-hdr">'
-        f'{"Dự báo đa mô hình — phiên kế tiếp" if not _is_en_d else "Multi-model next-session forecast"}'
-        f' <span style="font-size:11px;font-weight:600;color:{_T["text_muted"]}">'
-        f'({len(_all7)} {"mô hình" if not _is_en_d else "models"})</span></div>',
-        unsafe_allow_html=True)
-    _frows = ''
-    for _md in _all7:
-        _nm = _md['name']; _npd = _md['npred']; _mm = _md['m']; _lo, _hi = _md['ci']
-        _chg = (_npd - _last_c) / _last_c * 100 if _last_c else 0
-        _cc = _T['success'] if _chg >= 0 else _T['danger']
-        _arr = '▲' if _chg >= 0 else '▼'
-        _ci_s = (f'[{_lo*1000:,.0f} – {_hi*1000:,.0f}]'
-                 if (_lo is not None and _hi is not None and np.isfinite(_lo) and np.isfinite(_hi))
-                 else '—')
-        _mp = _mm.get('MAPE', float('nan'))
-        _mpc = _T['success'] if _mp < 1.5 else (_T['warning'] if _mp < 2 else _T['danger'])
-        _frows += (
-            f'<tr style="color:{_T["text_primary"]};border-top:1px solid {_T["divider"]}">'
-            f'<td style="padding:9px 12px;font-weight:700">{_nm}</td>'
-            f'<td style="padding:9px 12px;font-weight:700">{_npd*1000:,.0f} đ</td>'
-            f'<td style="padding:9px 12px;color:{_cc};font-weight:700">{_arr} {abs(_chg):.2f}%</td>'
-            f'<td style="padding:9px 12px;font-size:12px;color:{_T["text_secondary"]}">{_ci_s}</td>'
-            f'<td style="padding:9px 12px;color:{_mpc};font-weight:700">{_mp:.2f}%</td>'
-            f'</tr>')
-    _fh = (['Mô hình', 'Dự báo (đ)', 'Δ vs hiện tại', 'KTC 95% (đ)', 'MAPE test'] if not _is_en_d
-           else ['Model', 'Forecast (VND)', 'Δ vs current', '95% CI (VND)', 'Test MAPE'])
-    st.markdown(
-        f'<div style="border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid {_T["border"]}">'
-        f'<table style="width:100%;border-collapse:collapse;font-size:13px">'
-        f'<thead><tr style="background:{_T["accent"]};color:#fff">'
-        + ''.join(f'<th style="padding:9px 12px;text-align:left">{h}</th>' for h in _fh)
-        + f'</tr></thead><tbody>{_frows}</tbody></table></div>',
-        unsafe_allow_html=True)
-
-    # ── Xếp hạng độ chính xác (toàn bộ mô hình theo MAPE test) ───────────
-    st.markdown("<div style='margin:14px 0 8px'></div>", unsafe_allow_html=True)
-    st.markdown(f'<div class="sec-hdr">{t("dash.rank")}</div>', unsafe_allow_html=True)
-    _rank_list = [(_md['name'], _md['m']) for _md in _all7
-                  if np.isfinite(_md['m'].get('MAPE', float('nan')))]
-    _rank_list.sort(key=lambda x: x[1]['MAPE'])
-    _max_mape = max([mm['MAPE'] for _, mm in _rank_list] + [1e-9])
+    _rank_full = [_md for _md in _all7 if np.isfinite(_md['m'].get('MAPE', float('nan')))]
+    _rank_full.sort(key=lambda d: d['m']['MAPE'])
+    _max_mape = max([_md['m']['MAPE'] for _md in _rank_full] + [1e-9])
     _medal_html = [
         '<span style="background:#F9A825;color:#1A2A4A;font-weight:800;padding:4px 10px;border-radius:8px;font-size:12px">1ST</span>',
         '<span style="background:#94A3B8;color:#fff;font-weight:800;padding:4px 10px;border-radius:8px;font-size:12px">2ND</span>',
         '<span style="background:#CD7F32;color:#fff;font-weight:800;padding:4px 10px;border-radius:8px;font-size:12px">3RD</span>',
     ]
+
+    st.markdown("<div style='margin:14px 0 8px'></div>", unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="sec-hdr">'
+        f'{"Bảng tổng hợp mô hình — Dự báo + Độ chính xác" if not _is_en_d else "Model summary — Forecast + Accuracy"}'
+        f' <span style="font-size:11px;font-weight:600;color:{_T["text_muted"]}">'
+        f'({len(_rank_full)} {"mô hình · sắp xếp theo MAPE tăng dần" if not _is_en_d else "models · sorted by MAPE ascending"})</span></div>',
+        unsafe_allow_html=True)
     _rows_html = ''
-    for _r, (_mn, _mm) in enumerate(_rank_list):
+    for _r, _md in enumerate(_rank_full):
+        _nm = _md['name']; _npd = _md['npred']; _mm = _md['m']; _lo, _hi = _md['ci']
         _bg = (f'background:{_T["warning_bg"]}' if _r == 0
                else (f'background:{_T["bg_elevated"]}' if _r == 1 else f'background:{_T["bg_card"]}'))
         _badge = _medal_html[_r] if _r < 3 else f'<span style="color:{_T["text_muted"]};font-weight:700">{_r+1}</span>'
         _stars_td = _star(_mm['MAPE'])
         _mape_col = _T['success'] if _mm['MAPE'] < 1.5 else (_T['warning'] if _mm['MAPE'] < 2 else _T['danger'])
         _bar_pct  = 100 - (_mm['MAPE'] / _max_mape * 75)
+        _chg = (_npd - _last_c) / _last_c * 100 if _last_c else 0
+        _cc  = _T['success'] if _chg >= 0 else _T['danger']
+        _arr = '▲' if _chg >= 0 else '▼'
+        _ci_s = (f'[{_lo*1000:,.0f}–{_hi*1000:,.0f}]'
+                 if (_lo is not None and _hi is not None and np.isfinite(_lo) and np.isfinite(_hi))
+                 else '—')
         _rows_html += (
             f'<tr style="{_bg};color:{_T["text_primary"]};border-top:1px solid {_T["divider"]}">'
             f'<td style="padding:10px 12px;font-size:16px">{_badge}</td>'
-            f'<td style="padding:10px 12px;font-weight:700">{_mn}</td>'
+            f'<td style="padding:10px 12px;font-weight:700">{_nm}</td>'
+            f'<td style="padding:10px 12px;font-weight:700">{_npd*1000:,.0f}</td>'
+            f'<td style="padding:10px 12px;color:{_cc};font-weight:700">{_arr} {abs(_chg):.2f}%</td>'
+            f'<td style="padding:10px 12px;font-size:12px;color:{_T["text_secondary"]}">{_ci_s}</td>'
             f'<td style="padding:10px 12px;color:{_mape_col};font-weight:700">'
             f'{_mm["MAPE"]:.2f}% {_stars_td}</td>'
-            f'<td style="padding:10px 14px;min-width:120px">'
+            f'<td style="padding:10px 14px;min-width:100px">'
             f'<div style="background:{_T["border"]};border-radius:4px;height:6px;overflow:hidden">'
             f'<div style="background:{_mape_col};width:{_bar_pct:.0f}%;height:100%"></div></div></td>'
-            f'<td style="padding:10px 12px">{_mm["RMSE"]:.4f}</td>'
-            f'<td style="padding:10px 12px">{_mm["MAE"]:.4f}</td>'
-            f'<td style="padding:10px 12px;color:{_T["success"] if _mm["R2adj"]>0.95 else _T["text_secondary"]}">'
+            f'<td style="padding:10px 12px;font-size:12px;color:{_T["text_secondary"]}">{_mm["RMSE"]:.4f}</td>'
+            f'<td style="padding:10px 12px;font-size:12px;color:{_T["text_secondary"]}">{_mm["MAE"]:.4f}</td>'
+            f'<td style="padding:10px 12px;font-size:12px;color:{_T["success"] if _mm["R2adj"]>0.95 else _T["text_secondary"]}">'
             f'{_mm["R2adj"]:.4f}</td>'
             f'</tr>'
         )
+    _hdr_unified = (['Hạng','Mô hình','Dự báo (đ)','Δ','KTC 95% (đ)','MAPE','Hiệu năng','RMSE','MAE','R²adj']
+                    if not _is_en_d else
+                    ['Rank','Model','Forecast (VND)','Δ','95% CI (VND)','MAPE','Performance','RMSE','MAE','R²adj'])
     st.markdown(
         f'<div style="border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid {_T["border"]}">'
         f'<table style="width:100%;border-collapse:collapse;font-size:13px">'
         f'<thead><tr style="background:{_T["accent"]};color:#fff">'
-        f'<th style="padding:10px 12px;text-align:left">{t("col.rank")}</th>'
-        f'<th style="padding:10px 12px;text-align:left">{t("col.model")}</th>'
-        f'<th style="padding:10px 12px;text-align:left">MAPE</th>'
-        f'<th style="padding:10px 14px;text-align:left">{"Performance" if _is_en_d else "Hiệu năng"}</th>'
-        f'<th style="padding:10px 12px;text-align:left">RMSE</th>'
-        f'<th style="padding:10px 12px;text-align:left">MAE</th>'
-        f'<th style="padding:10px 12px;text-align:left">R²adj</th>'
-        f'</tr></thead><tbody>{_rows_html}</tbody></table></div>',
+        + ''.join(f'<th style="padding:10px 12px;text-align:left;white-space:nowrap">{h}</th>' for h in _hdr_unified)
+        + f'</tr></thead><tbody>{_rows_html}</tbody></table></div>',
         unsafe_allow_html=True)
 
     # ── Kiểm định Diebold–Mariano: best vs các mô hình khác ──────────────
