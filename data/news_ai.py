@@ -21,37 +21,39 @@ _DL_MODEL = os.environ.get('FINSCOPE_SENTIMENT_MODEL',
 
 # ── Nhận diện CHỦ ĐỀ tài chính (aspect) — rule-based, deploy-safe ────────────
 _ASPECTS = [
-    ('Kết quả KD', ['lợi nhuận', 'doanh thu', 'lãi', 'thua lỗ', ' lỗ ', 'kqkd',
-                    'báo cáo tài chính', 'quý ', 'biên lợi nhuận', 'eps']),
-    ('Cổ tức', ['cổ tức', 'chia thưởng', 'cổ phiếu thưởng', 'tạm ứng cổ tức']),
-    ('M&A · Thoái vốn', ['sáp nhập', 'mua lại', 'thâu tóm', 'thoái vốn',
-                         'chuyển nhượng', 'chào mua', 'm&a']),
-    ('Phát hành · Niêm yết', ['phát hành', 'niêm yết', 'tăng vốn', 'trái phiếu',
-                              'ipo', 'quyền mua', 'chào bán', 'lên sàn']),
-    ('Lãnh đạo · Cổ đông', ['chủ tịch', 'tổng giám đốc', 'ceo', 'từ nhiệm',
-                            'bổ nhiệm', 'cổ đông lớn', 'đăng ký mua',
-                            'đăng ký bán', 'nội bộ']),
-    ('Pháp lý · Vi phạm', ['xử phạt', 'vi phạm', 'điều tra', 'khởi tố',
-                           'thanh tra', 'truy thu', 'đình chỉ', 'gian lận',
-                           'thao túng', 'cảnh báo']),
-    ('Vĩ mô · Lãi suất', ['lãi suất', 'tỷ giá', 'lạm phát', 'fed', 'gdp',
-                          'ngân hàng nhà nước', 'room tín dụng', 'tín dụng',
-                          'vĩ mô', 'cpi']),
-    ('Khối ngoại', ['khối ngoại', 'nước ngoài', 'mua ròng', 'bán ròng',
-                    'etf', 'quỹ ngoại']),
-    ('Dự án · Đầu tư', ['dự án', 'khởi công', 'nhà máy', 'mở rộng',
-                        'trúng thầu', 'ký kết', 'hợp đồng', 'đầu tư']),
+    ('Kết quả KD', 'Earnings', ['lợi nhuận', 'doanh thu', 'lãi', 'thua lỗ', ' lỗ ', 'kqkd',
+                                'báo cáo tài chính', 'quý ', 'biên lợi nhuận', 'eps']),
+    ('Cổ tức', 'Dividend', ['cổ tức', 'chia thưởng', 'cổ phiếu thưởng', 'tạm ứng cổ tức']),
+    ('M&A · Thoái vốn', 'M&A · Divestment', ['sáp nhập', 'mua lại', 'thâu tóm', 'thoái vốn',
+                                             'chuyển nhượng', 'chào mua', 'm&a']),
+    ('Phát hành · Niêm yết', 'Issuance · Listing', ['phát hành', 'niêm yết', 'tăng vốn', 'trái phiếu',
+                                                    'ipo', 'quyền mua', 'chào bán', 'lên sàn']),
+    ('Lãnh đạo · Cổ đông', 'Leadership · Shareholders', ['chủ tịch', 'tổng giám đốc', 'ceo', 'từ nhiệm',
+                                                         'bổ nhiệm', 'cổ đông lớn', 'đăng ký mua',
+                                                         'đăng ký bán', 'nội bộ']),
+    ('Pháp lý · Vi phạm', 'Legal · Violation', ['xử phạt', 'vi phạm', 'điều tra', 'khởi tố',
+                                                'thanh tra', 'truy thu', 'đình chỉ', 'gian lận',
+                                                'thao túng', 'cảnh báo']),
+    ('Vĩ mô · Lãi suất', 'Macro · Rates', ['lãi suất', 'tỷ giá', 'lạm phát', 'fed', 'gdp',
+                                           'ngân hàng nhà nước', 'room tín dụng', 'tín dụng',
+                                           'vĩ mô', 'cpi']),
+    ('Khối ngoại', 'Foreign flows', ['khối ngoại', 'nước ngoài', 'mua ròng', 'bán ròng',
+                                     'etf', 'quỹ ngoại']),
+    ('Dự án · Đầu tư', 'Projects · Capex', ['dự án', 'khởi công', 'nhà máy', 'mở rộng',
+                                            'trúng thầu', 'ký kết', 'hợp đồng', 'đầu tư']),
 ]
 
 
-def aspect_tags(text: str, max_tags: int = 3) -> list:
-    """Trả các nhãn chủ đề tài chính khớp trong tin (tối đa max_tags)."""
+def aspect_tags(text: str, max_tags: int = 3, is_en: bool = False) -> list:
+    """Trả các nhãn chủ đề tài chính khớp trong tin (tối đa max_tags).
+
+    is_en=True → trả nhãn tiếng Anh (app song ngữ)."""
     t = ' ' + (text or '').lower() + ' '
     hits = []
-    for name, kws in _ASPECTS:
+    for name_vi, name_en, kws in _ASPECTS:
         c = sum(1 for k in kws if k in t)
         if c:
-            hits.append((name, c))
+            hits.append((name_en if is_en else name_vi, c))
     hits.sort(key=lambda x: -x[1])
     return [h[0] for h in hits[:max_tags]]
 

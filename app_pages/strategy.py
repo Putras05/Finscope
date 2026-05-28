@@ -185,14 +185,16 @@ def _technical_analysis_section(df, ticker, _T, is_en):
             _pc = ('#16A34A' if p['dir'] > 0 else '#DC2626' if p['dir'] < 0
                    else _T['text_muted'])
             _parr = '▲' if p['dir'] > 0 else '▼' if p['dir'] < 0 else '◆'
+            _pnm = p['name_en'] if is_en else p['name']
+            _pds = p['desc_en'] if is_en else p['desc']
             _chips += (
                 f'<div style="flex:1 1 220px;min-width:200px;background:{_T["bg_card"]};'
                 f'border:1px solid {_T["border"]};border-left:3px solid {_pc};'
                 f'border-radius:8px;padding:8px 12px">'
                 f'<div style="font-size:12px;font-weight:700;color:{_pc}">'
-                f'{_parr} {p["name"]}</div>'
+                f'{_parr} {_pnm}</div>'
                 f'<div style="font-size:10px;color:{_T["text_muted"]};margin-top:2px">'
-                f'{str(p["date"])[:10]} · {p["desc"]}</div></div>')
+                f'{str(p["date"])[:10]} · {_pds}</div></div>')
         st.markdown(
             f'<div style="font-size:11px;font-weight:700;color:{_T["text_secondary"]};'
             f'text-transform:uppercase;letter-spacing:.5px;margin:10px 0 6px">'
@@ -214,7 +216,11 @@ def _technical_analysis_section(df, ticker, _T, is_en):
         (('Kháng cự gần nhất' if not is_en else 'Nearest resistance'), _fmt(s['near_res']), '#DC2626'),
         (('Hỗ trợ gần nhất' if not is_en else 'Nearest support'), _fmt(s['near_sup']), '#16A34A'),
         (('Vùng Fibonacci' if not is_en else 'Fibonacci zone'), s['fib_zone'] or '—', '#7C3AED'),
-        (('Vị trí trong kênh' if not is_en else 'Channel position'), s['channel_pos'] or '—', '#0891B2'),
+        (('Vị trí trong kênh' if not is_en else 'Channel position'),
+         {'upper': 'Biên trên' if not is_en else 'Upper band',
+          'lower': 'Biên dưới' if not is_en else 'Lower band',
+          'mid':   'Giữa kênh' if not is_en else 'Mid-channel'}.get(s['channel_pos'], '—'),
+         '#0891B2'),
         (('Độ dốc kênh (%/phiên)' if not is_en else 'Channel slope (%/bar)'),
          f'{s["slope_pct"]:+.3f}%', _T['success'] if s['slope_pct'] >= 0 else _T['danger']),
     ]
@@ -322,8 +328,11 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     try:
         from data.technicals import candlestick_patterns
         _recent_pats = candlestick_patterns(df, lookback=3)
-        _pat_vote = _recent_pats[-1]['dir'] if _recent_pats else 0
-        _pat_name = _recent_pats[-1]['name'] if _recent_pats else None
+        if _recent_pats:
+            _pat_vote = _recent_pats[-1]['dir']
+            _pat_name = _recent_pats[-1]['name_en' if is_en else 'name']
+        else:
+            _pat_vote, _pat_name = 0, None
     except Exception:
         _pat_vote, _pat_name = 0, None
 

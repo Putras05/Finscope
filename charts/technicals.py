@@ -121,12 +121,13 @@ def chart_technical(df: pd.DataFrame, ticker: str, T: dict, *,
         nx, ny, nt = [], [], []          # neutral (doji)
         for p in pats:
             i = p['idx']
+            _pn = p['name_en'] if is_en else p['name']
             if p['dir'] > 0:
-                bx.append(dates.iloc[i]); by.append(d['Low'].iloc[i] * K * 0.985); bt.append(p['name'])
+                bx.append(dates.iloc[i]); by.append(d['Low'].iloc[i] * K * 0.985); bt.append(_pn)
             elif p['dir'] < 0:
-                rx.append(dates.iloc[i]); ry.append(d['High'].iloc[i] * K * 1.015); rt.append(p['name'])
+                rx.append(dates.iloc[i]); ry.append(d['High'].iloc[i] * K * 1.015); rt.append(_pn)
             else:
-                nx.append(dates.iloc[i]); ny.append(d['High'].iloc[i] * K * 1.012); nt.append(p['name'])
+                nx.append(dates.iloc[i]); ny.append(d['High'].iloc[i] * K * 1.012); nt.append(_pn)
         if bx:
             fig.add_trace(go.Scatter(
                 x=bx, y=by, mode='markers', name=('Bullish pattern' if is_en else 'Mẫu hình tăng'),

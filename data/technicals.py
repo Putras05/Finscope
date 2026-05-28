@@ -206,48 +206,58 @@ def candlestick_patterns(df: pd.DataFrame, lookback: int = 12) -> list:
         po, pc = O[i - 1], C[i - 1]
         pbody = abs(pc - po)
         pbull = pc >= po
-        name = dir_ = desc = None
+        pat = None   # (name_vi, name_en, dir, desc_vi, desc_en)
 
         # ── 3 nến: Sao Mai / Sao Hôm ──
         o2, c2 = O[i - 2], C[i - 2]
         body2 = abs(c2 - o2)
         if (c2 < o2 and pbody < body2 * 0.5 and bull and c > (o2 + c2) / 2
                 and body > pbody):
-            name, dir_, desc = ('Sao Mai (Morning Star)', 1,
-                                'Đảo chiều TĂNG sau xu hướng giảm — 3 nến')
+            pat = ('Sao Mai (Morning Star)', 'Morning Star', 1,
+                   'Đảo chiều TĂNG sau xu hướng giảm — 3 nến',
+                   'Bullish reversal after a downtrend — 3 candles')
         elif (c2 > o2 and pbody < body2 * 0.5 and (not bull) and c < (o2 + c2) / 2
               and body > pbody):
-            name, dir_, desc = ('Sao Hôm (Evening Star)', -1,
-                                'Đảo chiều GIẢM sau xu hướng tăng — 3 nến')
+            pat = ('Sao Hôm (Evening Star)', 'Evening Star', -1,
+                   'Đảo chiều GIẢM sau xu hướng tăng — 3 nến',
+                   'Bearish reversal after an uptrend — 3 candles')
         # ── 2 nến: Nhấn chìm (Engulfing) ──
         elif bull and (not pbull) and c >= po and o <= pc and body > pbody:
-            name, dir_, desc = ('Nhấn chìm tăng (Bullish Engulfing)', 1,
-                                'Nến xanh bao trùm nến đỏ trước — tín hiệu mua')
+            pat = ('Nhấn chìm tăng (Bullish Engulfing)', 'Bullish Engulfing', 1,
+                   'Nến xanh bao trùm nến đỏ trước — tín hiệu mua',
+                   'Green candle engulfs the prior red — buy signal')
         elif (not bull) and pbull and o >= pc and c <= po and body > pbody:
-            name, dir_, desc = ('Nhấn chìm giảm (Bearish Engulfing)', -1,
-                                'Nến đỏ bao trùm nến xanh trước — tín hiệu bán')
+            pat = ('Nhấn chìm giảm (Bearish Engulfing)', 'Bearish Engulfing', -1,
+                   'Nến đỏ bao trùm nến xanh trước — tín hiệu bán',
+                   'Red candle engulfs the prior green — sell signal')
         # ── 2 nến: Harami (thai nghén) ──
         elif pbody > body * 1.6 and max(o, c) <= max(po, pc) and min(o, c) >= min(po, pc):
             if not pbull:
-                name, dir_, desc = ('Harami tăng', 1,
-                                    'Thân nhỏ nằm trong nến giảm lớn — khả năng đảo chiều tăng')
+                pat = ('Harami tăng', 'Bullish Harami', 1,
+                       'Thân nhỏ nằm trong nến giảm lớn — khả năng đảo chiều tăng',
+                       'Small body inside a large red candle — possible bullish reversal')
             else:
-                name, dir_, desc = ('Harami giảm', -1,
-                                    'Thân nhỏ nằm trong nến tăng lớn — khả năng đảo chiều giảm')
+                pat = ('Harami giảm', 'Bearish Harami', -1,
+                       'Thân nhỏ nằm trong nến tăng lớn — khả năng đảo chiều giảm',
+                       'Small body inside a large green candle — possible bearish reversal')
         # ── 1 nến: Búa / Sao băng / Doji ──
         elif body <= rng * 0.32 and dnsh >= body * 2 and upsh <= body * 0.8:
-            name, dir_, desc = ('Búa (Hammer)', 1,
-                                'Bóng dưới dài — lực mua hấp thụ đáy')
+            pat = ('Búa (Hammer)', 'Hammer', 1,
+                   'Bóng dưới dài — lực mua hấp thụ đáy',
+                   'Long lower shadow — buyers absorb the bottom')
         elif body <= rng * 0.32 and upsh >= body * 2 and dnsh <= body * 0.8:
-            name, dir_, desc = ('Sao băng (Shooting Star)', -1,
-                                'Bóng trên dài — lực bán áp đảo đỉnh')
+            pat = ('Sao băng (Shooting Star)', 'Shooting Star', -1,
+                   'Bóng trên dài — lực bán áp đảo đỉnh',
+                   'Long upper shadow — sellers dominate the top')
         elif body <= rng * 0.1:
-            name, dir_, desc = ('Doji', 0,
-                                'Thân rất nhỏ — thị trường lưỡng lự')
+            pat = ('Doji', 'Doji', 0,
+                   'Thân rất nhỏ — thị trường lưỡng lự',
+                   'Very small body — market indecision')
 
-        if name:
-            out.append({'idx': i, 'date': D[i], 'name': name,
-                        'dir': dir_, 'desc': desc})
+        if pat:
+            out.append({'idx': i, 'date': D[i],
+                        'name': pat[0], 'name_en': pat[1], 'dir': pat[2],
+                        'desc': pat[3], 'desc_en': pat[4]})
     return out
 
 
@@ -269,12 +279,12 @@ def technical_summary(df: pd.DataFrame) -> dict:
             if lv[j][1] <= last <= lv[j + 1][1]:
                 fib_zone = f"{lv[j][0]*100:.1f}%–{lv[j+1][0]*100:.1f}%"
                 break
-    ch_pos = ''
+    ch_pos = ''   # mã trung lập ngôn ngữ: 'upper' / 'lower' / 'mid'
     if len(ch['mid']):
-        m = ch['mid'][-1]; up = ch['upper'][-1]; lo = ch['lower'][-1]
+        up = ch['upper'][-1]; lo = ch['lower'][-1]
         if up > lo:
             r = (last - lo) / (up - lo)
-            ch_pos = ('Biên trên' if r > 0.8 else 'Biên dưới' if r < 0.2 else 'Giữa kênh')
+            ch_pos = ('upper' if r > 0.8 else 'lower' if r < 0.2 else 'mid')
     return {
         'last': last, 'near_res': near_res, 'near_sup': near_sup,
         'fib_zone': fib_zone, 'fib_uptrend': fib.get('uptrend', True),

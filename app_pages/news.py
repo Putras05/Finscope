@@ -128,7 +128,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         _cards = ''
         for cl in _clusters[:4]:
             _rep = items[cl['rep']]
-            _asp = NA.aspect_tags(_rep['title'] + ' ' + _rep.get('summary', ''))
+            _asp = NA.aspect_tags(_rep['title'] + ' ' + _rep.get('summary', ''), is_en=is_en)
             _chips = ''.join(_chip(a, _T['accent'], _T) for a in _asp)
             _cards += (
                 f'<div style="flex:1 1 280px;min-width:240px;background:{_T["bg_card"]};'
@@ -154,7 +154,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         _title = it['title']; _link = it.get('link', '')
         _title_html = (f'<a href="{_link}" target="_blank" style="color:{_T["text_primary"]};text-decoration:none">{_title}</a>'
                        if _link else _title)
-        _asp = NA.aspect_tags(_title + ' ' + it.get('summary', ''))
+        _asp = NA.aspect_tags(_title + ' ' + it.get('summary', ''), is_en=is_en)
         _asp_html = ''.join(_chip(a, _T['text_secondary'], _T) for a in _asp)
         # cảm xúc: từ điển + (nếu bật) AI học sâu
         _sent_cell = (f'<span style="font-size:11px;font-weight:700;color:{col};'
