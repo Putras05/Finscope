@@ -2017,6 +2017,59 @@ html { scroll-behavior: smooth; }
 def inject_global_css() -> None:
     st.markdown(_GLOBAL_CSS, unsafe_allow_html=True)
     st.markdown(_RADIO_SEGMENTED_CSS, unsafe_allow_html=True)
+    st.markdown(_NAV_TRANSITION_CSS, unsafe_allow_html=True)
+
+
+# Streamlit MẶC ĐỊNH fade-out + grayscale toàn page khi đang rerun (`data-stale`
+# = true) → user click chuyển trang thấy nội dung CŨ MỜ ĐI hồi lâu rồi mới về
+# trang mới. Fix:
+#  1) Tắt opacity-fade + filter trên data-stale → giữ rõ nét đến khi render xong.
+#  2) Thay vào: thanh progress bar mỏng 3px ở ĐỈNH page (gradient teal) chạy
+#     ngang khi đang rerun → feedback rõ ràng mà KHÔNG che/mờ nội dung cũ.
+#  3) Cursor wait nhẹ trên toàn body khi stale (cho mọi action).
+_NAV_TRANSITION_CSS = """<style>
+/* ══ TẮT FADE-OUT khi đang rerun — giữ nội dung sắc nét ════════════════════ */
+[data-testid="stAppViewContainer"] [data-stale="true"],
+[data-testid="stApp"] [data-stale="true"],
+[data-stale="true"] {
+    opacity: 1 !important;
+    filter: none !important;
+    pointer-events: auto !important;
+}
+
+/* ══ THANH PROGRESS TRÊN ĐỈNH khi rerun (thay cho fade toàn page) ═══════════ */
+[data-testid="stAppViewContainer"]::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 0;
+    background: linear-gradient(90deg, transparent 0%, #0F766E 40%, #0891B2 60%, transparent 100%);
+    z-index: 999999;
+    transition: height 0.18s ease, opacity 0.18s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+[data-stale="true"] [data-testid="stAppViewContainer"]::before,
+[data-testid="stAppViewContainer"]:has([data-stale="true"])::before {
+    height: 3px;
+    opacity: 1;
+    animation: nav-loading 1.2s ease-in-out infinite;
+}
+@keyframes nav-loading {
+    0%   { transform: translateX(-30%); }
+    100% { transform: translateX(30%); }
+}
+
+/* ══ CURSOR FEEDBACK nhẹ khi đang rerun ════════════════════════════════════ */
+[data-stale="true"] [data-testid="stMain"] {
+    cursor: progress;
+}
+
+/* ══ ĐỊNH VỊ NAV TOP — scroll lên đầu mỗi lần đổi page (smooth) ════════════
+   Streamlit không tự scroll-to-top khi đổi page → trang dài + đổi sang trang
+   ngắn = user vẫn ở giữa, lúng túng. CSS-only scroll-margin để khi anchor đổi. */
+section.main > div.block-container { scroll-margin-top: 0 !important; }
+</style>"""
 
 
 # Style st.radio(horizontal=True) so it looks like a segmented control
