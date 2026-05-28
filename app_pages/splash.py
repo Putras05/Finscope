@@ -111,6 +111,9 @@ mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
 .splash-card .label { display: block; font-size: 10.5px; font-weight: 800; color: #1E40AF !important; text-transform: uppercase; letter-spacing: 2.2px; margin-bottom: 10px; }
 .splash-card .value { font-size: 15px; color: #0F172A !important; font-weight: 600; line-height: 1.85; }
 .splash-card .value .author-id { color: #64748B !important; font-weight: 500; font-size: 13.5px; margin-left: 6px; }
+.splash-card .value .author-role { color: #1E40AF !important; font-weight: 700; font-size: 11.5px; margin-left: 8px; letter-spacing: 0.4px; text-transform: uppercase; }
+.splash-card .value .author-email { display: block; margin-top: 6px; font-size: 12px; color: #475569 !important; font-weight: 500; }
+.splash-card .value .author-email a { color: #1E40AF !important; text-decoration: none; }
 div[data-testid="stButton"] { display: flex; justify-content: center; margin: 32px auto 12px; position: relative; z-index: 5; }
 div[data-testid="stButton"] > button { background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%) !important; color: #FFFFFF !important; font-weight: 800 !important; font-size: 15px !important; padding: 14px 44px !important; border-radius: 999px !important; border: none !important; letter-spacing: 2.5px !important; box-shadow: 0 6px 20px rgba(30,64,175,0.35), inset 0 1px 0 rgba(255,255,255,0.20) !important; transition: transform 0.2s ease, box-shadow 0.2s ease !important; min-width: 220px; }
 div[data-testid="stButton"] > button:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 12px 28px rgba(30,64,175,0.50) !important; }
@@ -145,8 +148,12 @@ div[data-testid="stButton"] > button:hover { transform: translateY(-3px) scale(1
         '<div class="splash-card">',
         '<span class="label">Nhóm tác giả</span>',
         '<div class="value">',
-        'Nguyễn Thành Danh<span class="author-id">— C2300014</span><br/>',
-        'Trần Huỳnh Nhã Trúc<span class="author-id">— C2300189</span>',
+        'Nguyễn Thành Danh<span class="author-id">— C2300014</span>'
+        '<span class="author-role">· Nhóm trưởng</span><br/>',
+        'Trần Huỳnh Nhã Trúc<span class="author-id">— C2300189</span>'
+        '<span class="author-role">· Thành viên</span>',
+        '<span class="author-email">Liên hệ nhóm trưởng: '
+        '<a href="mailto:thanhdanhgvt@gmail.com">thanhdanhgvt@gmail.com</a></span>',
         '</div>',
         '</div>',
         '</div>',
