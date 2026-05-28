@@ -386,7 +386,11 @@ def _resample_ohlc(df: pd.DataFrame, freq: str | None) -> pd.DataFrame:
 def chart_price_candlestick(df: pd.DataFrame, ticker: str, T: dict,
                             interval: str = '1D',
                             show_sma: bool = True,
-                            show_ichimoku: bool = False) -> go.Figure:
+                            show_ichimoku: bool = False,
+                            show_bb: bool = False,
+                            show_vwap: bool = False,
+                            show_sr: bool = False,
+                            show_psar: bool = False) -> go.Figure:
     """Candlestick chart TradingView-style — multi-TF + Volume + toggle SMA/Ichimoku.
 
     Layout: 2 hàng share x-axis. Row 1 (75%) = nến + (optional) SMA + Ichimoku.
@@ -545,6 +549,80 @@ def chart_price_candlestick(df: pd.DataFrame, ticker: str, T: dict,
             hovertemplate='SMA 20: %{y:,.2f}<extra></extra>',
             showlegend=False,
         ), row=1, col=1)
+
+    # ── Row 1: Bollinger Bands 20·2σ ─────────────────────────────────────
+    if show_bb and len(df) >= 20:
+        _mid = df['Close'].rolling(20, min_periods=20).mean()
+        _std = df['Close'].rolling(20, min_periods=20).std()
+        _upper = _mid + 2 * _std
+        _lower = _mid - 2 * _std
+        fig.add_trace(go.Scatter(
+            x=dates, y=_upper.values, mode='lines', name='BB upper',
+            line=dict(color='#94A3B8', width=1, dash='dot'),
+            hovertemplate='BB upper: %{y:,.2f}<extra></extra>',
+            showlegend=False,
+        ), row=1, col=1)
+        fig.add_trace(go.Scatter(
+            x=dates, y=_lower.values, mode='lines', name='BB lower',
+            line=dict(color='#94A3B8', width=1, dash='dot'),
+            fill='tonexty', fillcolor='rgba(148,163,184,0.10)',
+            hovertemplate='BB lower: %{y:,.2f}<extra></extra>',
+            showlegend=False,
+        ), row=1, col=1)
+        fig.add_trace(go.Scatter(
+            x=dates, y=_mid.values, mode='lines', name='BB mid (SMA20)',
+            line=dict(color='#64748B', width=1, dash='dash'),
+            hovertemplate='BB mid: %{y:,.2f}<extra></extra>',
+            showlegend=False,
+        ), row=1, col=1)
+
+    # ── Row 1: VWAP 20 cuộn ───────────────────────────────────────────────
+    if show_vwap and 'Volume' in df.columns and len(df) >= 10:
+        try:
+            from data.technicals import vwap as _vwap_fn
+            _vw = _vwap_fn(df, window=20)
+            fig.add_trace(go.Scatter(
+                x=dates, y=_vw, mode='lines', name='VWAP 20',
+                line=dict(color='#EAB308', width=1.6),
+                hovertemplate='VWAP: %{y:,.2f}<extra></extra>',
+                showlegend=False,
+            ), row=1, col=1)
+        except Exception:
+            pass
+
+    # ── Row 1: Hỗ trợ/Kháng cự (vùng giá lịch sử) ────────────────────────
+    if show_sr and len(df) >= 30:
+        try:
+            from data.technicals import support_resistance as _sr_fn
+            _sr = _sr_fn(df, max_levels=4)
+            for _px, _strength in _sr.get('resistance', [])[:3]:
+                fig.add_hline(y=_px, line=dict(color='#EF4444', width=1, dash='dot'),
+                              annotation_text=f'R · {_px:.2f}',
+                              annotation_position='right',
+                              annotation_font=dict(size=9, color='#EF4444'),
+                              row=1, col=1)
+            for _px, _strength in _sr.get('support', [])[:3]:
+                fig.add_hline(y=_px, line=dict(color='#10B981', width=1, dash='dot'),
+                              annotation_text=f'S · {_px:.2f}',
+                              annotation_position='right',
+                              annotation_font=dict(size=9, color='#10B981'),
+                              row=1, col=1)
+        except Exception:
+            pass
+
+    # ── Row 1: Parabolic SAR (chấm dừng lỗ Wilder) ────────────────────────
+    if show_psar and len(df) >= 10:
+        try:
+            from data.technicals import parabolic_sar as _psar_fn
+            _ps = _psar_fn(df)
+            fig.add_trace(go.Scatter(
+                x=dates, y=_ps, mode='markers', name='PSAR',
+                marker=dict(color='#A855F7', size=4, symbol='circle'),
+                hovertemplate='PSAR: %{y:,.2f}<extra></extra>',
+                showlegend=False,
+            ), row=1, col=1)
+        except Exception:
+            pass
 
     # ── Row 2: Volume bars ──────────────────────────────────────────────
     if len(df) > 0 and 'Volume' in df.columns:

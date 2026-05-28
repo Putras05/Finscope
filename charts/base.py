@@ -11,12 +11,12 @@ from core.constants import get_clr
 
 
 _PLOTLY_CONFIG = {
-    'displayModeBar': False, 'displaylogo': False,  # v37: tắt modebar để rộng + đỡ overlap title
+    'displayModeBar': True, 'displaylogo': False,   # bật modebar — zoom/pan/download/reset
     'modeBarButtonsToRemove': [
         'lasso2d', 'select2d', 'autoScale2d',
         'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines',
     ],
-    'toImageButtonOptions': {'format': 'png', 'scale': 2},
+    'toImageButtonOptions': {'format': 'png', 'scale': 3, 'filename': 'finscope_chart'},
 }
 
 

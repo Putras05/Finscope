@@ -64,13 +64,9 @@ def _candlestick_section(df, ticker, _T, _is_en_cmp):
     Streamlit 1.32+ st.fragment isolates reruns — đổi SMA/Ichimoku/Timeframe
     không gọi lại render() cha (KPI, forecast cards). Cảm giác instant.
     """
-    _tf_col, _sma_col, _ichi_col = st.columns([3, 1, 1])
+    _tf_col, _ov_col = st.columns([3, 2])
     with _tf_col:
         _tf_label = 'Khung thời gian' if not _is_en_cmp else 'Timeframe'
-        # NOTE: st.segmented_control needs Streamlit ≥1.34 — Streamlit Cloud
-        # may run an older runtime. Use st.radio(horizontal=True) which is
-        # available since 0.85 and styled like a segmented control via CSS
-        # (see ui/css.py inject_global_css `[data-testid="stRadio"]` rules).
         _tf_options = ['1D', '1W', '1M', '3M']
         _selected_tf = st.radio(
             _tf_label,
@@ -80,20 +76,43 @@ def _candlestick_section(df, ticker, _T, _is_en_cmp):
             key=f'cs_tf_{ticker}',
             label_visibility='collapsed',
         )
-    with _sma_col:
-        _show_sma = st.toggle(
-            'SMA 5/20', value=True, key=f'cs_sma_{ticker}',
-            help=('Hiển thị 2 đường trung bình động SMA 5 (cam) & SMA 20 (tím)'
-                  if not _is_en_cmp else
-                  'Show SMA 5 (orange) & SMA 20 (purple) moving averages'),
-        )
-    with _ichi_col:
-        _show_ichimoku = st.toggle(
-            'Ichimoku', value=False, key=f'cs_ichi_{ticker}',
-            help=('Hiển thị Tenkan, Kijun, Mây Kumo, Chikou (cần ≥30 phiên)'
-                  if not _is_en_cmp else
-                  'Show Tenkan, Kijun, Kumo cloud, Chikou (needs ≥30 bars)'),
-        )
+    with _ov_col:
+        # Popover gom 6 lớp phủ kỹ thuật — giữ thanh top gọn, vẫn cho user
+        # bật nhiều overlay tùy ý mà không chiếm chỗ.
+        _pop_label = ('Lớp phủ kỹ thuật ▾' if not _is_en_cmp else 'Technical overlays ▾')
+        try:
+            _pop = st.popover(_pop_label, use_container_width=True)
+        except Exception:
+            _pop = st.container()
+        with _pop:
+            _c1, _c2 = st.columns(2)
+            with _c1:
+                _show_sma = st.toggle(
+                    'SMA 5/20', value=True, key=f'cs_sma_{ticker}',
+                    help='SMA 5 (cam) & SMA 20 (tím)' if not _is_en_cmp
+                         else 'SMA 5 (orange) & SMA 20 (purple)')
+                _show_bb = st.toggle(
+                    'Bollinger Bands', value=False, key=f'cs_bb_{ticker}',
+                    help='Dải Bollinger 20·2σ — biên trên/dưới ± 2 độ lệch chuẩn'
+                         if not _is_en_cmp else 'Bollinger Bands 20·2σ')
+                _show_sr = st.toggle(
+                    'Hỗ trợ / Kháng cự' if not _is_en_cmp else 'Support / Resistance',
+                    value=False, key=f'cs_sr_{ticker}',
+                    help='Các mức S/R từ swing-high/low gom cụm 260 phiên gần nhất'
+                         if not _is_en_cmp else 'S/R clustered from last 260 sessions')
+            with _c2:
+                _show_ichimoku = st.toggle(
+                    'Ichimoku', value=False, key=f'cs_ichi_{ticker}',
+                    help='Tenkan, Kijun, Mây Kumo, Chikou (cần ≥30 phiên)'
+                         if not _is_en_cmp else 'Tenkan, Kijun, Kumo, Chikou')
+                _show_vwap = st.toggle(
+                    'VWAP 20', value=False, key=f'cs_vwap_{ticker}',
+                    help='Giá bình quân gia quyền theo khối lượng (cuộn 20 phiên)'
+                         if not _is_en_cmp else 'Volume-weighted avg price (20-period)')
+                _show_psar = st.toggle(
+                    'Parabolic SAR', value=False, key=f'cs_psar_{ticker}',
+                    help='Chấm dừng lỗ Wilder — dưới giá ⇒ uptrend, trên giá ⇒ downtrend'
+                         if not _is_en_cmp else 'Wilder stop-and-reverse dots')
     if _selected_tf is None:
         _selected_tf = '1D'
 
@@ -135,6 +154,10 @@ def _candlestick_section(df, ticker, _T, _is_en_cmp):
             interval=_selected_tf,
             show_sma=_show_sma,
             show_ichimoku=_show_ichimoku,
+            show_bb=_show_bb,
+            show_vwap=_show_vwap,
+            show_sr=_show_sr,
+            show_psar=_show_psar,
         )
         _candle_config = {
             **_PLOTLY_CONFIG,
