@@ -245,6 +245,51 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
     # ── TAB 4: THỐNG KÊ & RESET ────────────────────────────────────────
     with tab_stat:
+        # ── Equity curve — đường tài sản theo thời gian ─────────────────
+        curve = PP.equity_curve(state)
+        if len(curve) >= 2:
+            st.markdown(f'<div class="sec-hdr">{"Đường tài sản (Equity Curve)" if not is_en else "Equity Curve"}'
+                        f' <span style="font-size:11px;font-weight:600;color:{_T["text_muted"]};margin-left:8px">'
+                        f'{"Cash + giá trị nắm giữ theo thời gian — neo vào Close hằng ngày" if not is_en else "Cash + holdings value over time — anchored to daily Close"}'
+                        f'</span></div>', unsafe_allow_html=True)
+            try:
+                import plotly.graph_objects as _go
+                from charts.base import _plotly_axes_style, _PLOTLY_CONFIG
+                _dates = [c['date'] for c in curve]
+                _eq    = [c['equity']   for c in curve]
+                _cash  = [c['cash']     for c in curve]
+                _hold  = [c['holdings'] for c in curve]
+                _init  = float(state.get('initial_capital', 100_000_000))
+                _fig = _go.Figure()
+                _fig.add_trace(_go.Scatter(
+                    x=_dates, y=_eq, mode='lines+markers',
+                    line=dict(color='#0F766E', width=2.4),
+                    marker=dict(size=6, color='#0F766E', line=dict(color='#fff', width=1)),
+                    name=('Tổng tài sản' if not is_en else 'Total Equity'),
+                    fill='tozeroy', fillcolor='rgba(15,118,110,0.08)',
+                    hovertemplate='<b>%{x}</b><br>%{y:,.0f} đ<extra></extra>'))
+                _fig.add_trace(_go.Scatter(
+                    x=_dates, y=_cash, mode='lines',
+                    line=dict(color='#94A3B8', width=1.4, dash='dot'),
+                    name=('Tiền mặt' if not is_en else 'Cash'),
+                    hovertemplate='Cash: %{y:,.0f} đ<extra></extra>'))
+                _fig.add_hline(y=_init, line=dict(color=_T['text_muted'], width=1, dash='dash'),
+                               annotation_text=('Vốn ban đầu' if not is_en else 'Initial capital'),
+                               annotation_position='right',
+                               annotation_font=dict(size=10, color=_T['text_muted']))
+                _fig.update_layout(
+                    height=340, margin=dict(l=50, r=30, t=10, b=40),
+                    paper_bgcolor=_T['bg_card'], plot_bgcolor=_T['bg_card'],
+                    font=dict(family='Inter', size=11, color=_T['text_primary']),
+                    hovermode='x unified',
+                    legend=dict(orientation='h', y=-0.18, x=0.5, xanchor='center',
+                                bgcolor='rgba(0,0,0,0)'))
+                _plotly_axes_style(_fig, _T)
+                _fig.update_yaxes(title=dict(text='đồng', font=dict(size=10, color=_T['text_muted'])))
+                st.plotly_chart(_fig, use_container_width=True, config=_PLOTLY_CONFIG)
+            except Exception as _e:
+                st.caption(f'⚠ {_e}')
+            st.markdown("<div style='margin:14px 0 8px'></div>", unsafe_allow_html=True)
         _detail = [
             (('Số lệnh tổng' if not is_en else 'Total trades'),       f'{stats["n_trades"]}', _T['text_primary']),
             (('Lệnh mua' if not is_en else 'Buy orders'),             f'{stats["n_buys"]}', _T['success']),

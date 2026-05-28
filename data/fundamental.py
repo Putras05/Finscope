@@ -39,6 +39,14 @@ _BAL_MAP = {
     # bank không có 'Tiền và tương đương tiền' theo đúng nghĩa → NaN, chấp nhận.
     'cash':          ['Tiền và tương đương tiền'],
 }
+_CF_MAP = {
+    # 3 dòng tiền chính + tổng — vnstock dùng tên 'Lưu chuyển tiền thuần/ròng'.
+    'oper_cf': ['Lưu chuyển tiền tệ ròng từ các hoạt động sản xuất kinh',
+                'Lưu chuyển tiền thuần từ hoạt động kinh doanh'],
+    'inv_cf':  ['Lưu chuyển tiền thuần từ hoạt động đầu tư'],
+    'fin_cf':  ['Lưu chuyển tiền thuần từ hoạt động tài chính'],
+    'net_cf':  ['Lưu chuyển tiền thuần trong kỳ'],
+}
 
 
 def _find_row(df: pd.DataFrame, patterns: list):
@@ -65,19 +73,24 @@ def fetch_financials(ticker: str) -> dict:
         from vnstock import Vnstock
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             s = Vnstock().stock(symbol=ticker.upper(), source='VCI')
-            # Income + Balance SONG SONG → giảm chờ network từ ~6s xuống ~3s
-            # (vnstock 4 mỗi call mất ~2-3s; chạy đồng thời chỉ tốn max).
-            with ThreadPoolExecutor(max_workers=2) as _ex:
+            # 3 BCTC SONG SONG → tổng thời gian = max thay vì tổng. Cashflow
+            # là báo cáo thứ 3 trong Big 3 (income + balance + cashflow).
+            with ThreadPoolExecutor(max_workers=3) as _ex:
                 _f_inc = _ex.submit(s.finance.income_statement, period='quarter', lang='vi')
-                _f_bal = _ex.submit(s.finance.balance_sheet, period='quarter', lang='vi')
+                _f_bal = _ex.submit(s.finance.balance_sheet,    period='quarter', lang='vi')
+                _f_cf  = _ex.submit(s.finance.cash_flow,        period='quarter', lang='vi')
                 inc = _f_inc.result()
                 bal = _f_bal.result()
+                try:
+                    cf = _f_cf.result()
+                except Exception:
+                    cf = None       # cash flow optional — không vỡ trang nếu thiếu
         periods = [c for c in inc.columns if c not in ('item', 'item_en', 'item_id')]
         return {'ok': True, 'note': '', 'periods': periods,
-                'income': inc, 'balance': bal}
+                'income': inc, 'balance': bal, 'cashflow': cf}
     except Exception as e:
         return {'ok': False, 'note': f'Không lấy được BCTC: {str(e)[:120]}',
-                'periods': [], 'income': None, 'balance': None}
+                'periods': [], 'income': None, 'balance': None, 'cashflow': None}
 
 
 def _row_to_list(row, periods: list) -> list:
@@ -96,14 +109,18 @@ def _row_to_list(row, periods: list) -> list:
 def extract_series(fin: dict) -> dict:
     """Trả {key: [values 4 quý]} cho mỗi metric quan trọng + periods."""
     if not fin or not fin.get('ok'):
-        return {'periods': [], 'income': {}, 'balance': {}}
+        return {'periods': [], 'income': {}, 'balance': {}, 'cashflow': {}}
     periods = fin['periods']
-    inc = fin['income']; bal = fin['balance']
+    inc = fin['income']; bal = fin['balance']; cf = fin.get('cashflow')
     income_s = {k: _row_to_list(_find_row(inc, pats), periods)
                 for k, pats in _INC_MAP.items()}
     balance_s = {k: _row_to_list(_find_row(bal, pats), periods)
                  for k, pats in _BAL_MAP.items()}
-    return {'periods': periods, 'income': income_s, 'balance': balance_s}
+    cf_s = ({k: _row_to_list(_find_row(cf, pats), periods)
+             for k, pats in _CF_MAP.items()} if cf is not None
+            else {k: [float('nan')] * len(periods) for k in _CF_MAP})
+    return {'periods': periods, 'income': income_s,
+            'balance': balance_s, 'cashflow': cf_s}
 
 
 def compute_kpis(ext: dict, last_price_vnd: float = 0.0,
@@ -115,7 +132,7 @@ def compute_kpis(ext: dict, last_price_vnd: float = 0.0,
     """
     if not ext or not ext['periods']:
         return {'ok': False}
-    inc = ext['income']; bal = ext['balance']
+    inc = ext['income']; bal = ext['balance']; cf = ext.get('cashflow', {})
 
     def _ttm(arr):
         """TTM = tổng 4 kỳ (giả định 4 quý gần nhất là TTM)."""
@@ -170,6 +187,14 @@ def compute_kpis(ext: dict, last_price_vnd: float = 0.0,
     rev_qoq = _qoq(inc['revenue'])
     ni_qoq  = _qoq(inc['net_income'])
 
+    # Cash Flow TTM (tổng 4 kỳ) + Free Cash Flow (Operating + Investing — CapEx
+    # gần đúng = phần Investing CF nhuần liên quan tài sản cố định).
+    oper_cf_ttm = _ttm(cf.get('oper_cf', []))
+    inv_cf_ttm  = _ttm(cf.get('inv_cf', []))
+    fin_cf_ttm  = _ttm(cf.get('fin_cf', []))
+    fcf_ttm     = (oper_cf_ttm + inv_cf_ttm) if (oper_cf_ttm == oper_cf_ttm and inv_cf_ttm == inv_cf_ttm) else float('nan')
+    p_fcf       = (mcap / fcf_ttm) if (mcap == mcap and fcf_ttm == fcf_ttm and fcf_ttm > 0) else float('nan')
+
     return {
         'ok': True,
         'rev_ttm': rev_ttm, 'gp_ttm': gp_ttm, 'ni_ttm': ni_ttm,
@@ -180,4 +205,6 @@ def compute_kpis(ext: dict, last_price_vnd: float = 0.0,
         'market_cap': mcap, 'pe': pe, 'pb': pb, 'bvps': bvps,
         'last_price': last_price_vnd, 'listed_share': listed_share,
         'rev_qoq': rev_qoq, 'ni_qoq': ni_qoq,
+        'oper_cf_ttm': oper_cf_ttm, 'inv_cf_ttm': inv_cf_ttm,
+        'fin_cf_ttm': fin_cf_ttm, 'fcf_ttm': fcf_ttm, 'p_fcf': p_fcf,
     }

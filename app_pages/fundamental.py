@@ -200,6 +200,56 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         f'<tbody>{_bal_rows}</tbody></table></div>',
         unsafe_allow_html=True)
 
+    # ── BÁO CÁO LƯU CHUYỂN TIỀN TỆ (Big-3: income + balance + CASH FLOW) ──
+    st.markdown("<div style='margin:18px 0 6px'></div>", unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="sec-hdr">'
+        f'{"Báo cáo Lưu chuyển Tiền tệ 4 quý" if not is_en else "Cash Flow Statement — last 4 quarters"}'
+        f' <span style="font-size:11px;font-weight:600;color:{_T["text_muted"]};margin-left:8px">'
+        f'{"HĐ kinh doanh · HĐ đầu tư · HĐ tài chính · LCTT thuần · Free Cash Flow (FCF)" if not is_en else "Operating · Investing · Financing · Net · Free Cash Flow"}'
+        f'</span></div>', unsafe_allow_html=True)
+    cf = ext.get('cashflow', {})
+    _cf_rows = (
+        _row_html(('LCTT HĐ kinh doanh (CFO)' if not is_en else 'Operating CF'), cf.get('oper_cf', [float('nan')]*len(periods))) +
+        _row_html(('LCTT HĐ đầu tư (CFI)'    if not is_en else 'Investing CF'), cf.get('inv_cf', [float('nan')]*len(periods))) +
+        _row_html(('LCTT HĐ tài chính (CFF)' if not is_en else 'Financing CF'), cf.get('fin_cf', [float('nan')]*len(periods))) +
+        _row_html(('LCTT thuần trong kỳ'     if not is_en else 'Net change in cash'), cf.get('net_cf', [float('nan')]*len(periods)))
+    )
+    st.markdown(
+        f'<div style="border-radius:12px;overflow-x:auto;border:1px solid {_T["border"]}">'
+        f'<table style="width:100%;border-collapse:collapse;font-size:13px">'
+        f'<thead><tr style="background:{_T["accent"]};color:#fff">{_th}</tr></thead>'
+        f'<tbody>{_cf_rows}</tbody></table></div>',
+        unsafe_allow_html=True)
+
+    # 3 KPI Cash Flow + FCF + P/FCF
+    st.markdown("<div style='margin:10px 0 6px'></div>", unsafe_allow_html=True)
+    _cf_col_o = _T['success'] if (kpi['oper_cf_ttm'] == kpi['oper_cf_ttm'] and kpi['oper_cf_ttm'] > 0) else _T['danger']
+    _cf_col_f = _T['success'] if (kpi['fcf_ttm']     == kpi['fcf_ttm']     and kpi['fcf_ttm']     > 0) else _T['danger']
+    _cf_cards = ''.join([
+        _kpi_card(('CFO (TTM)' if not is_en else 'TTM CFO'),
+                  _fmt_money(kpi['oper_cf_ttm']), _cf_col_o, _T,
+                  ('Tiền HĐ KD tạo ra' if not is_en else 'Cash from operations')),
+        _kpi_card(('CFI (TTM)' if not is_en else 'TTM CFI'),
+                  _fmt_money(kpi['inv_cf_ttm']),
+                  '#0891B2' if kpi['inv_cf_ttm']==kpi['inv_cf_ttm'] else _T['text_muted'], _T,
+                  ('Tiền HĐ đầu tư (thường âm)' if not is_en else 'Cash from investing (usually negative)')),
+        _kpi_card(('CFF (TTM)' if not is_en else 'TTM CFF'),
+                  _fmt_money(kpi['fin_cf_ttm']),
+                  _T['warning'] if kpi['fin_cf_ttm']==kpi['fin_cf_ttm'] else _T['text_muted'], _T,
+                  ('Tiền HĐ tài chính (vay/trả/CT)' if not is_en else 'Cash from financing')),
+        _kpi_card('FCF (TTM)',
+                  _fmt_money(kpi['fcf_ttm']), _cf_col_f, _T,
+                  ('CFO + CFI · dòng tiền tự do' if not is_en else 'CFO + CFI · free cash flow')),
+        _kpi_card('P/FCF',
+                  f'{kpi["p_fcf"]:.2f}x' if kpi['p_fcf']==kpi['p_fcf'] else '—',
+                  _T['accent'], _T,
+                  ('Vốn hóa / FCF · thấp = rẻ' if not is_en else 'Mcap / FCF · lower = cheaper')),
+    ])
+    st.markdown(
+        f'<div style="display:flex;gap:10px;flex-wrap:wrap">{_cf_cards}</div>',
+        unsafe_allow_html=True)
+
     # ── BIÊN LỢI NHUẬN + GROWTH ─────────────────────────────────────────
     st.markdown("<div style='margin:18px 0 6px'></div>", unsafe_allow_html=True)
     st.markdown(f'<div class="sec-hdr">{"Biên lợi nhuận & Tăng trưởng" if not is_en else "Margins & Growth"}</div>',

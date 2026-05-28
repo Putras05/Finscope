@@ -109,6 +109,75 @@ def sell(state: dict, ticker: str, qty: int, price: float) -> tuple:
                          f'(realized {realized:+,.0f} đ).')
 
 
+def equity_curve(state: dict) -> list:
+    """Đường tài sản (equity = cash + holdings × close tại ngày đó) theo thời gian.
+
+    Đi qua từng lệnh theo thứ tự thời gian, dựng cash + positions sau mỗi lệnh,
+    rồi tính holdings tại Close của NGÀY giao dịch đó. Điểm cuối = hôm nay.
+    Trả list of dict {date, cash, holdings, equity}.
+    """
+    from data.fetcher import fetch_data
+    import datetime as _dt
+    history = sorted(state.get('history', []), key=lambda h: h['ts'])
+    if not history:
+        return []
+
+    cash = float(state['initial_capital'])
+    positions = {}                       # {ticker: qty}
+    price_series = {}                    # cache per ticker
+
+    def _close_on(tk: str, date_iso: str):
+        """Close (đồng) tại hoặc trước date_iso. None nếu không có data."""
+        if tk not in price_series:
+            try:
+                df = fetch_data(tk)
+                price_series[tk] = df.set_index(df['Ngay'].astype(str))['Close']
+            except Exception:
+                price_series[tk] = None
+        s = price_series[tk]
+        if s is None:
+            return None
+        avail = s[s.index <= date_iso]
+        return float(avail.iloc[-1] * 1000) if len(avail) else None
+
+    curve = []
+    # Điểm bắt đầu — trước lệnh đầu tiên
+    curve.append({'date': history[0]['ts'][:10],
+                  'cash': cash, 'holdings': 0.0, 'equity': cash})
+    for h in history:
+        date_iso = h['ts'][:10]
+        tk = h['ticker']; qty = int(h['qty']); price = float(h['price'])
+        if h['side'] == 'BUY':
+            cash -= qty * price
+            positions[tk] = positions.get(tk, 0) + qty
+        else:
+            cash += qty * price
+            positions[tk] = positions.get(tk, 0) - qty
+            if positions[tk] <= 0:
+                positions.pop(tk, None)
+        holdings = 0.0
+        for ptk, pq in positions.items():
+            px = _close_on(ptk, date_iso)
+            if px is None:
+                px = price       # fallback: dùng giá lệnh hiện tại
+            holdings += pq * px
+        curve.append({'date': date_iso, 'cash': cash,
+                      'holdings': holdings, 'equity': cash + holdings})
+
+    # Điểm cuối: HÔM NAY (nếu khác ngày lệnh cuối)
+    today = _dt.date.today().isoformat()
+    if today != curve[-1]['date']:
+        holdings_today = 0.0
+        for ptk, pq in positions.items():
+            px = _close_on(ptk, today)
+            if px is None:
+                px = curve[-1]['holdings'] / max(sum(positions.values()) or 1, 1)
+            holdings_today += pq * px
+        curve.append({'date': today, 'cash': cash,
+                      'holdings': holdings_today, 'equity': cash + holdings_today})
+    return curve
+
+
 def compute_stats(state: dict, current_prices: dict) -> dict:
     """Tính giá trị danh mục + lãi/lỗ + thống kê hành vi giao dịch.
 
