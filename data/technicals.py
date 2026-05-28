@@ -176,6 +176,67 @@ def zigzag(df: pd.DataFrame, pct: float = 0.05) -> dict:
     return {'idx': idx, 'px': px, 'dirs': dirs}
 
 
+# ── VWAP (Volume-Weighted Average Price) — cuộn (rolling) cho dữ liệu phiên ─
+def vwap(df: pd.DataFrame, window: int = 20) -> np.ndarray:
+    """VWAP cuộn: trung bình giá tiêu biểu có trọng số khối lượng trong cửa sổ.
+
+    Giá tiêu biểu = (H+L+C)/3. VWAP_t = Σ(tp·V) / Σ(V) trên cửa sổ. Dữ liệu
+    phiên (1D) nên dùng rolling thay vì reset-per-session như VWAP intraday.
+    """
+    tp = (df['High'] + df['Low'] + df['Close']) / 3.0
+    v = df['Volume'].astype(float).replace(0, np.nan)
+    num = (tp * v).rolling(window, min_periods=max(2, window // 2)).sum()
+    den = v.rolling(window, min_periods=max(2, window // 2)).sum()
+    return (num / den).values
+
+
+# ── Parabolic SAR (Wilder 1978) — chấm dừng lỗ & đảo chiều ──────────────────
+def parabolic_sar(df: pd.DataFrame, af0: float = 0.02, af_step: float = 0.02,
+                  af_max: float = 0.20) -> np.ndarray:
+    """Parabolic SAR theo Wilder: SAR(t+1) = SAR(t) + AF·(EP − SAR(t)).
+
+    Trả mảng SAR cùng độ dài df; điểm dưới giá → xu hướng tăng (hỗ trợ),
+    điểm trên giá → xu hướng giảm (kháng cự).
+    """
+    n = len(df)
+    H = df['High'].values.astype(float)
+    L = df['Low'].values.astype(float)
+    sar = np.full(n, np.nan)
+    if n < 3:
+        return sar
+    # Khởi tạo: giả định xu hướng TĂNG ban đầu
+    bull = True
+    af = af0
+    ep = H[0]          # extreme point (cao nhất khi bull, thấp nhất khi bear)
+    sar[0] = L[0]
+    for i in range(1, n):
+        prev_sar = sar[i - 1]
+        cur = prev_sar + af * (ep - prev_sar)
+        if bull:
+            # SAR không được vượt low của 2 phiên trước
+            cur = min(cur, L[i - 1], L[max(0, i - 2)])
+            if L[i] < cur:                # đảo chiều
+                bull = False
+                cur = ep                  # SAR mới = EP cũ
+                ep = L[i]
+                af = af0
+            else:
+                if H[i] > ep:
+                    ep = H[i]; af = min(af + af_step, af_max)
+        else:
+            cur = max(cur, H[i - 1], H[max(0, i - 2)])
+            if H[i] > cur:
+                bull = True
+                cur = ep
+                ep = H[i]
+                af = af0
+            else:
+                if L[i] < ep:
+                    ep = L[i]; af = min(af + af_step, af_max)
+        sar[i] = cur
+    return sar
+
+
 # ── Mẫu hình nến (candlestick patterns) ─────────────────────────────────────
 def candlestick_patterns(df: pd.DataFrame, lookback: int = 12) -> list:
     """Nhận dạng các mẫu hình nến phổ biến trong `lookback` phiên gần nhất.

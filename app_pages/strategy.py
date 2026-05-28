@@ -154,24 +154,30 @@ def _technical_analysis_section(df, ticker, _T, is_en):
         f'{"— Hỗ trợ/Kháng cự · Fibonacci · Kênh xu hướng · Sóng" if not is_en else "— Support/Resistance · Fibonacci · Trend channel · Waves"}'
         f'</span></div>', unsafe_allow_html=True)
 
-    c1, c2, c3, c4, c5, c6 = st.columns([1, 1, 1, 1, 1, 1.3])
-    _sr = c1.toggle(('Hỗ trợ/Kháng cự' if not is_en else 'S/R'),
-                    value=True, key=f'ta_sr_{ticker}')
-    _fib = c2.toggle('Fibonacci', value=True, key=f'ta_fib_{ticker}')
-    _ch = c3.toggle(('Kênh xu hướng' if not is_en else 'Channel'),
-                    value=True, key=f'ta_ch_{ticker}')
-    _zz = c4.toggle(('Sóng (ZigZag)' if not is_en else 'Waves'),
-                    value=True, key=f'ta_zz_{ticker}')
-    _pat = c5.toggle(('Mẫu nến' if not is_en else 'Patterns'),
-                     value=True, key=f'ta_pat_{ticker}')
-    _win = c6.radio(('Cửa sổ' if not is_en else 'Window'),
-                    options=[120, 180, 365], index=1, horizontal=True,
-                    key=f'ta_win_{ticker}', label_visibility='collapsed')
+    # Hàng 1: 4 toggle phổ thông + cửa sổ
+    c1, c2, c3, c4, c_win = st.columns([1, 1, 1, 1, 1.3])
+    _sr  = c1.toggle(('Hỗ trợ/Kháng cự' if not is_en else 'S/R'),  value=True, key=f'ta_sr_{ticker}')
+    _fib = c2.toggle('Fibonacci',                                   value=True, key=f'ta_fib_{ticker}')
+    _ch  = c3.toggle(('Kênh xu hướng' if not is_en else 'Channel'), value=True, key=f'ta_ch_{ticker}')
+    _zz  = c4.toggle(('Sóng (ZigZag)' if not is_en else 'Waves'),   value=True, key=f'ta_zz_{ticker}')
+    _win = c_win.radio(('Cửa sổ' if not is_en else 'Window'),
+                       options=[120, 180, 365], index=1, horizontal=True,
+                       key=f'ta_win_{ticker}', label_visibility='collapsed')
+    # Hàng 2: mẫu nến + VWAP + PSAR (mặc định tắt VWAP/PSAR cho gọn)
+    c5, c6, c7, _, _ = st.columns([1, 1, 1, 1, 1.3])
+    _pat  = c5.toggle(('Mẫu nến' if not is_en else 'Patterns'),    value=True,  key=f'ta_pat_{ticker}')
+    _vwap = c6.toggle('VWAP',                                       value=False, key=f'ta_vwap_{ticker}',
+                      help=('Giá trung bình theo khối lượng 20 phiên'
+                            if not is_en else 'Volume-weighted average price (20)'))
+    _psar = c7.toggle('Parabolic SAR',                              value=False, key=f'ta_psar_{ticker}',
+                      help=('Chấm dừng lỗ / điểm đảo chiều (Wilder 1978)'
+                            if not is_en else 'Stop-and-Reverse points (Wilder 1978)'))
 
     try:
         fig = chart_technical(df, ticker, _T, window=int(_win), show_sr=_sr,
                               show_fib=_fib, show_channel=_ch, show_zigzag=_zz,
-                              show_patterns=_pat, is_en=is_en)
+                              show_patterns=_pat, show_vwap=_vwap,
+                              show_psar=_psar, is_en=is_en)
         st.plotly_chart(fig, use_container_width=True, config={
             **_PLOTLY_CONFIG, 'scrollZoom': True})
     except Exception as _e:

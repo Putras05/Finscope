@@ -8,9 +8,22 @@ import streamlit as st
 import datetime as _dt
 from streamlit_option_menu import option_menu
 
-from core.constants import TICKERS
+from core.constants import TICKERS, TICKER_INFO
 from core.i18n import t
 from ui.logo import mark_mono
+
+
+def _sector_short(tk: str) -> str:
+    """Ngành ngắn gọn của mã (bỏ đuôi '· HOSE'); fallback 'Khác' nếu thiếu."""
+    s = TICKER_INFO.get(tk, '')
+    return s.split('·')[0].strip() if s else 'Khác'
+
+
+# Sắp mã theo NHÓM NGÀNH để dropdown dễ chọn — 3 mã mặc định ở đầu.
+_DEFAULT_TOP = ['FPT', 'HPG', 'VNM']
+_TICKER_ORDER = _DEFAULT_TOP + sorted(
+    [tk for tk in TICKERS if tk not in _DEFAULT_TOP],
+    key=lambda tk: (_sector_short(tk), tk))
 
 _PAGE_KEYS = [
     'Dashboard Tổng quan', 'Phân tích Chi tiết', 'Mô hình Nâng cao',
@@ -91,7 +104,10 @@ def render_topbar() -> tuple:
 
     # ── Hàng điều khiển: mã · train · p · từ · đến · nút ────────────────
     c = st.columns([1.5, 1.6, 1.0, 1.5, 1.5, 0.7, 0.7, 0.8])
-    ticker = c[0].selectbox(t('sidebar.ticker'), TICKERS, key='tb_ticker')
+    ticker = c[0].selectbox(
+        t('sidebar.ticker'), _TICKER_ORDER, key='tb_ticker',
+        format_func=lambda tk: f'{_sector_short(tk)} · {tk}',
+    )
     train_ratio = c[1].slider(t('sidebar.train_ratio'), 70, 90, 80, step=5,
                               format='%d%%', key='tb_ratio') / 100
     if 'sb_ar_order' not in st.session_state:
