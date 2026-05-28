@@ -59,20 +59,38 @@ def render_topbar() -> tuple:
     """
     _is_en = st.session_state.get('lang', 'VI') == 'EN'
 
-    # ── Header thương hiệu ──────────────────────────────────────────────
+    # ── Header thương hiệu — wordmark gradient + huy hiệu logo ───────────
+    # WORDMARK: "Fin" đậm-tối + "Scope" gradient blue→teal (background-clip).
+    # Font-feature: liga + numeric tabular cho cảm giác chuyên nghiệp.
+    _wm_html = (
+        f"<span style='display:inline-flex;align-items:center;gap:10px;"
+        f"font-family:Inter,system-ui,sans-serif;font-size:24px;"
+        f"font-weight:800;letter-spacing:-.8px;line-height:1'>"
+        f"{_LOGO_SVG}"
+        f"<span style='display:inline-block'>"
+        f"<span style='color:#0F172A'>Fin</span>"
+        f"<span style='background:linear-gradient(90deg,#1E40AF 0%,#0891B2 60%,#0F766E 100%);"
+        f"-webkit-background-clip:text;background-clip:text;color:transparent;"
+        f"-webkit-text-fill-color:transparent'>Scope</span>"
+        f"</span></span>")
+
     st.markdown(
         f"<div style='display:flex;align-items:center;justify-content:space-between;"
         f"flex-wrap:wrap;gap:8px;padding:6px 4px 10px'>"
-        f"<div style='display:flex;align-items:center;gap:10px;flex-wrap:wrap'>"
-        f"<span style='display:inline-flex;align-items:center;gap:8px;font-size:22px;"
-        f"font-weight:800;color:#1E40AF;letter-spacing:-.5px'>"
-        f"{_LOGO_SVG}{t('app.title')}</span>"
-        f"<span style='font-size:12px;color:#64748B;font-style:italic'>{t('app.tagline')}</span>"
-        f"<span style='font-size:11px;font-weight:600;color:#64748B;"
-        f"background:#EFF6FF;border:1px solid #DBEAFE;padding:3px 10px;border-radius:999px'>"
-        f"{'Multi-model Stock Analysis · 2026' if _is_en else 'Phân tích Chứng khoán Đa mô hình · 2026'}</span>"
+        f"<div style='display:flex;align-items:center;gap:12px;flex-wrap:wrap'>"
+        f"{_wm_html}"
+        # Đường gạch dọc tinh tế chia wordmark khỏi tagline
+        f"<span style='width:1px;height:22px;background:#CBD5E1'></span>"
+        f"<span style='font-size:12.5px;color:#475569;font-weight:500;"
+        f"letter-spacing:.2px'>{t('app.tagline')}</span>"
+        f"<span style='font-size:10.5px;font-weight:700;color:#0F766E;"
+        f"background:linear-gradient(90deg,#ECFEFF 0%,#F0FDFA 100%);"
+        f"border:1px solid #99F6E4;padding:3px 10px;border-radius:999px;"
+        f"letter-spacing:.4px'>"
+        f"{'Multi-model · 2026' if _is_en else 'Đa mô hình · 2026'}</span>"
         f"</div>"
-        f"<span style='font-size:11px;color:#94A3B8'>Nguyễn Thành Danh · Trần Huỳnh Nhã Trúc</span>"
+        f"<span style='font-size:11px;color:#94A3B8;font-style:italic'>"
+        f"Nguyễn Thành Danh · Trần Huỳnh Nhã Trúc</span>"
         f"</div>", unsafe_allow_html=True)
 
     # ── Navigation ngang ────────────────────────────────────────────────
