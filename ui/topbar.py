@@ -26,14 +26,14 @@ _TICKER_ORDER = _DEFAULT_TOP + sorted(
     key=lambda tk: (_sector_short(tk), tk))
 
 _PAGE_KEYS = [
-    'Dashboard Tổng quan', 'Phân tích Chi tiết', 'Mô hình Nâng cao',
-    'Chiến lược Giao dịch', 'Tin tức Thị trường', 'Tín hiệu & Cảnh báo',
-    'Lịch sử & Dữ liệu', 'Danh mục Đầu tư', 'Giao dịch Demo',
-    'Hướng dẫn Sử dụng',
+    'Dashboard Tổng quan', 'Tổng quan Thị trường', 'Phân tích Chi tiết',
+    'Mô hình Nâng cao', 'Chiến lược Giao dịch', 'Tin tức Thị trường',
+    'Tín hiệu & Cảnh báo', 'Lịch sử & Dữ liệu', 'Danh mục Đầu tư',
+    'Giao dịch Demo', 'Hướng dẫn Sử dụng',
 ]
 _ICONS = [
-    'speedometer2', 'graph-up-arrow', 'bezier2', 'bullseye', 'newspaper',
-    'activity', 'clock-history', 'briefcase', 'cash-stack',
+    'speedometer2', 'globe', 'graph-up-arrow', 'bezier2', 'bullseye',
+    'newspaper', 'activity', 'clock-history', 'briefcase', 'cash-stack',
     'book-half',
 ]
 
@@ -65,10 +65,10 @@ def render_topbar() -> tuple:
 
     # ── Navigation ngang ────────────────────────────────────────────────
     _labels = [
-        t('nav.dashboard'), t('nav.analysis'),  t('nav.advanced'),
-        t('nav.strategy'),  t('nav.news'),      t('nav.signals'),
-        t('nav.history'),   t('nav.portfolio'), t('nav.paper'),
-        t('nav.guide'),
+        t('nav.dashboard'), t('nav.market'),    t('nav.analysis'),
+        t('nav.advanced'),  t('nav.strategy'),  t('nav.news'),
+        t('nav.signals'),   t('nav.history'),   t('nav.portfolio'),
+        t('nav.paper'),     t('nav.guide'),
     ]
     if '_page_key' not in st.session_state:
         st.session_state['_page_key'] = 'Dashboard Tổng quan'

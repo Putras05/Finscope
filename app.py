@@ -242,6 +242,9 @@ _args = (ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, _T
 if page == 'Dashboard Tổng quan':
     from app_pages import dashboard as _pg_dash
     _pg_dash.render(*_args)
+elif page == 'Tổng quan Thị trường':
+    from app_pages import market as _pg_market
+    _pg_market.render(*_args)
 elif page == 'Phân tích Chi tiết':
     from app_pages import analysis as _pg_ana
     _pg_ana.render(*_args)

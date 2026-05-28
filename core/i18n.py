@@ -14,6 +14,7 @@ TEXT = {
     'nav.history':    {'VI': 'Lịch sử & Dữ liệu',    'EN': 'History & Data'},
     'nav.signals':    {'VI': 'Tín hiệu & Cảnh báo',  'EN': 'Signals & Alerts'},
     'nav.portfolio':  {'VI': 'Danh mục Đầu tư',      'EN': 'Investment Portfolio'},
+    'nav.market':     {'VI': 'Tổng quan Thị trường',  'EN': 'Market Overview'},
     'nav.paper':      {'VI': 'Giao dịch Demo',        'EN': 'Paper Trading'},
     'nav.guide':      {'VI': 'Hướng dẫn Sử dụng',    'EN': 'User Guide'},
     # Dashboard
