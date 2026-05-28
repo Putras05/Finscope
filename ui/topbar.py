@@ -25,6 +25,17 @@ _TICKER_ORDER = _DEFAULT_TOP + sorted(
     [tk for tk in TICKERS if tk not in _DEFAULT_TOP],
     key=lambda tk: (_sector_short(tk), tk))
 
+# Sectors sorted by số mã giảm dần (nhóm phổ biến lên đầu — Ngân hàng > BĐS > …)
+def _sector_counts() -> dict:
+    c = {}
+    for tk in TICKERS:
+        s = _sector_short(tk); c[s] = c.get(s, 0) + 1
+    return c
+_SECTOR_COUNTS = _sector_counts()
+_ALL_SECTORS = sorted(_SECTOR_COUNTS.keys(),
+                      key=lambda s: (-_SECTOR_COUNTS[s], s))
+_ALL_LABEL = 'Tất cả ngành'
+
 _PAGE_KEYS = [
     'Dashboard Tổng quan', 'Tổng quan Thị trường', 'Phân tích Cơ bản',
     'Phân tích Chi tiết', 'Mô hình Nâng cao', 'Chiến lược Giao dịch',
@@ -106,19 +117,46 @@ def render_topbar() -> tuple:
     page = _PAGE_KEYS[_labels.index(_sel)]
     st.session_state['_page_key'] = page
 
-    # ── Hàng điều khiển: mã · train · p · từ · đến · nút ────────────────
-    # Nới rộng cột mã (1.5→2.2) để label "ACB · Ngân hàng" không bị cụt thành
-    # "Ngân ...". Format MÃ trước · ngành sau → mã LUÔN nhìn thấy dù bị cắt.
-    c = st.columns([2.2, 1.4, 0.9, 1.3, 1.3, 0.7, 0.7, 0.8])
-    ticker = c[0].selectbox(
-        t('sidebar.ticker'), _TICKER_ORDER, key='tb_ticker',
-        format_func=lambda tk: f'{tk} · {_sector_short(tk)}',
+    # ── Hàng điều khiển: NGÀNH → MÃ → train · p · từ · đến · nút ────────
+    # Two-step lựa chọn (kiểu pro app): chọn NGÀNH trước, MÃ trong ngành đó
+    # sau. Sector "Tất cả ngành" giữ luồng cũ. 9 cột.
+    c = st.columns([1.3, 1.1, 1.2, 0.8, 1.3, 1.3, 0.6, 0.6, 0.7])
+
+    # NGÀNH selectbox — option "Tất cả ngành" + 31 ngành sort theo độ phổ biến.
+    _SECTOR_OPTS = [_ALL_LABEL] + _ALL_SECTORS
+    if 'tb_sector' not in st.session_state:
+        st.session_state['tb_sector'] = _ALL_LABEL
+    sector = c[0].selectbox(
+        'Ngành' if not _is_en else 'Sector',
+        _SECTOR_OPTS, key='tb_sector',
+        format_func=lambda s: (s if s == _ALL_LABEL
+                               else f'{s} ({_SECTOR_COUNTS.get(s,0)} mã)'),
     )
-    train_ratio = c[1].slider(t('sidebar.train_ratio'), 70, 90, 80, step=5,
+
+    # MÃ filtered theo ngành — ưu tiên 3 mã default ở đầu nếu chọn "Tất cả".
+    if sector == _ALL_LABEL:
+        ticker_opts = _TICKER_ORDER
+    else:
+        ticker_opts = [tk for tk in _TICKER_ORDER if _sector_short(tk) == sector]
+        if not ticker_opts:
+            ticker_opts = _TICKER_ORDER
+    # Reset tb_ticker nếu không nằm trong options sau khi đổi ngành (tránh
+    # Streamlit warning "default not in options").
+    if st.session_state.get('tb_ticker') not in ticker_opts:
+        st.session_state['tb_ticker'] = ticker_opts[0]
+    if sector == _ALL_LABEL:
+        _fmt_tk = lambda tk: f'{tk} · {_sector_short(tk)}'
+    else:
+        _fmt_tk = lambda tk: tk    # ngành đã hiện ở dropdown trên → khỏi lặp
+    ticker = c[1].selectbox(
+        'Mã' if not _is_en else 'Ticker', ticker_opts, key='tb_ticker',
+        format_func=_fmt_tk,
+    )
+    train_ratio = c[2].slider(t('sidebar.train_ratio'), 70, 90, 80, step=5,
                               format='%d%%', key='tb_ratio') / 100
     if 'sb_ar_order' not in st.session_state:
         st.session_state['sb_ar_order'] = 1
-    ar_order = c[2].number_input(
+    ar_order = c[3].number_input(
         'p', min_value=1, max_value=100, value=st.session_state['sb_ar_order'],
         step=1, key='sb_ar_order', help=t('sidebar.ar_order_help'))
     _today = _dt.date.today()
@@ -126,24 +164,24 @@ def render_topbar() -> tuple:
         st.session_state['sb_date_from'] = _dt.date(2016, 1, 1)
     if 'sb_date_to' not in st.session_state:
         st.session_state['sb_date_to'] = _today
-    date_from = c[3].date_input(t('sidebar.from'), key='sb_date_from',
+    date_from = c[4].date_input(t('sidebar.from'), key='sb_date_from',
                                 format='YYYY/MM/DD')
-    date_to = c[4].date_input(t('sidebar.to'), key='sb_date_to',
+    date_to = c[5].date_input(t('sidebar.to'), key='sb_date_to',
                               format='YYYY/MM/DD')
 
     # Nút Dark / Lang / Refresh — căn xuống cho thẳng hàng input
-    c[5].markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
     c[6].markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
     c[7].markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
-    if c[5].button('Sáng' if _is_dark else 'Tối', key='tb_dark',
+    c[8].markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+    if c[6].button('Sáng' if _is_dark else 'Tối', key='tb_dark',
                    use_container_width=True, help='Dark / Light'):
         st.session_state.theme_mode = 'light' if _is_dark else 'dark'
         st.rerun()
-    if c[6].button('VI' if _is_en else 'EN', key='tb_lang',
+    if c[7].button('VI' if _is_en else 'EN', key='tb_lang',
                    use_container_width=True, help='Ngôn ngữ / Language'):
         st.session_state.lang = 'VI' if _is_en else 'EN'
         st.rerun()
-    if c[7].button('↻', key='tb_refresh', use_container_width=True,
+    if c[8].button('↻', key='tb_refresh', use_container_width=True,
                    help=t('common.refresh')):
         for _k in ['_data_cache_key', '_df', '_r1', '_r2', '_r3',
                    '_m1', '_m2', '_m3']:
