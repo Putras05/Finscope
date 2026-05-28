@@ -657,9 +657,248 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         st.caption(f'⚠ {_e}')
 
     # ════════════════════════════════════════════════════════════════════
-    # PHẦN 4 — Kết luận tổng hợp Ichimoku (chuyên sâu)
+    # PHẦN 4 — PHÂN TÍCH CHI TIẾT THEO NHÓM CHỈ BÁO (5 tab cân bằng)
     # ════════════════════════════════════════════════════════════════════
-    st.markdown(f'<div class="sec-hdr">{t("signal.summary_hdr")}</div>',
+    st.markdown(
+        f'<div class="sec-hdr">'
+        f'{"Phân tích chi tiết theo nhóm chỉ báo" if not _is_en_sig else "Detailed indicator-family analysis"}'
+        f' <span style="font-size:11px;font-weight:600;color:{_muted};margin-left:8px">'
+        f'{"Xu hướng · Động lượng · Biến động · Khối lượng · Ichimoku" if not _is_en_sig else "Trend · Momentum · Volatility · Volume · Ichimoku"}'
+        f'</span></div>', unsafe_allow_html=True)
+
+    _d_full = _compute_indicators(df)
+    _last = _d_full.iloc[-1]
+    _stoch_full = TA.stochastic(df)
+    _adx_full = TA.adx(df)
+    _obv_full = TA.obv(df)
+    _vwap_full = TA.vwap(df)
+    _psar_full = TA.parabolic_sar(df)
+
+    _tab_trend, _tab_mom, _tab_vol, _tab_volu = st.tabs([
+        '  ' + ('Xu hướng' if not _is_en_sig else 'Trend') + '  ',
+        '  ' + ('Động lượng' if not _is_en_sig else 'Momentum') + '  ',
+        '  ' + ('Biến động' if not _is_en_sig else 'Volatility') + '  ',
+        '  ' + ('Khối lượng' if not _is_en_sig else 'Volume') + '  ',
+    ])
+
+    def _detail_card(col, title, value, color, hint):
+        col.markdown(
+            f'<div style="background:{_bg_card};border:1px solid {_brd};'
+            f'border-top:3px solid {color};border-radius:10px;padding:12px 14px">'
+            f'<div style="font-size:10px;font-weight:700;color:{_muted};'
+            f'text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">{title}</div>'
+            f'<div style="font-size:20px;font-weight:800;color:{color};line-height:1.1">{value}</div>'
+            f'<div style="font-size:11px;color:{_fg_s};margin-top:5px;line-height:1.4">{hint}</div>'
+            f'</div>', unsafe_allow_html=True)
+
+    # ── TAB XU HƯỚNG ────────────────────────────────────────────────────
+    with _tab_trend:
+        _c1, _c2, _c3, _c4 = st.columns(4)
+        # MA50 trend
+        ma50 = _last.get('MA50', np.nan); _cl = float(_last['Close'])
+        if ma50 == ma50:
+            _ma50_dir = ('Trên MA50' if _cl > ma50 else 'Dưới MA50') if not _is_en_sig else ('Above MA50' if _cl > ma50 else 'Below MA50')
+            _ma50_col = '#16A34A' if _cl > ma50 else '#DC2626'
+            _detail_card(_c1, 'MA50 (xu hướng chính)' if not _is_en_sig else 'MA50 (primary trend)',
+                         _ma50_dir, _ma50_col,
+                         f'MA50 = {ma50*1000:,.0f} đ · giá hiện tại {_cl*1000:,.0f} đ')
+        # MA5/MA20 cross
+        ma5 = _last.get('MA5', np.nan); ma20 = _last.get('MA20', np.nan)
+        if ma5 == ma5 and ma20 == ma20:
+            _ma_dir = ('MA5 > MA20' if ma5 > ma20 else 'MA5 < MA20')
+            _ma_col = '#16A34A' if ma5 > ma20 else '#DC2626'
+            _detail_card(_c2, 'MA5/MA20 (ngắn hạn)' if not _is_en_sig else 'MA5/MA20 (short-term)',
+                         _ma_dir, _ma_col,
+                         f'MA5 {ma5*1000:,.0f} đ · MA20 {ma20*1000:,.0f} đ')
+        # ADX
+        if len(_adx_full) and _adx_full[-1] == _adx_full[-1]:
+            a = _adx_full[-1]
+            _adx_lbl = ('Trend MẠNH' if a > 25 else 'Trend yếu' if a < 20 else 'Trend nhẹ') if not _is_en_sig else ('STRONG trend' if a > 25 else 'Weak' if a < 20 else 'Mild')
+            _adx_col = '#0891B2' if a > 25 else '#D97706' if a > 20 else '#64748B'
+            _detail_card(_c3, 'ADX (Wilder)' if not _is_en_sig else 'ADX (Wilder)',
+                         f'{a:.0f}', _adx_col,
+                         f'>25 trend rõ · <20 sideway · 14-bar smoothing')
+        # Parabolic SAR
+        if len(_psar_full) and _psar_full[-1] == _psar_full[-1]:
+            ps = _psar_full[-1]
+            above = ps > float(_last['High'])
+            _ps_lbl = ('Dưới giá (Bull)' if not above else 'Trên giá (Bear)') if not _is_en_sig else ('Below price (Bull)' if not above else 'Above price (Bear)')
+            _ps_col = '#16A34A' if not above else '#DC2626'
+            _detail_card(_c4, 'Parabolic SAR' if not _is_en_sig else 'Parabolic SAR',
+                         _ps_lbl, _ps_col,
+                         f'SAR = {ps*1000:,.0f} đ (Wilder 1978)')
+        # mini chart: price + MA20 + MA50 + PSAR markers, last 120 bars
+        try:
+            import plotly.graph_objects as _go
+            from charts.base import _plotly_axes_style
+            _dt = pd.to_datetime(df['Ngay'].tail(120))
+            _figt = _go.Figure()
+            _figt.add_trace(_go.Scatter(x=_dt, y=df['Close'].tail(120)*1000, name='Close',
+                                         line=dict(color=_fg, width=1.6)))
+            _figt.add_trace(_go.Scatter(x=_dt, y=df['MA20'].tail(120)*1000, name='MA20',
+                                         line=dict(color='#8B5CF6', width=1.2, dash='dot')))
+            _figt.add_trace(_go.Scatter(x=_dt, y=df['MA50'].tail(120)*1000, name='MA50',
+                                         line=dict(color='#0891B2', width=1.4, dash='dash')))
+            _figt.add_trace(_go.Scatter(x=_dt, y=_psar_full[-120:]*1000, name='PSAR',
+                                         mode='markers', marker=dict(symbol='circle', size=3, color='#94A3B8')))
+            _figt.update_layout(height=280, margin=dict(l=44, r=20, t=10, b=40),
+                                 paper_bgcolor=_bg_card, plot_bgcolor=_bg_card,
+                                 font=dict(family='Inter', size=11, color=_fg),
+                                 hovermode='x unified',
+                                 legend=dict(orientation='h', y=-0.18, x=0.5, xanchor='center'))
+            _plotly_axes_style(_figt, _T)
+            _figt.update_xaxes(tickformat='%m/%Y')
+            st.plotly_chart(_figt, use_container_width=True, config=_PLOTLY_CONFIG)
+        except Exception as _e:
+            st.caption(f'⚠ {_e}')
+
+    # ── TAB ĐỘNG LƯỢNG ──────────────────────────────────────────────────
+    with _tab_mom:
+        _c1, _c2, _c3 = st.columns(3)
+        rsi = _last.get('RSI14', np.nan)
+        if rsi == rsi:
+            _rsi_lbl = ('Quá mua' if rsi > 70 else 'Quá bán' if rsi < 30 else 'Trung tính') if not _is_en_sig else ('Overbought' if rsi > 70 else 'Oversold' if rsi < 30 else 'Neutral')
+            _rsi_col = '#DC2626' if rsi > 70 else '#16A34A' if rsi < 30 else '#64748B'
+            _detail_card(_c1, 'RSI14 (Wilder)', f'{rsi:.1f}', _rsi_col,
+                         f'{_rsi_lbl} · >70 quá mua · <30 quá bán')
+        if not np.isnan(_last.get('MACD', np.nan)):
+            macd = float(_last['MACD']); sig = float(_last['MACD_signal']); hist = float(_last['MACD_hist'])
+            _mc_lbl = ('Tăng' if macd > sig else 'Giảm') if not _is_en_sig else ('Bullish' if macd > sig else 'Bearish')
+            _mc_col = '#16A34A' if macd > sig else '#DC2626'
+            _detail_card(_c2, 'MACD (12,26,9)', _mc_lbl, _mc_col,
+                         f'MACD {macd:.3f} · Signal {sig:.3f} · Hist {hist:+.3f}')
+        if len(_stoch_full['k']) and _stoch_full['k'][-1] == _stoch_full['k'][-1]:
+            kv = _stoch_full['k'][-1]; dv = _stoch_full['d'][-1]
+            _st_lbl = ('Quá mua' if kv > 80 else 'Quá bán' if kv < 20 else 'Trung tính') if not _is_en_sig else ('Overbought' if kv > 80 else 'Oversold' if kv < 20 else 'Neutral')
+            _st_col = '#DC2626' if kv > 80 else '#16A34A' if kv < 20 else '#64748B'
+            _detail_card(_c3, 'Stochastic (Lane)', f'%K {kv:.0f} / %D {dv:.0f}', _st_col,
+                         f'{_st_lbl} · >80 quá mua · <20 quá bán')
+        # mini chart: RSI line with 30/70 thresholds
+        try:
+            _dt = pd.to_datetime(df['Ngay'].tail(120))
+            _figm = _go.Figure()
+            _figm.add_trace(_go.Scatter(x=_dt, y=df['RSI14'].tail(120), name='RSI14',
+                                         line=dict(color='#8B5CF6', width=1.6)))
+            _figm.add_hline(y=70, line=dict(color='#DC2626', width=1, dash='dash'),
+                             annotation_text='70 quá mua' if not _is_en_sig else '70 OB',
+                             annotation_position='right',
+                             annotation_font=dict(size=9, color='#DC2626'))
+            _figm.add_hline(y=30, line=dict(color='#16A34A', width=1, dash='dash'),
+                             annotation_text='30 quá bán' if not _is_en_sig else '30 OS',
+                             annotation_position='right',
+                             annotation_font=dict(size=9, color='#16A34A'))
+            _figm.update_layout(height=240, margin=dict(l=44, r=70, t=10, b=40),
+                                 paper_bgcolor=_bg_card, plot_bgcolor=_bg_card,
+                                 font=dict(family='Inter', size=11, color=_fg),
+                                 hovermode='x unified', showlegend=False,
+                                 yaxis_range=[0, 100])
+            _plotly_axes_style(_figm, _T)
+            _figm.update_xaxes(tickformat='%m/%Y')
+            st.plotly_chart(_figm, use_container_width=True, config=_PLOTLY_CONFIG)
+        except Exception as _e:
+            st.caption(f'⚠ {_e}')
+
+    # ── TAB BIẾN ĐỘNG ───────────────────────────────────────────────────
+    with _tab_vol:
+        _c1, _c2, _c3 = st.columns(3)
+        pb = _last.get('BB_pctB', np.nan)
+        if pb == pb:
+            _bb_lbl = ('Vượt dải trên' if pb > 1 else 'Thủng dải dưới' if pb < 0 else 'Trong dải') if not _is_en_sig else ('Above upper' if pb > 1 else 'Below lower' if pb < 0 else 'Within band')
+            _bb_col = '#DC2626' if pb > 1 else '#16A34A' if pb < 0 else '#64748B'
+            _detail_card(_c1, 'Bollinger %B', f'{pb:.2f}', _bb_col,
+                         f'{_bb_lbl} · (Close − Lower) / (Upper − Lower)')
+        atr = _last.get('ATR', np.nan)
+        if atr == atr:
+            _atr_mean = _d_full['ATR'].tail(60).mean()
+            _atr_lbl = ('Cao bất thường' if atr > _atr_mean*1.3 else 'Thấp' if atr < _atr_mean*0.7 else 'Bình thường') if not _is_en_sig else ('Unusually high' if atr > _atr_mean*1.3 else 'Low' if atr < _atr_mean*0.7 else 'Normal')
+            _atr_col = '#D97706' if atr > _atr_mean*1.3 else '#0891B2' if atr < _atr_mean*0.7 else '#64748B'
+            _detail_card(_c2, 'ATR14 (Wilder)', f'{atr*1000:,.0f} đ', _atr_col,
+                         f'{_atr_lbl} · TB 60p {_atr_mean*1000:,.0f} đ')
+        # Range hôm nay
+        rng = float(_last['High']) - float(_last['Low'])
+        rng_pct = rng / float(_last['Close']) * 100 if _last['Close'] else 0
+        _detail_card(_c3, 'Range hôm nay' if not _is_en_sig else "Today's range",
+                     f'{rng*1000:,.0f} đ', _T['accent'],
+                     f'{rng_pct:.2f}% so với Close')
+        # mini chart: price + Bollinger bands
+        try:
+            _dt = pd.to_datetime(df['Ngay'].tail(120))
+            _figv = _go.Figure()
+            _figv.add_trace(_go.Scatter(x=_dt, y=_d_full['BB_up'].tail(120)*1000, name='Upper',
+                                         line=dict(color='#0891B2', width=1, dash='dot'),
+                                         showlegend=False, hoverinfo='skip'))
+            _figv.add_trace(_go.Scatter(x=_dt, y=_d_full['BB_lo'].tail(120)*1000, name='Lower',
+                                         line=dict(color='#0891B2', width=1, dash='dot'),
+                                         fill='tonexty', fillcolor='rgba(8,145,178,0.08)',
+                                         showlegend=False, hoverinfo='skip'))
+            _figv.add_trace(_go.Scatter(x=_dt, y=df['Close'].tail(120)*1000, name='Close',
+                                         line=dict(color=_fg, width=1.6)))
+            _figv.update_layout(height=260, margin=dict(l=44, r=20, t=10, b=40),
+                                 paper_bgcolor=_bg_card, plot_bgcolor=_bg_card,
+                                 font=dict(family='Inter', size=11, color=_fg),
+                                 hovermode='x unified', showlegend=False)
+            _plotly_axes_style(_figv, _T)
+            _figv.update_xaxes(tickformat='%m/%Y')
+            st.plotly_chart(_figv, use_container_width=True, config=_PLOTLY_CONFIG)
+        except Exception as _e:
+            st.caption(f'⚠ {_e}')
+
+    # ── TAB KHỐI LƯỢNG ──────────────────────────────────────────────────
+    with _tab_volu:
+        _c1, _c2, _c3 = st.columns(3)
+        vr = float(_last.get('Volume_ratio', 1) or 1)
+        _vr_lbl = ('Đột biến' if vr > 2 else 'Cao' if vr > 1.5 else 'Thấp' if vr < 0.5 else 'Bình thường') if not _is_en_sig else ('Spike' if vr > 2 else 'High' if vr > 1.5 else 'Low' if vr < 0.5 else 'Normal')
+        _vr_col = '#DC2626' if vr > 2 else '#D97706' if vr > 1.5 else '#0891B2' if vr < 0.5 else '#64748B'
+        _detail_card(_c1, 'Volume ratio', f'×{vr:.2f}', _vr_col,
+                     f'{_vr_lbl} · so với TB 5 phiên')
+        if len(_obv_full) >= 15:
+            obv_now = _obv_full[-1]; obv_prev = _obv_full[-15]
+            _obv_dir = ('Tăng' if obv_now > obv_prev else 'Giảm') if not _is_en_sig else ('Up' if obv_now > obv_prev else 'Down')
+            _obv_col = '#16A34A' if obv_now > obv_prev else '#DC2626'
+            _detail_card(_c2, 'OBV (Granville)', _obv_dir, _obv_col,
+                         f'Δ14 = {(obv_now-obv_prev)/1e6:+.1f}M · KL theo chiều giá')
+        if len(_vwap_full) and _vwap_full[-1] == _vwap_full[-1]:
+            v = _vwap_full[-1]
+            gap = (float(_last['Close']) - v) / v * 100 if v else 0
+            _vw_lbl = ('Trên VWAP' if gap > 0 else 'Dưới VWAP') if not _is_en_sig else ('Above VWAP' if gap > 0 else 'Below VWAP')
+            _vw_col = '#16A34A' if gap > 0 else '#DC2626'
+            _detail_card(_c3, 'VWAP 20 phiên' if not _is_en_sig else 'VWAP 20',
+                         f'{_vw_lbl} {gap:+.2f}%', _vw_col,
+                         f'VWAP = {v*1000:,.0f} đ')
+        # mini chart: volume bars + OBV line
+        try:
+            _dt = pd.to_datetime(df['Ngay'].tail(120))
+            from plotly.subplots import make_subplots
+            _figvo = make_subplots(specs=[[{'secondary_y': True}]])
+            _figvo.add_trace(_go.Bar(x=_dt, y=df['Volume'].tail(120),
+                                       marker=dict(color='rgba(8,145,178,0.45)'),
+                                       name='Volume', showlegend=False),
+                             secondary_y=False)
+            _figvo.add_trace(_go.Scatter(x=_dt, y=_obv_full[-120:],
+                                          mode='lines', name='OBV',
+                                          line=dict(color='#F59E0B', width=1.5)),
+                             secondary_y=True)
+            _figvo.update_layout(height=260, margin=dict(l=44, r=44, t=10, b=40),
+                                  paper_bgcolor=_bg_card, plot_bgcolor=_bg_card,
+                                  font=dict(family='Inter', size=11, color=_fg),
+                                  hovermode='x unified', showlegend=False)
+            _plotly_axes_style(_figvo, _T)
+            _figvo.update_xaxes(tickformat='%m/%Y')
+            st.plotly_chart(_figvo, use_container_width=True, config=_PLOTLY_CONFIG)
+        except Exception as _e:
+            st.caption(f'⚠ {_e}')
+
+    # ════════════════════════════════════════════════════════════════════
+    # PHẦN 5 — PHÂN TÍCH ICHIMOKU KINKO HYO CHUYÊN SÂU
+    # ════════════════════════════════════════════════════════════════════
+    st.markdown("<div style='margin:20px 0 0'></div>", unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="sec-hdr">'
+        f'{"Phân tích Ichimoku Kinko Hyo chuyên sâu" if not _is_en_sig else "Detailed Ichimoku Kinko Hyo analysis"}'
+        f' <span style="font-size:11px;font-weight:600;color:{_muted};margin-left:8px">'
+        f'{"4 tầng tín hiệu · biểu đồ Kumo · 3 đặc trưng dẫn xuất (Hosoda 1969, tham số 9·26·52)" if not _is_en_sig else "4-tier system · Kumo chart · 3 derived features (Hosoda 1969, 9·26·52)"}'
+        f'</span></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="sec-hdr" style="margin-top:14px">{t("signal.summary_hdr")}</div>',
                 unsafe_allow_html=True)
 
     _ov_color  = _sig_color(overall_code, is_dark)
