@@ -202,14 +202,44 @@ def news_sentiment(ticker: str, max_items: int = 14) -> dict:
 
     ticker_sum = sum(i['score'] for i in ticker_items)
     ticker_w = sum(i['score'] * i['rw'] for i in ticker_items)
-    # Phiếu: ưu tiên tâm lý theo mã (đã trọng số độ mới) nếu đủ tin,
-    # ngược lại dùng tâm lý thị trường có trọng số.
-    vote_src = ticker_w if len(ticker_items) >= 2 else market_w
-    vote = 1 if vote_src > 1.0 else (-1 if vote_src < -1.0 else 0)
+
+    # ── ĐỌC HIỂU BẰNG AI HỌC SÂU (PhoBERT) — luôn bật nếu có sẵn (đã được
+    #    warm ngầm ở trang bìa). Liên kết: điểm DL được nhân với trọng số
+    #    độ-mới và DÙNG LÀM PHIẾU CHÍNH cho thẻ Dashboard + tín hiệu Chiến
+    #    lược. Thiếu transformers/torch → tự về từ điển (deploy-safe). ──
+    dl_used = False
+    market_dl = 0.0
+    ticker_dl = 0.0
+    try:
+        from data.news_ai import dl_available, dl_sentiment_cached
+        if dl_available():
+            _titles = tuple(it['title'] for it in items_sorted)
+            _dl = dl_sentiment_cached(_titles)
+            if _dl is not None:
+                dl_used = True
+                # Gắn DL score vào từng item hiển thị + cộng dồn (có trọng số độ-mới)
+                for it, ds in zip(items_sorted, _dl):
+                    it['score_dl'] = float(ds)
+                    market_dl += float(ds) * it.get('rw', 1.0)
+                    if it.get('is_ticker'):
+                        ticker_dl += float(ds) * it.get('rw', 1.0)
+    except Exception:
+        pass
+
+    # Phiếu tổng hợp: ƯU TIÊN DL khi có sẵn; ngưỡng nhẹ hơn vì DL score ∈ [−1,1].
+    if dl_used:
+        _tk_n = sum(1 for it in items_sorted if it.get('is_ticker'))
+        vote_src = ticker_dl if _tk_n >= 2 else market_dl
+        vote = 1 if vote_src > 0.6 else (-1 if vote_src < -0.6 else 0)
+    else:
+        vote_src = ticker_w if len(ticker_items) >= 2 else market_w
+        vote = 1 if vote_src > 1.0 else (-1 if vote_src < -1.0 else 0)
 
     return {
         'ok': True, 'note': '',
         'market_score': market_sum, 'ticker_score': ticker_sum,
+        'market_score_dl': market_dl, 'ticker_score_dl': ticker_dl,
+        'dl_used': dl_used,
         'vote': vote, 'n': len(allnews), 'ticker_n': len(ticker_items),
         'items': items_sorted,
     }

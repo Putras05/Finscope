@@ -45,6 +45,15 @@ def render():
                         _fn(tk, 0.80, p=1)
                     except Exception:
                         pass
+                # Warm PhoBERT pipeline (đọc hiểu AI cho tin) — nếu transformers
+                # có sẵn → nạp ngầm để khi user tới trang News/Strategy không phải
+                # đợi load. Thiếu thư viện → bỏ qua (deploy-safe, fallback lexicon).
+                try:
+                    from data.news_ai import dl_available, _load_dl_pipeline
+                    if dl_available():
+                        _load_dl_pipeline()
+                except Exception:
+                    pass
                 # Warm tin tức RSS + sentiment (cache 30') để thẻ "Tâm lý
                 # tin tức" trên Dashboard hiện tức thì, không chờ mạng.
                 try:
@@ -137,7 +146,7 @@ div[data-testid="stButton"] > button:hover { transform: translateY(-3px) scale(1
         '<span class="label">Nhóm tác giả</span>',
         '<div class="value">',
         'Nguyễn Thành Danh<span class="author-id">— C2300014</span><br/>',
-        'Trần Huỳnh Nhã Trúc',
+        'Trần Huỳnh Nhã Trúc<span class="author-id">— C2300189</span>',
         '</div>',
         '</div>',
         '</div>',

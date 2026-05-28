@@ -44,50 +44,36 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         return
 
     items = r['items']
+    _dl_used = bool(r.get('dl_used'))   # PhoBERT đã chạy ngầm — luôn bật khi có sẵn
 
-    # ── Toggle học sâu (PhoBERT) — mặc định tắt để app luôn mượt/deploy-safe ──
-    _dl_ok = NA.dl_available()
-    _cta, _ctb = st.columns([1.4, 2.6])
-    with _cta:
-        _dl_on = st.toggle(
-            ('Đọc hiểu bằng AI học sâu' if not is_en else 'Deep-learning AI reading'),
-            value=False, key='news_dl_on', disabled=not _dl_ok,
-            help=('Dùng mô hình Transformer tiếng Việt (PhoBERT) để chấm cảm xúc '
-                  'thay từ điển. Lần đầu nạp mô hình mất ~15-30s.'
-                  if not is_en else
-                  'Use a Vietnamese Transformer (PhoBERT) to score sentiment '
-                  'instead of the lexicon. First load takes ~15-30s.'))
-    with _ctb:
-        _stat = (('● AI sẵn sàng (PhoBERT)' if _dl_ok else '○ AI chưa cài (dùng từ điển)')
-                 if not is_en else
-                 ('● AI ready (PhoBERT)' if _dl_ok else '○ AI not installed (using lexicon)'))
-        _scol = _T['success'] if _dl_ok else _T['text_muted']
-        st.markdown(
-            f'<div style="font-size:11px;color:{_scol};margin-top:14px">{_stat}'
-            f'<span style="color:{_T["text_muted"]}"> · '
-            f'{"học sâu chỉ phục vụ đọc hiểu, không dùng dự báo giá" if not is_en else "deep learning serves reading only, not price forecasting"}'
-            f'</span></div>', unsafe_allow_html=True)
-
-    _dl_scores = None
-    if _dl_on and _dl_ok:
-        with st.spinner('AI đang đọc hiểu tin...' if not is_en else 'AI is reading the news...'):
-            _dl_scores = NA.dl_sentiment_cached(tuple(it['title'] for it in items))
-        if _dl_scores is None:
-            st.info('AI tạm không khả dụng — dùng từ điển.' if not is_en
-                    else 'AI unavailable — falling back to lexicon.')
+    # ── Badge trạng thái nguồn cảm xúc (không có toggle — chạy ngầm) ────
+    if _dl_used:
+        _stat_txt = ('● PhoBERT đang đọc hiểu (AI) + từ điển'
+                     if not is_en else '● PhoBERT reading (AI) + lexicon')
+        _stat_col = _T['success']
+    else:
+        _stat_txt = ('○ Dùng từ điển (PhoBERT chưa cài / fallback)'
+                     if not is_en else '○ Lexicon mode (PhoBERT not installed / fallback)')
+        _stat_col = _T['text_muted']
+    st.markdown(
+        f'<div style="font-size:11px;color:{_stat_col};margin:0 0 10px;font-weight:600">'
+        f'{_stat_txt}'
+        f'<span style="color:{_T["text_muted"]};font-weight:400"> · '
+        f'{"AI ảnh hưởng đến phiếu tín hiệu Chiến lược và thẻ Tâm lý Dashboard" if not is_en else "AI feeds the Strategy vote and Dashboard sentiment card"}'
+        f'</span></div>', unsafe_allow_html=True)
 
     # ── Hai thẻ tâm lý: Thị trường & theo Mã (từ điển) ─────────────────
     _ml, _mc, _ma = _meter(r['market_score'], is_en, _T)
     c1, c2 = st.columns(2)
     with c1:
         _ai_line = ''
-        if _dl_scores:
-            _ai_net = sum(_dl_scores)
+        if _dl_used:
+            _ai_net = float(r.get('market_score_dl', 0.0))
             _ai_lbl, _ai_col, _ai_arr = _meter(_ai_net, is_en, _T)
             _ai_line = (f'<div style="font-size:11px;color:{_T["text_muted"]};margin-top:4px">'
-                        f'{"AI học sâu" if not is_en else "Deep-learning AI"}: '
+                        f'{"PhoBERT AI" if not is_en else "PhoBERT AI"}: '
                         f'<b style="color:{_ai_col}">{_ai_arr} {_ai_lbl}</b> '
-                        f'({_ai_net:+.1f})</div>')
+                        f'({_ai_net:+.2f})</div>')
         st.markdown(
             f'<div style="background:{_T["bg_card"]};border:1px solid {_T["border"]};'
             f'border-left:6px solid {_mc};border-radius:14px;padding:18px 22px">'
@@ -159,8 +145,8 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         # cảm xúc: từ điển + (nếu bật) AI học sâu
         _sent_cell = (f'<span style="font-size:11px;font-weight:700;color:{col};'
                       f'background:{col}1A;padding:2px 8px;border-radius:6px">{lbl} {it["score"]:+d}</span>')
-        if _dl_scores:
-            _ai = _dl_scores[_k]
+        _ai = it.get('score_dl')
+        if _ai is not None:
             _aic = '#16A34A' if _ai > 0.15 else ('#DC2626' if _ai < -0.15 else _T['text_muted'])
             _ail = ('AI+' if _ai > 0.15 else ('AI−' if _ai < -0.15 else 'AI±'))
             _sent_cell += (f'<br><span style="font-size:10px;font-weight:700;color:{_aic};'
@@ -181,5 +167,5 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
     st.markdown(
         f'<div style="font-size:11px;color:{_T["text_muted"]};margin-top:12px;line-height:1.6">'
-        f'{"★ = tin liên quan trực tiếp tới mã · chip xám = chủ đề tài chính (đọc hiểu). Cảm xúc từ điển luôn bật (deploy-safe, dùng cho phiếu tín hiệu); AI học sâu (PhoBERT) là tùy chọn — chỉ phục vụ ĐỌC HIỂU, không dùng dự báo giá. AI có thể lệch ở sắc thái tài chính nên hiển thị song song để đối chiếu." if not is_en else "★ = ticker-related · grey chips = financial aspects. Lexicon sentiment is always on (deploy-safe, used for the signal vote); deep-learning AI (PhoBERT) is optional — for READING only, not price forecasting. AI may misread financial nuance, hence shown side-by-side."}'
+        f'{"★ = tin liên quan trực tiếp tới mã · chip xám = chủ đề tài chính. PhoBERT (AI học sâu) đọc hiểu ngầm khi máy có sẵn → cho ra phiếu tâm lý tin tức (dùng ở thẻ Dashboard + tín hiệu Chiến lược). Từ điển vẫn chạy song song để đối chiếu — máy không có transformers/torch thì app tự dùng từ điển (deploy-safe)." if not is_en else "★ = ticker-related · grey chips = financial aspects. PhoBERT (deep-learning AI) reads in background when available → produces the news-sentiment vote (used by Dashboard sentiment card + Strategy signal). Lexicon runs in parallel for comparison — without transformers/torch the app auto-falls back to lexicon (deploy-safe)."}'
         f'</div>', unsafe_allow_html=True)
