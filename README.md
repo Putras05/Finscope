@@ -8,15 +8,18 @@ thống kê**, bộ **phân tích kỹ thuật** đầy đủ và **đọc hiể
 
 **Nhóm tác giả:** Nguyễn Thành Danh (C2300014) · Trần Huỳnh Nhã Trúc
 
-## Tính năng
+## Tính năng (12 trang)
 
 - **Dashboard** — giá, KPI, banner Dự báo Kết hợp, TOP-3 mô hình tốt nhất (theo MAPE), thẻ tâm lý tin tức, dự báo nhiều phiên + **kiểm định Diebold–Mariano**.
+- **Tổng quan Thị trường** — snapshot 53 mã HOSE: heatmap, sector overview 31 ngành, top movers, vốn hóa, GTGD (cache 5'). 
+- **Phân tích Cơ bản** — báo cáo tài chính 4 quý + tỷ số TỰ TÍNH (P/E, P/B, ROE, ROA, EPS, biên LN, D/E) cho cả DN thường lẫn ngân hàng.
 - **Phân tích Chi tiết** — 9 tab: 8 mô hình + FinScope Ensemble, mỗi tab có phương trình/tham số, chẩn đoán (ACF/PACF, phần dư, Q-Q), fan chart khoảng tin cậy.
 - **Mô hình Nâng cao** — SARIMA · Holt-Winters/ETS · GARCH · SARIMAX · Gradient Boosting · Ensemble + khoảng tin cậy 80%/95%.
-- **Chiến lược Giao dịch** — 9 phiếu (Ichimoku, RSI, MACD, Bollinger, MA cross, mẫu hình nến, đồng thuận dự báo, tâm lý tin tức) → MUA/BÁN/GIỮ + SL/TP (ATR) + backtest **có phí giao dịch**; **Phân tích kỹ thuật**: Hỗ trợ/Kháng cự · Fibonacci · Kênh xu hướng · Sóng (ZigZag) · Pivot · mẫu hình nến.
-- **Tin tức & Đọc hiểu** — RSS (CafeF/VnExpress/Vietstock) + sentiment từ điển; tùy chọn **AI học sâu (PhoBERT)** + nhận diện chủ đề + gom nhóm.
-- **Tín hiệu Ichimoku** · **Lịch sử & Dữ liệu** · **Danh mục Đầu tư** · **Hướng dẫn**.
-- Song ngữ VI/EN · Sáng/Tối · **53 mã HOSE** (VN30 + nhiều mã thanh khoản cao).
+- **Chiến lược Giao dịch** — 12 phiếu (MA50/MA5-20/MACD/RSI/Bollinger/Stochastic/ADX/OBV/Ichimoku/mẫu nến/dự báo/tin tức) → MUA/BÁN/GIỮ + SL/TP (ATR) + backtest **có phí giao dịch**; **Phân tích kỹ thuật**: Hỗ trợ/Kháng cự · Fibonacci · Kênh xu hướng · Sóng (ZigZag) · Pivot · mẫu hình nến · VWAP · Parabolic SAR.
+- **Tin tức & Đọc hiểu** — RSS (CafeF/VnExpress/Vietstock) + **AI học sâu PhoBERT** chạy ngầm (fallback từ điển) + nhận diện chủ đề + gom nhóm.
+- **Tín hiệu & Cảnh báo** — alerts dashboard 11 chỉ báo + biểu đồ kỹ thuật tổng hợp + 4 tab nhóm (Xu hướng/Động lượng/Biến động/Khối lượng) + Ichimoku chuyên sâu.
+- **Lịch sử & Dữ liệu** · **Danh mục Đầu tư** (Ensemble 4 mô hình × n mã) · **Giao dịch Demo** (paper trading P&L) · **Hướng dẫn**.
+- Song ngữ VI/EN · Sáng/Tối · **53 mã HOSE** (VN30 + nhiều mã thanh khoản cao) · **chọn 2 bước: ngành → mã**.
 
 ## Mô hình
 

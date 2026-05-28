@@ -77,7 +77,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     col_g1, col_g2 = st.columns(2)
 
     with col_g1:
-        _guide_card(_IC_DASH, '1. Dashboard Tổng quan' if not _is_en else '1. Overview Dashboard',
+        _guide_card(_IC_DASH, 'Dashboard Tổng quan' if not _is_en else 'Overview Dashboard',
                     '#3B82F6', f"""
 <b style="color:{_T['text_primary']}">{'Mục đích:' if not _is_en else 'Purpose:'}</b>
 {'Cung cấp cái nhìn nhanh về mã đang chọn (danh sách VN30): giá, KPI, dự báo đa mô hình, tín hiệu kỹ thuật.'
@@ -97,7 +97,27 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
  '• Multi-step fan chart + multi-model table + <b>Diebold–Mariano test</b> + MAPE ranking'}
 """)
 
-        _guide_card(_IC_HIST, '3. Lịch sử & Dữ liệu' if not _is_en else '3. History & Data',
+        _guide_card('graph-up-arrow', 'Tổng quan Thị trường' if not _is_en else 'Market Overview',
+                    '#0F766E', f"""
+<b style="color:{_T['text_primary']}">{'Mục đích:' if not _is_en else 'Purpose:'}</b>
+{'Bức tranh TỔNG cả thị trường (53 mã HOSE) — snapshot mỗi 5 phút trong phiên: ai tăng, ai giảm, ngành nào dẫn dắt, dòng tiền chảy về đâu.'
+ if not _is_en else 'WHOLE-market snapshot (53 HOSE tickers) refreshed every 5 min: who is up, who is down, which sectors lead, where the money flows.'}<br><br>
+
+<b style="color:{_T['text_primary']}">{'Nội dung:' if not _is_en else 'Content:'}</b><br>
+{'• 6 KPI top: số mã tăng / giảm / đứng · Δ% trung bình · <b>vốn hóa tổng</b> · GTGD hôm nay<br>'
+ '• <b>Top 5 tăng giá</b> / <b>Top 5 giảm giá</b> (2 cột song song)<br>'
+ '• Bảng <b>tổng quan 31 ngành</b>: số mã · Δ% TB · advancers/decliners · vốn hóa · GTGD<br>'
+ '• <b>Heatmap 53 mã</b>: cards sắp theo vốn hóa, màu nền theo % thay đổi<br>'
+ '• Bảng dữ liệu đầy đủ + tải CSV'
+ if not _is_en else
+ '• 6 top KPIs: advancers / decliners / unchanged · avg Δ% · <b>total market cap</b> · today turnover<br>'
+ '• <b>Top 5 gainers</b> / <b>Top 5 losers</b> (side-by-side)<br>'
+ '• <b>31-sector overview</b>: # tickers · avg Δ% · advancers/decliners · mcap · turnover<br>'
+ '• <b>53-ticker heatmap</b>: cards sorted by mcap, colored by %change<br>'
+ '• Full data table + CSV download'}
+""")
+
+        _guide_card(_IC_HIST, 'Lịch sử & Dữ liệu' if not _is_en else 'History & Data',
                     '#F59E0B', f"""
 <b style="color:{_T['text_primary']}">{'Mục đích:' if not _is_en else 'Purpose:'}</b>
 {'Xem dữ liệu lịch sử và thống kê mô tả.'
@@ -115,7 +135,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
  '• Full OHLCV data table downloadable'}
 """)
 
-        _guide_card(_IC_PORT, '5. Danh mục Đầu tư' if not _is_en else '5. Investment Portfolio',
+        _guide_card(_IC_PORT, 'Danh mục Đầu tư' if not _is_en else 'Investment Portfolio',
                     '#10B981', f"""
 <b style="color:{_T['text_primary']}">{'Mục đích:' if not _is_en else 'Purpose:'}</b>
 {'So sánh hiệu quả dự báo và rủi ro của <b>2–6 cổ phiếu</b> tuỳ chọn.'
@@ -131,6 +151,28 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
  '• Normalized performance chart (Base = 100) — relative comparison<br>'
  '• MAPE · RMSE · MAE · R²adj table for 4 models × each ticker (best model marked)<br>'
  '• Return stats (mean/std/min/max/up_days) per ticker'}
+""")
+
+        _guide_card(_IC_PORT, 'Giao dịch Demo (Paper Trading)' if not _is_en else 'Paper Trading',
+                    '#F59E0B', f"""
+<b style="color:{_T['text_primary']}">{'Mục đích:' if not _is_en else 'Purpose:'}</b>
+{'Tập giao dịch ảo với giá thị trường THẬT để theo dõi lãi/lỗ + thống kê hành vi (win rate, lệnh trung bình…). Sổ lệnh lưu cục bộ vào paper_state.json — KHÔNG phải tài khoản chứng khoán thật.'
+ if not _is_en else 'Practice trading with REAL market prices, track P&L + behavior stats (win rate, avg trade…). Book stored locally in paper_state.json — NOT a real brokerage account.'}<br><br>
+
+<b style="color:{_T['text_primary']}">{'Nội dung:' if not _is_en else 'Content:'}</b><br>
+{'• 5 KPI: <b>Tiền mặt · Giá trị nắm giữ · Tổng tài sản · P&L tổng · Tỉ lệ thắng</b><br>'
+ '• Tab <b>Đặt lệnh</b>: chọn MUA/BÁN, KL, giá (mặc định = close gần nhất); preview tổng giá trị<br>'
+ '• Tab <b>Vị thế hiện tại</b>: bảng KL · giá vốn TB · giá hiện tại · lãi/lỗ tạm tính<br>'
+ '• Tab <b>Lịch sử lệnh</b>: log đầy đủ + realized P&L mỗi lệnh bán<br>'
+ '• Tab <b>Thống kê & Reset</b>: avg win/loss · max win/loss · n_wins/n_losses + tuỳ chọn vốn ban đầu reset<br>'
+ '• Vốn mặc định: <b>100 triệu đồng</b>. Bình quân gia quyền khi mua thêm, realized P&L tính theo avg cost'
+ if not _is_en else
+ '• 5 KPIs: <b>Cash · Holdings · Total Equity · Total P&L · Win Rate</b><br>'
+ '• <b>Place Order</b> tab: pick BUY/SELL, qty, price (default = last close); total value preview<br>'
+ '• <b>Current Positions</b> tab: qty · avg cost · current price · unrealized P&L<br>'
+ '• <b>Order History</b> tab: full log + realized P&L per sell<br>'
+ '• <b>Stats & Reset</b> tab: avg win/loss · max win/loss · n_wins/n_losses + custom-capital reset<br>'
+ '• Default capital: <b>100M đồng</b>. Weighted-average cost basis on buys, realized P&L vs avg cost on sells'}
 """)
 
         _guide_card('newspaper', 'Tin tức & Đọc hiểu' if not _is_en else 'News & AI Reading',
@@ -152,7 +194,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 """)
 
     with col_g2:
-        _guide_card(_IC_ANA, '2. Phân tích Chi tiết' if not _is_en else '2. Detailed Analysis',
+        _guide_card(_IC_ANA, 'Phân tích Chi tiết' if not _is_en else 'Detailed Analysis',
                     '#8B5CF6', f"""
 <b style="color:{_T['text_primary']}">{'Mục đích:' if not _is_en else 'Purpose:'}</b>
 {'Xem chi tiết các mô hình dự báo phiên kế tiếp — mỗi tab có phương trình, bảng tham số ước lượng, hiệu năng Train/Test, biểu đồ & khoảng tin cậy.'
@@ -192,6 +234,26 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
  '• Actual vs. forecast scatter (ideal R² = 1)<br>'
  '• Model equation + estimated parameter table<br>'
  '• ARIMA diagnostics: ACF/PACF + residuals + Q-Q + CI fan chart'}
+""")
+
+        _guide_card(_IC_ADV, 'Phân tích Cơ bản' if not _is_en else 'Fundamental Analysis',
+                    '#7C3AED', f"""
+<b style="color:{_T['text_primary']}">{'Mục đích:' if not _is_en else 'Purpose:'}</b>
+{'Phân tích báo cáo tài chính + các tỷ số tài chính (P/E, P/B, ROE, ROA, EPS, biên LN, D/E) — số liệu THẬT 4 quý gần nhất, không phải demo.'
+ if not _is_en else 'Financial statement + ratio analysis (P/E, P/B, ROE, ROA, EPS, margins, D/E) — REAL data from the last 4 quarters, not demo.'}<br><br>
+
+<b style="color:{_T['text_primary']}">{'Nội dung:' if not _is_en else 'Content:'}</b><br>
+{'• 7 KPI top: <b>P/E · P/B · EPS · ROE · ROA · Vốn hóa · D/E</b> — tự tính từ income + balance + giá thị trường (KHÔNG dùng endpoint ratio() bị paywalled trong vnstock)<br>'
+ '• Bảng <b>Kết quả kinh doanh 4 quý</b>: doanh thu · LN gộp · LN trước/sau thuế · EPS — kèm bar chart Doanh thu/LN<br>'
+ '• Bảng <b>Cân đối kế toán 4 quý</b>: tổng tài sản · vốn CSH · nợ ngắn/dài hạn · tiền<br>'
+ '• 6 card <b>Biên LN & Tăng trưởng</b>: biên gộp/ròng · Δ QoQ doanh thu/LN · TTM revenue/income<br>'
+ '• <b>Hỗ trợ cả NGÂN HÀNG</b>: BCTC bank khác DN thường → map riêng tự nhận diện'
+ if not _is_en else
+ '• 7 top KPIs: <b>P/E · P/B · EPS · ROE · ROA · Mcap · D/E</b> — self-computed from income + balance + market price (NOT using paywalled vnstock ratio() endpoint)<br>'
+ '• <b>4-quarter income statement</b>: revenue · gross/operating/pretax/net profit · EPS — with Revenue/NI bar chart<br>'
+ '• <b>4-quarter balance sheet</b>: assets · equity · short/long-term debt · cash<br>'
+ '• 6 <b>Margins & Growth</b> cards: gross/net margin · QoQ revenue/NI · TTM revenue/income<br>'
+ '• <b>Bank statements supported</b>: bank financials differ from corporates — separate auto-detected map'}
 """)
 
         _guide_card(_IC_ADV, 'Mô hình Nâng cao' if not _is_en else 'Advanced Models',
@@ -243,7 +305,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
  '• Strategy <b>backtest</b> (net of ~0.3% round-trip fees): trades, win rate, Sharpe, cumulative return'}
 """)
 
-        _guide_card(_IC_SIG, '4. Tín hiệu & Cảnh báo' if not _is_en else '4. Signals & Alerts',
+        _guide_card(_IC_SIG, 'Tín hiệu & Cảnh báo' if not _is_en else 'Signals & Alerts',
                     '#EF4444', f"""
 <b style="color:{_T['text_primary']}">{'Mục đích:' if not _is_en else 'Purpose:'}</b>
 {'Phân tích xu hướng theo hệ thống Ichimoku Kinko Hyo (Hosoda 1969).'
@@ -276,19 +338,26 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         _guide_card(_IC_SET, 'Thanh điều khiển (Topbar)' if not _is_en else 'Topbar Controls',
                     '#64748B', f"""
 <b style="color:{_T['text_primary']}">{'Điều hướng trang:' if not _is_en else 'Page navigation:'}</b><br>
-{'• <b>Menu 9 trang</b> trên thanh ngang đầu trang: Dashboard · Phân tích · Mô hình Nâng cao · Chiến lược Giao dịch · <b>Tin tức</b> · Tín hiệu · Lịch sử · Danh mục · Hướng dẫn<br>'
+{'• <b>Menu 12 trang</b> trên thanh ngang đầu trang: Dashboard · <b>Tổng quan TT</b> · <b>Phân tích Cơ bản</b> · Phân tích Chi tiết · Mô hình Nâng cao · Chiến lược · Tin tức · Tín hiệu · Lịch sử · Danh mục · <b>Giao dịch Demo</b> · Hướng dẫn<br>'
  '• Bấm vào tên trang để chuyển qua lại — trạng thái mô hình được giữ nguyên (không train lại)'
  if not _is_en else
- '• <b>9-page menu</b> on the top bar: Dashboard · Analysis · Advanced Models · Trading Strategy · <b>News</b> · Signals · History · Portfolio · Guide<br>'
+ '• <b>12-page menu</b> on the top bar: Dashboard · <b>Market</b> · <b>Fundamental</b> · Analysis · Advanced Models · Strategy · News · Signals · History · Portfolio · <b>Paper Trading</b> · Guide<br>'
  '• Click a page name to switch — trained model state persists (no retraining)'}<br><br>
 
+<b style="color:{_T['text_primary']}">{'Chọn mã (2 bước):' if not _is_en else 'Ticker selection (2-step):'}</b><br>
+{'• <b>Bước 1 — Ngành:</b> chọn ngành (Ngân hàng / Bất động sản / Chứng khoán / ...) — số mã hiện sau tên ngành<br>'
+ '• <b>Bước 2 — Mã:</b> chọn mã trong ngành đã chọn. Chọn "Tất cả ngành" để xem toàn bộ 53 mã'
+ if not _is_en else
+ '• <b>Step 1 — Sector:</b> pick sector (Banking / Real Estate / Securities / ...) — number of tickers shown after sector name<br>'
+ '• <b>Step 2 — Ticker:</b> pick ticker within selected sector. Choose "All sectors" to see all 53'}<br><br>
+
 <b style="color:{_T['text_primary']}">{'Tham số mô hình:' if not _is_en else 'Model parameters:'}</b><br>
-{'• <b>Mã giao dịch:</b> chọn trong <b>53 mã HOSE</b> (VN30 + nhiều mã thanh khoản cao: FPT, HPG, VCB, PNJ, GMD, DGC, ...)<br>'
+{'• <b>Mã giao dịch:</b> chọn trong <b>53 mã HOSE</b> (VN30 + nhiều mã thanh khoản cao: FPT, HPG, VCB, PNJ, GMD, DGC, ...) — gom theo 31 ngành<br>'
  '• <b>Tỉ lệ Huấn luyện:</b> 70–90% — tỉ lệ dữ liệu dùng để train mô hình (còn lại để test)<br>'
  '• <b>Độ trễ (p):</b> số phiên quá khứ làm input cho AR/MLR; với ARIMA dùng làm trần bậc AR khi tự chọn order. Mặc định p=1; tăng 3–5 để thử. Quy tắc an toàn: p ≤ √n<br>'
  '• <b>Khoảng thời gian:</b> lọc dữ liệu lịch sử theo ngày <b>Từ</b> / <b>Đến</b> (định dạng YYYY/MM/DD)'
  if not _is_en else
- '• <b>Ticker:</b> pick from <b>53 HOSE symbols</b> (VN30 + many liquid names: FPT, HPG, VCB, PNJ, GMD, DGC, ...)<br>'
+ '• <b>Ticker:</b> pick from <b>53 HOSE symbols</b> (VN30 + many liquid names: FPT, HPG, VCB, PNJ, GMD, DGC, ...) — grouped by 31 sectors<br>'
  '• <b>Train Ratio:</b> 70–90% — proportion of data used for training (remainder for testing)<br>'
  '• <b>Lag Order (p):</b> past sessions as input for AR/MLR; for ARIMA it caps the AR order during auto-selection. Default p=1; try 3–5. Safety: p ≤ √n<br>'
  '• <b>Date Range:</b> filter historical data by <b>From</b> / <b>To</b> (format YYYY/MM/DD)'}<br><br>
