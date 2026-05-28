@@ -245,6 +245,9 @@ if page == 'Dashboard Tổng quan':
 elif page == 'Tổng quan Thị trường':
     from app_pages import market as _pg_market
     _pg_market.render(*_args)
+elif page == 'Phân tích Cơ bản':
+    from app_pages import fundamental as _pg_fund
+    _pg_fund.render(*_args)
 elif page == 'Phân tích Chi tiết':
     from app_pages import analysis as _pg_ana
     _pg_ana.render(*_args)
