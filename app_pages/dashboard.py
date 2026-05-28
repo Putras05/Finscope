@@ -64,55 +64,54 @@ def _candlestick_section(df, ticker, _T, _is_en_cmp):
     Streamlit 1.32+ st.fragment isolates reruns — đổi SMA/Ichimoku/Timeframe
     không gọi lại render() cha (KPI, forecast cards). Cảm giác instant.
     """
-    _tf_col, _ov_col = st.columns([3, 2])
-    with _tf_col:
-        _tf_label = 'Khung thời gian' if not _is_en_cmp else 'Timeframe'
-        _tf_options = ['1D', '1W', '1M', '3M']
-        _selected_tf = st.radio(
-            _tf_label,
-            options=_tf_options,
-            index=0,  # default '1D'
-            horizontal=True,
-            key=f'cs_tf_{ticker}',
-            label_visibility='collapsed',
-        )
-    with _ov_col:
-        # Popover gom 6 lớp phủ kỹ thuật — giữ thanh top gọn, vẫn cho user
-        # bật nhiều overlay tùy ý mà không chiếm chỗ.
-        _pop_label = ('Lớp phủ kỹ thuật ▾' if not _is_en_cmp else 'Technical overlays ▾')
-        try:
-            _pop = st.popover(_pop_label, use_container_width=True)
-        except Exception:
-            _pop = st.container()
-        with _pop:
-            _c1, _c2 = st.columns(2)
-            with _c1:
-                _show_sma = st.toggle(
-                    'SMA 5/20', value=True, key=f'cs_sma_{ticker}',
-                    help='SMA 5 (cam) & SMA 20 (tím)' if not _is_en_cmp
-                         else 'SMA 5 (orange) & SMA 20 (purple)')
-                _show_bb = st.toggle(
-                    'Bollinger Bands', value=False, key=f'cs_bb_{ticker}',
-                    help='Dải Bollinger 20·2σ — biên trên/dưới ± 2 độ lệch chuẩn'
-                         if not _is_en_cmp else 'Bollinger Bands 20·2σ')
-                _show_sr = st.toggle(
-                    'Hỗ trợ / Kháng cự' if not _is_en_cmp else 'Support / Resistance',
-                    value=False, key=f'cs_sr_{ticker}',
-                    help='Các mức S/R từ swing-high/low gom cụm 260 phiên gần nhất'
-                         if not _is_en_cmp else 'S/R clustered from last 260 sessions')
-            with _c2:
-                _show_ichimoku = st.toggle(
-                    'Ichimoku', value=False, key=f'cs_ichi_{ticker}',
-                    help='Tenkan, Kijun, Mây Kumo, Chikou (cần ≥30 phiên)'
-                         if not _is_en_cmp else 'Tenkan, Kijun, Kumo, Chikou')
-                _show_vwap = st.toggle(
-                    'VWAP 20', value=False, key=f'cs_vwap_{ticker}',
-                    help='Giá bình quân gia quyền theo khối lượng (cuộn 20 phiên)'
-                         if not _is_en_cmp else 'Volume-weighted avg price (20-period)')
-                _show_psar = st.toggle(
-                    'Parabolic SAR', value=False, key=f'cs_psar_{ticker}',
-                    help='Chấm dừng lỗ Wilder — dưới giá ⇒ uptrend, trên giá ⇒ downtrend'
-                         if not _is_en_cmp else 'Wilder stop-and-reverse dots')
+    # Hàng 1: Timeframe radio (1D/1W/1M/3M) chiếm full row
+    _tf_label = 'Khung thời gian' if not _is_en_cmp else 'Timeframe'
+    _tf_options = ['1D', '1W', '1M', '3M']
+    _selected_tf = st.radio(
+        _tf_label,
+        options=_tf_options,
+        index=0,
+        horizontal=True,
+        key=f'cs_tf_{ticker}',
+        label_visibility='collapsed',
+    )
+
+    # Hàng 2: 6 toggle compact dưới timeframe
+    if True:
+        # 6 toggle xếp ngang trong 6 cột — KHÔNG popover/expander để tránh
+        # extra DOM layer + lag cảm nhận. Compact label 1-2 chữ + help text
+        # full khi hover. Default SMA ON, 5 cái khác OFF (không recompute thừa).
+        _ocols = st.columns(6, gap='small')
+        with _ocols[0]:
+            _show_sma = st.toggle(
+                'SMA', value=True, key=f'cs_sma_{ticker}',
+                help='SMA 5 (cam) & SMA 20 (tím)' if not _is_en_cmp
+                     else 'SMA 5 (orange) & SMA 20 (purple)')
+        with _ocols[1]:
+            _show_ichimoku = st.toggle(
+                'Ichi', value=False, key=f'cs_ichi_{ticker}',
+                help='Ichimoku — Tenkan, Kijun, Mây Kumo, Chikou (cần ≥30 phiên)'
+                     if not _is_en_cmp else 'Ichimoku — Tenkan, Kijun, Kumo, Chikou')
+        with _ocols[2]:
+            _show_bb = st.toggle(
+                'BB', value=False, key=f'cs_bb_{ticker}',
+                help='Bollinger Bands 20·2σ — biên trên/dưới ± 2 độ lệch chuẩn'
+                     if not _is_en_cmp else 'Bollinger Bands 20·2σ')
+        with _ocols[3]:
+            _show_vwap = st.toggle(
+                'VWAP', value=False, key=f'cs_vwap_{ticker}',
+                help='VWAP 20 — giá bình quân gia quyền theo khối lượng (cuộn 20 phiên)'
+                     if not _is_en_cmp else 'VWAP 20 — volume-weighted avg price')
+        with _ocols[4]:
+            _show_sr = st.toggle(
+                'S/R', value=False, key=f'cs_sr_{ticker}',
+                help='Hỗ trợ / Kháng cự — mức từ swing-high/low gom cụm 260 phiên gần nhất'
+                     if not _is_en_cmp else 'Support/Resistance from last 260 sessions')
+        with _ocols[5]:
+            _show_psar = st.toggle(
+                'PSAR', value=False, key=f'cs_psar_{ticker}',
+                help='Parabolic SAR — chấm dừng lỗ Wilder (dưới giá ⇒ up, trên ⇒ down)'
+                     if not _is_en_cmp else 'Parabolic SAR — Wilder stop-and-reverse')
     if _selected_tf is None:
         _selected_tf = '1D'
 

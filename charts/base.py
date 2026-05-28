@@ -11,7 +11,11 @@ from core.constants import get_clr
 
 
 _PLOTLY_CONFIG = {
-    'displayModeBar': True, 'displaylogo': False,   # bật modebar — zoom/pan/download/reset
+    # KHÔNG set 'displayModeBar' = mặc định 'hover' — chỉ hiện khi rê chuột
+    # vào chart (không chiếm DOM hằng số, đỡ lag cảm nhận). Khi user CẦN zoom/
+    # download thì hover vào góc phải-trên chart, modebar fade-in. Có đầy đủ
+    # nút zoom/pan/reset/download PNG.
+    'displaylogo': False,
     'modeBarButtonsToRemove': [
         'lasso2d', 'select2d', 'autoScale2d',
         'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines',
