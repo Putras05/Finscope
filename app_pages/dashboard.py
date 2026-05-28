@@ -907,7 +907,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             f'<td style="padding:9px 12px;color:{_mpc};font-weight:700">{_mp:.2f}%</td>'
             f'</tr>')
     _fh = (['Mô hình', 'Dự báo (đ)', 'Δ vs hiện tại', 'KTC 95% (đ)', 'MAPE test'] if not _is_en_d
-           else ['Model', 'Forecast (đ)', 'Δ vs current', '95% CI (đ)', 'Test MAPE'])
+           else ['Model', 'Forecast (VND)', 'Δ vs current', '95% CI (VND)', 'Test MAPE'])
     st.markdown(
         f'<div style="border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid {_T["border"]}">'
         f'<table style="width:100%;border-collapse:collapse;font-size:13px">'

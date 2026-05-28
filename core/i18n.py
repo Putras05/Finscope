@@ -152,6 +152,12 @@ TEXT = {
     'common.neutral':    {'VI': 'Trung tính',        'EN': 'Neutral'},
     'common.settled':    {'VI': 'ĐÃ CHỐT',           'EN': 'SETTLED'},
     'common.price':      {'VI': 'Giá',               'EN': 'Price'},
+    # Đơn vị tiền — dùng cho mọi f'... {price} {t("unit.price")}' tránh hardcode 'đ'.
+    'unit.price':        {'VI': 'đ',                 'EN': 'VND'},
+    'unit.billion':      {'VI': 'tỷ',                'EN': 'B'},
+    'unit.million':      {'VI': 'triệu',             'EN': 'M'},
+    'unit.shares':       {'VI': 'cp',                'EN': 'shares'},
+    'unit.sessions':     {'VI': 'phiên',             'EN': 'sessions'},
     # Dashboard header & cards
     'dash.live':              {'VI': 'LIVE',                          'EN': 'LIVE'},
     'dash.updated':           {'VI': 'Cập nhật',                     'EN': 'Updated'},

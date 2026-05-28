@@ -114,7 +114,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
     _hdr = (['Mô hình', 'Cấu hình', 'Dự báo (đ)', 'Thay đổi', 'CI 80% (đ)', 'CI 95% (đ)', 'Độ rộng 95%']
             if not is_en else
-            ['Model', 'Config', 'Forecast (đ)', 'Change', 'CI 80% (đ)', 'CI 95% (đ)', '95% width'])
+            ['Model', 'Config', 'Forecast (VND)', 'Change', 'CI 80% (VND)', 'CI 95% (VND)', '95% width'])
     _rows_html = ''
     for r in rows:
         npd = r['next_pred']

@@ -186,12 +186,12 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                 f'Tài sản · Vốn CSH · Nợ · Tiền</span></div>', unsafe_allow_html=True)
     bal = ext['balance']
     _bal_rows = (
-        _row_html('TỔNG TÀI SẢN', bal['total_assets']) +
-        _row_html('Vốn chủ sở hữu', bal['equity']) +
-        _row_html('Tổng nợ phải trả', bal['total_debt']) +
-        _row_html('Nợ ngắn hạn', bal['short_debt']) +
-        _row_html('Nợ dài hạn', bal['long_debt']) +
-        _row_html('Tiền & tương đương', bal['cash'])
+        _row_html(('TỔNG TÀI SẢN' if not is_en else 'TOTAL ASSETS'), bal['total_assets']) +
+        _row_html(('Vốn chủ sở hữu' if not is_en else 'Equity'), bal['equity']) +
+        _row_html(('Tổng nợ phải trả' if not is_en else 'Total liabilities'), bal['total_debt']) +
+        _row_html(('Nợ ngắn hạn' if not is_en else 'Short-term debt'), bal['short_debt']) +
+        _row_html(('Nợ dài hạn' if not is_en else 'Long-term debt'), bal['long_debt']) +
+        _row_html(('Tiền & tương đương' if not is_en else 'Cash & equivalents'), bal['cash'])
     )
     st.markdown(
         f'<div style="border-radius:12px;overflow-x:auto;border:1px solid {_T["border"]}">'
