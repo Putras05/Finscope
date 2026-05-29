@@ -492,6 +492,14 @@ def chart_price_candlestick(df: pd.DataFrame, ticker: str, T: dict,
             sb_v  = sb_arr[_valid]
             _bull = sa_v >= sb_v
 
+            # v58 — Downsample (mỗi điểm thứ 2) khi > 120 điểm: tiết kiệm
+            # 50% SVG path nodes. Cloud thay đổi chậm → visual giống hệt.
+            _step = 2 if len(x_v) > 120 else 1
+            x_v   = x_v[::_step]
+            sa_v  = sa_v[::_step]
+            sb_v  = sb_v[::_step]
+            _bull = _bull[::_step]
+
             # BULL polygon: top = sa khi bull, ngược lại collapse về sb (height=0)
             top_bull = _np.where(_bull, sa_v, sb_v)
             xs_bull  = _np.concatenate([x_v, x_v[::-1]])

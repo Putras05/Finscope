@@ -2118,6 +2118,28 @@ section.main [data-stale="true"],
     contain-intrinsic-size: auto 480px;
 }
 
+/* ══ v58: content-visibility cho block container (page-level sections)
+   ═══════════════════════════════════════════════════════════════════════
+   Streamlit chia page thành nhiều `.stVerticalBlock` containers. Khi
+   container off-screen, browser SKIP layout/paint/style hoàn toàn → scroll
+   page dài (Portfolio 800+ dòng, Paper 1200+ dòng) mượt hẳn.
+   contain-intrinsic-size = browser dùng placeholder size khi chưa render. */
+.stVerticalBlock > .element-container,
+.stHorizontalBlock {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 300px;
+}
+
+/* ══ v58: Disable hover transform (gây compositor layer thrash khi scroll)
+   ═══════════════════════════════════════════════════════════════════════
+   .fc-card và các card có translateY(-3px) trên hover; khi mouse cross
+   trong lúc scroll → compositor work liên tục. Tắt khi đang scroll. */
+body.scrolling .fc-card:hover,
+body.scrolling [data-testid="stMetric"]:hover,
+body.scrolling .stButton > button:hover {
+    transform: none !important;
+}
+
 /* ══ v58: Pause infinite animation khi user đang scroll ═══════════════════
    `.best-model-card best-glow 2.5s infinite` và các pulse animation đốt CPU
    ngay cả khi off-screen. JS scroll handler thêm class `.scrolling` vào

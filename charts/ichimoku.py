@@ -83,10 +83,20 @@ def chart_ichimoku_plotly(df_ichi: pd.DataFrame, ticker: str, T: dict = None) ->
         sb_v  = sb_np[valid]
         bull_mask = sa_v >= sb_v
 
+        # v58 — Downsample polygon Ichimoku cloud (lấy mỗi điểm thứ 2) khi
+        # chuỗi > 120 điểm. Cloud visual không đổi vì sa/sb thay đổi chậm;
+        # giảm 50% SVG path nodes (mỗi polygon 600→300 nodes). 2 polygon =
+        # tiết kiệm ~600 SVG nodes/chart. Big win cho scroll.
+        _step = 2 if len(x_v) > 120 else 1
+        x_ds = x_v[::_step]
+        sa_ds = sa_v[::_step]
+        sb_ds = sb_v[::_step]
+        bull_mask_ds = bull_mask[::_step]
+
         # Polygon BULL: top = sa khi bull, ngoài bull collapse về sb (height=0)
-        top_bull = np.where(bull_mask, sa_v, sb_v)
-        xs_bull = np.concatenate([x_v, x_v[::-1]])
-        ys_bull = np.concatenate([top_bull, sb_v[::-1]])
+        top_bull = np.where(bull_mask_ds, sa_ds, sb_ds)
+        xs_bull = np.concatenate([x_ds, x_ds[::-1]])
+        ys_bull = np.concatenate([top_bull, sb_ds[::-1]])
         fig.add_trace(go.Scatter(
             x=xs_bull, y=ys_bull,
             fill='toself', fillcolor=col_bull,
@@ -96,9 +106,9 @@ def chart_ichimoku_plotly(df_ichi: pd.DataFrame, ticker: str, T: dict = None) ->
         ))
 
         # Polygon BEAR: top = sb khi bear, ngoài bear collapse về sa
-        top_bear = np.where(~bull_mask, sb_v, sa_v)
-        xs_bear = np.concatenate([x_v, x_v[::-1]])
-        ys_bear = np.concatenate([top_bear, sa_v[::-1]])
+        top_bear = np.where(~bull_mask_ds, sb_ds, sa_ds)
+        xs_bear = np.concatenate([x_ds, x_ds[::-1]])
+        ys_bear = np.concatenate([top_bear, sa_ds[::-1]])
         fig.add_trace(go.Scatter(
             x=xs_bear, y=ys_bear,
             fill='toself', fillcolor=col_bear,
