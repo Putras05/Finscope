@@ -706,28 +706,16 @@ def chart_price_candlestick(df: pd.DataFrame, ticker: str, T: dict,
         **({'rangebreaks': _rangebreaks} if _rangebreaks else {}),
         row=2, col=1,
     )
-    # X-axis row 1: gắn rangeselector
+    # v57 — Bỏ rangeselector (trước đây có "1M 3M 6M 1N Tất cả" trong chart).
+    # Đã có timeframe radio phía trên (1D/1W/1M/3M) thay thế. User chỉ kéo
+    # chart để xem lịch sử (dragmode='pan'); rangeselector chiếm DOM permanent
+    # gây lag không cần thiết.
     fig.update_xaxes(
         uirevision=_x_uirev,
         type='date',
         showgrid=False, zeroline=False,
         showline=True, linecolor=T['border'], linewidth=1,
         showspikes=False,
-        rangeselector=dict(
-            buttons=[
-                dict(count=1, label='1M', step='month', stepmode='backward'),
-                dict(count=3, label='3M', step='month', stepmode='backward'),
-                dict(count=6, label='6M', step='month', stepmode='backward'),
-                dict(count=1, label='1N', step='year',  stepmode='backward'),
-                dict(step='all', label=label_all),
-            ],
-            bgcolor=T['bg_card'],
-            activecolor=T['accent'],
-            bordercolor=T['border'],
-            borderwidth=1,
-            font=dict(color=T['text_primary'], size=11),
-            x=0, y=1.10, yanchor='bottom',
-        ),
         rangeslider=dict(visible=False),
         **({'rangebreaks': _rangebreaks} if _rangebreaks else {}),
         row=1, col=1,

@@ -74,18 +74,6 @@ def chart_portfolio_compare_plotly(all_data: dict, train_ratio: float, T=None):
         xaxis=dict(
             showgrid=False, showline=True, linecolor=T['border'],
             tickfont=dict(size=10, color=T['text_muted']),
-            rangeselector=dict(
-                buttons=[
-                    dict(count=1, label='1Y', step='year', stepmode='backward'),
-                    dict(count=3, label='3Y', step='year', stepmode='backward'),
-                    dict(count=5, label='5Y', step='year', stepmode='backward'),
-                    dict(step='all', label='All'),
-                ],
-                bgcolor=T['bg_card'], activecolor=T['accent'],
-                bordercolor=T['border'], borderwidth=1,
-                font=dict(color=T['text_primary'], size=10),
-                x=0, y=1.08, yanchor='bottom',
-            ),
         ),
         yaxis=dict(
             showgrid=True, gridcolor=T['grid'],

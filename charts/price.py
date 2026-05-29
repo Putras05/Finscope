@@ -142,18 +142,6 @@ def chart_price_history_plotly(res: dict, ticker: str,
         tickfont=dict(size=10, color=T['text_muted']),
         showspikes=True, spikecolor=T['accent'], spikemode='across',
         spikesnap='cursor', spikedash='dot', spikethickness=1,
-        rangeselector=dict(
-            buttons=[
-                dict(count=1, label='1N', step='year', stepmode='backward'),
-                dict(count=3, label='3N', step='year', stepmode='backward'),
-                dict(count=5, label='5N', step='year', stepmode='backward'),
-                dict(step='all', label=t('chart.all_btn')),
-            ],
-            bgcolor=T['bg_card'], activecolor=T['accent'],
-            bordercolor=T['border'], borderwidth=1,
-            font=dict(color=T['text_primary'], size=9, family='Inter'),  # v38: 10→9 mobile
-            x=0, y=-0.18, yanchor='top',  # v38: y=1.08→-0.18 move BELOW chart (was colliding with title+legend)
-        ),
         type='date',
     )
     lay['yaxis'] = dict(

@@ -11,16 +11,11 @@ from core.constants import get_clr
 
 
 _PLOTLY_CONFIG = {
-    # KHÔNG set 'displayModeBar' = mặc định 'hover' — chỉ hiện khi rê chuột
-    # vào chart (không chiếm DOM hằng số, đỡ lag cảm nhận). Khi user CẦN zoom/
-    # download thì hover vào góc phải-trên chart, modebar fade-in. Có đầy đủ
-    # nút zoom/pan/reset/download PNG.
+    # v57 — Tắt MODEBAR hoàn toàn (nút chụp ảnh / zoom / pan / reset / download
+    # PNG / etc.). User chỉ cần kéo (pan) qua chart để xem lịch sử — modebar
+    # chiếm DOM, hover-fade-in animation gây lag rõ khi scroll qua nhiều chart.
+    'displayModeBar': False,
     'displaylogo': False,
-    'modeBarButtonsToRemove': [
-        'lasso2d', 'select2d', 'autoScale2d',
-        'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines',
-    ],
-    'toImageButtonOptions': {'format': 'png', 'scale': 3, 'filename': 'finscope_chart'},
     # v57 — Tắt mọi animation/transition của Plotly. Default Plotly là 500ms
     # transition khi zoom/pan; với 10 trace x 1000+ points, tween animation
     # nuốt CPU. responsive=False để tắt resize observer (lag khi scroll do
@@ -28,6 +23,9 @@ _PLOTLY_CONFIG = {
     'responsive': False,
     'doubleClick': 'reset',
     'scrollZoom': False,
+    # showTips=False để tắt tooltip "double click to autoscale" của Plotly
+    'showTips': False,
+    'staticPlot': False,  # giữ tương tác (hover + drag = pan)
 }
 
 
@@ -49,6 +47,10 @@ def _patched_update_layout(self, *args, **kwargs):
         kwargs['transition'] = {'duration': 0}
     if 'uirevision' not in kwargs:
         kwargs['uirevision'] = 'static'
+    # v57 — dragmode='pan' default → user kéo chart sẽ pan (di chuyển ngang)
+    # thay vì zoom hộp. Đúng UX mong muốn.
+    if 'dragmode' not in kwargs:
+        kwargs['dragmode'] = 'pan'
     return _ORIG_UPDATE_LAYOUT(self, *args, **kwargs)
 
 
