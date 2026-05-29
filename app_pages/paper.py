@@ -345,6 +345,7 @@ def _render_pro_suggestion(ticker: str, df, state: dict, stats: dict,
             f'</div>', unsafe_allow_html=True)
 
 
+@st.fragment
 def _render_journal_tab(state: dict, _T, is_en: bool) -> None:
     """Nhật ký giao dịch — gắn note + tags vào từng lệnh trong history."""
     import streamlit as _st
@@ -440,6 +441,7 @@ def _render_journal_tab(state: dict, _T, is_en: bool) -> None:
             + f'</div>', unsafe_allow_html=True)
 
 
+@st.fragment
 def _render_monte_carlo_section(state: dict, stats: dict, _T, is_en: bool) -> None:
     """Section Monte Carlo — dự báo equity portfolio N ngày forward."""
     import streamlit as _st
@@ -605,6 +607,7 @@ def _render_monte_carlo_section(state: dict, stats: dict, _T, is_en: bool) -> No
          'Bootstrap MC simulates N equity paths by resampling (with replacement) from your daily-return distribution — preserves real fat tails and skewness. VaR 95% = max loss at 95% confidence; CVaR = mean loss in the 5% worst paths — a stricter risk measure than VaR.'))
 
 
+@st.fragment
 def _render_backtest_tab(ticker: str, df, _T, is_en: bool) -> None:
     """Tab Backtest — chạy signal engine 8 trụ trên data lịch sử của 1 mã."""
     import streamlit as _st
