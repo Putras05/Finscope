@@ -15,7 +15,7 @@ def _theme_css(T: dict) -> str:
     color: {T['text_primary']} !important;
     border: 1px solid {T['border']} !important;
     border-radius: 8px !important; font-weight: 600 !important;
-    transition: all .14s !important;
+    transition: background-color .14s, color .14s, border-color .14s !important;
 }}
 [data-testid="stMain"] .stButton > button:hover {{
     background: {T['accent']} !important;
@@ -201,7 +201,7 @@ def _theme_css(T: dict) -> str:
     border: 1.5px solid {T['border']} !important;
     border-radius: 10px !important;
     font-weight: 600 !important;
-    transition: all .14s !important;
+    transition: background-color .14s, color .14s, border-color .14s !important;
 }}
 [data-testid="stMain"] [data-testid="stDownloadButton"] > button *,
 [data-testid="stMain"] .stDownloadButton > button * {{
@@ -234,7 +234,7 @@ def _theme_css(T: dict) -> str:
     font-size: 13px !important;
     font-weight: 500 !important;
     min-height: 38px !important;
-    transition: all .14s !important;
+    transition: background-color .14s, color .14s, border-color .14s !important;
 }}
 [data-testid="stMain"] [data-testid="stColumn"] .stButton > button *,
 [data-testid="stMain"] [data-testid="column"] .stButton > button *,
@@ -517,7 +517,7 @@ hr {{ border-color: {T['border']} !important; }}
     font-size: 13px !important;
     font-weight: 600 !important;
     min-height: 40px !important;
-    transition: all 0.2s !important;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s !important;
 }}
 [data-testid="stMain"] div[data-testid="stHorizontalBlock"] .stButton > button p {{
     color: {T['text_primary']} !important;
@@ -546,7 +546,7 @@ hr {{ border-color: {T['border']} !important; }}
     font-weight: 600 !important;
     width: 100% !important;
     min-height: 44px !important;
-    transition: all 0.2s !important;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s !important;
 }}
 [data-testid="stMain"] div[data-testid="stDownloadButton"] > button p,
 [data-testid="stMain"] div .stDownloadButton > button p {{
@@ -652,7 +652,7 @@ div[data-testid="stChatInput"] button svg {{
     border: 1px solid {T['border_strong']} !important;
     border-radius: 8px !important;
     font-weight: 600 !important;
-    transition: all .14s !important;
+    transition: background-color .14s, color .14s, border-color .14s !important;
 }}
 [data-testid="stMain"] [data-testid*="baseButton"] p,
 [data-testid="stMain"] [data-testid*="baseButton"] span,

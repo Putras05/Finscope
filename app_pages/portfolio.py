@@ -533,6 +533,7 @@ def _render_optimizer_section(sel, all_data, _T, is_en):
     _render_cointegration_section(sel, all_data, _T, is_en)
 
 
+@st.fragment
 def _render_capm_section(sel, all_data, _T, is_en):
     """CAPM Beta + Alpha vs VN-Index (Sharpe 1964, Lintner 1965)."""
     import plotly.graph_objects as _go
@@ -659,6 +660,7 @@ def _render_capm_section(sel, all_data, _T, is_en):
         unsafe_allow_html=True)
 
 
+@st.fragment
 def _render_pca_section(sel, all_data, _T, is_en):
     """PCA decomposition + biplot (Hotelling 1933, Jolliffe 2002)."""
     import plotly.graph_objects as _go
@@ -752,6 +754,7 @@ def _render_pca_section(sel, all_data, _T, is_en):
         unsafe_allow_html=True)
 
 
+@st.fragment
 def _render_cointegration_section(sel, all_data, _T, is_en):
     """Engle-Granger cointegration test (Engle-Granger 1987 — Nobel 2003)."""
     import plotly.graph_objects as _go
