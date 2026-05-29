@@ -296,6 +296,31 @@ def inject_theme_js(T: dict) -> None:
 </script>
 """, height=0, scrolling=False)
 
+    # v58 — Scroll handler thêm class .scrolling vào body khi đang scroll →
+    # CSS pause infinite animation (best-glow / live-pulse / nav-loading).
+    # passive: true để KHÔNG block scroll smoothness.
+    _components.html("""
+<script>
+(function() {
+    var doc; try { doc = window.parent.document; } catch(e) { return; }
+    if (doc.__scrollClassAttached) return;
+    doc.__scrollClassAttached = true;
+    var t = null;
+    function onScroll() {
+        if (!doc.body.classList.contains('scrolling')) {
+            doc.body.classList.add('scrolling');
+        }
+        clearTimeout(t);
+        t = setTimeout(function() {
+            doc.body.classList.remove('scrolling');
+        }, 200);
+    }
+    var w = doc.defaultView || window.parent;
+    w.addEventListener('scroll', onScroll, { passive: true, capture: true });
+})();
+</script>
+""", height=0, scrolling=False)
+
 
 def hide_streamlit_badges_js() -> None:
     """Ẩn Streamlit Cloud badges — LIGHTWEIGHT version (không làm quá tải app).
@@ -1090,10 +1115,10 @@ def force_sidebar_open_js() -> None:
         win.addEventListener('resize', function() {
             clearTimeout(_resizeT);
             _resizeT = setTimeout(applySidebarMode, 150);
-        });
+        }, { passive: true });
         win.addEventListener('orientationchange', function() {
             setTimeout(applySidebarMode, 300);
-        });
+        }, { passive: true });
     }
 
     // MutationObserver — SCOPED vào sidebar (NOT body) để tránh fire mỗi

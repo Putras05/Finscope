@@ -2080,6 +2080,55 @@ section.main [data-stale="true"],
     animation: none !important;
 }
 
+/* ══ v58: HIDE PLOTLY MODEBAR HOÀN TOÀN, MỌI VIEWPORT ════════════════════
+   User chỉ kéo (pan) chart — không cần camera/zoom/reset/download/lasso.
+   Modebar hover-fade-in animation gây lag rõ khi scroll qua nhiều chart.
+   Trước đây CSS hide chỉ trong @media (max-width:768px); giờ global.   */
+.modebar-container,
+.modebar,
+.modebar-group,
+.modebar-btn,
+[class*="modebar"],
+.js-plotly-plot .modebar,
+.js-plotly-plot .modebar-container {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* ══ v58: CSS containment — browser optimize paint khi scroll qua cards ══
+   `contain: layout style paint` đánh dấu element là isolated layout/paint
+   boundary → khi card thay đổi nội dung KHÔNG trigger reflow toàn page.
+   Đặc biệt hiệu quả với Streamlit metric/card layout (~20-40 cards/page).
+   `content-visibility: auto` cho phép browser skip render off-screen
+   sections (huge win cho page dài).                                      */
+[data-testid="stMetric"],
+[data-testid="stPlotlyChart"],
+.element-container > [data-testid="stMarkdownContainer"],
+.stTabs [data-baseweb="tab-panel"] {
+    contain: layout style;
+}
+[data-testid="stPlotlyChart"] {
+    /* paint containment thêm cho chart — Plotly có SVG nặng */
+    contain: layout style paint;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 480px;
+}
+
+/* ══ v58: Pause infinite animation khi user đang scroll ═══════════════════
+   `.best-model-card best-glow 2.5s infinite` và các pulse animation đốt CPU
+   ngay cả khi off-screen. JS scroll handler thêm class `.scrolling` vào
+   body trong khi scroll, gỡ ra sau 200ms idle. CSS pause animation khi
+   class active. Combine với content-visibility: auto ở trên = scroll smooth. */
+body.scrolling .best-model-card,
+body.scrolling .live-dot,
+body.scrolling .nav-loading {
+    animation-play-state: paused !important;
+}
+
 /* ══ THANH PROGRESS TRÊN ĐỈNH khi rerun (thay cho fade toàn page) ═══════════ */
 [data-testid="stAppViewContainer"]::before {
     content: '';
