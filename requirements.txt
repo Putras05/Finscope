@@ -1,12 +1,12 @@
-# Pinned 2026-05-28 — vnstock nâng lên 4.x để mở khoá Báo cáo tài chính
-# (income/balance/cashflow real cho trang Phân tích Cơ bản). vnstock 4 yêu
-# cầu numpy ≥ 2.2 + pandas ≥ 2.3 nên cả 2 đều phải nhảy theo.
+# Pinned 2026-05-30 — version locked cho Streamlit Cloud reproducible build.
+# vnstock 4.x mở khoá Báo cáo tài chính real (income/balance/cashflow).
+# v58: bỏ matplotlib (sparkline đã chuyển SVG pure Python) — tiết kiệm 80MB
+# build + 3-5s khởi động trên Streamlit Cloud free tier (1GB RAM).
 streamlit==1.39.0
 streamlit-option-menu==0.3.13
 pandas==2.3.3
 numpy==2.2.6
 plotly==5.24.1
-matplotlib==3.9.2
 scipy==1.14.1
 scikit-learn==1.5.2
 statsmodels==0.14.4

@@ -1,59 +1,14 @@
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import plotly.graph_objects as go
 
-from core.themes import theme, set_mpl_theme
+from core.themes import theme
 from core.constants import CLR, CLR_DARK, get_clr
 from core.i18n import t
 from charts.base import _plotly_layout_base
 
-
-def chart_price_history(res: dict, ticker: str, date_from=None, date_to=None, T: dict = None):
-    if T is None: T = theme()
-    set_mpl_theme(T)
-    is_dark = T.get('is_dark', False)
-    CLR_NOW    = get_clr(T)
-    col        = CLR_NOW[ticker]
-    pred_col   = CLR_NOW['pred']
-    train_fill = (CLR_DARK['FPT'] if is_dark else CLR[ticker], 0.12 if is_dark else 0.10)
-    test_fill  = (CLR_NOW['pred'], 0.10 if is_dark else 0.08)
-    bg = T['bg_chart']
-
-    dt_all = pd.to_datetime(res['dates_full'])
-    cl_all = res['close_full']
-    nt     = res['nt']
-    mask   = np.ones(len(dt_all), bool)
-    if date_from: mask &= dt_all >= pd.Timestamp(date_from)
-    if date_to:   mask &= dt_all <= pd.Timestamp(date_to)
-    if mask.sum() < 2: mask = np.ones(len(dt_all), bool)
-    dt_show = dt_all[mask]; cl_show = cl_all[mask]
-    train_mask = mask & (np.arange(len(dt_all)) < nt)
-    test_mask  = mask & (np.arange(len(dt_all)) >= nt)
-    split_dt   = dt_all[nt] if nt < len(dt_all) else None
-
-    fig, ax = plt.subplots(figsize=(13, 3.8))
-    fig.patch.set_facecolor(bg); ax.set_facecolor(bg)
-    if train_mask.any():
-        ax.fill_between(dt_all[train_mask], cl_all[train_mask], alpha=train_fill[1], color=train_fill[0])
-    if test_mask.any():
-        ax.fill_between(dt_all[test_mask], cl_all[test_mask], alpha=test_fill[1], color=test_fill[0])
-    ax.plot(dt_show, cl_show, color=col, lw=1.5, zorder=4)
-    if split_dt is not None:
-        ax.axvline(split_dt, color=pred_col, lw=1.4, ls='--', alpha=.65)
-    if train_mask.any() and test_mask.any():
-        tr_v = dt_all[train_mask]; te_v = dt_all[test_mask]; ym = cl_show.max()
-        ax.text(tr_v[len(tr_v)//2], ym*.96, 'TRAIN', ha='center', fontsize=8, color=col, alpha=.65, fontweight='700')
-        ax.text(te_v[len(te_v)//2], ym*.96, 'TEST',  ha='center', fontsize=8, color=pred_col, alpha=.65, fontweight='700')
-    d0 = str(dt_show[0].date()); d1 = str(dt_show[-1].date())
-    ax.set_title(f'{ticker}  —  Lịch sử giá đóng cửa  ({d0} → {d1})', fontsize=11, fontweight='bold', pad=8)
-    ax.set_ylabel('Giá đóng cửa (nghìn VNĐ)', fontsize=9)
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
-    ax.xaxis.set_major_locator(mdates.YearLocator(max(1, (dt_show[-1] - dt_show[0]).days // 365 // 7)))
-    plt.tight_layout(); return fig
+# v58 — Bỏ matplotlib + chart_price_history() (dead). Active code dùng
+# chart_price_history_plotly() bên dưới.
 
 
 def chart_price_history_plotly(res: dict, ticker: str,

@@ -11,9 +11,8 @@ except Exception:
 
 import streamlit as st
 import warnings
-import matplotlib
-matplotlib.use('Agg')
 warnings.filterwarnings('ignore')
+# v58 — Bỏ matplotlib (chỉ sparkline dùng, đã chuyển sang SVG pure Python)
 # Streamlit 1.56+ emit deprecation warnings cho `use_container_width` (sẽ bỏ
 # 2025-12-31) và `st.components.v1.html` (2026-06-01). App đang dùng diện rộng;
 # migration toàn diện rủi ro. Suppress để demo không lộ yellow banner.

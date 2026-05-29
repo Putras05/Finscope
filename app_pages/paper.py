@@ -26,10 +26,17 @@ def _kpi_card(label, value, color, _T, sub=None):
     )
 
 
+@st.cache_data(ttl=60, show_spinner=False)
 def _get_last_close(tk: str) -> float | None:
-    """Giá đóng cửa mới nhất (đ) cho mã. None nếu fetch lỗi."""
+    """Giá đóng cửa mới nhất (đ) cho mã. None nếu fetch lỗi.
+
+    v58 — cache 60s: tránh fetch lặp cho mỗi position render (~27 mã trong
+    sổ paper, mỗi rerun = 27 calls trước đây).
+    """
     try:
         d = fetch_data(tk)
+        if d is None or d.empty:
+            return None
         return float(d['Close'].iloc[-1]) * 1000.0
     except Exception:
         return None

@@ -1,13 +1,12 @@
-import io
 import base64
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
-from core.themes import theme, set_mpl_theme, lighten_color
+from core.themes import theme, lighten_color
 from core.constants import get_clr
+
+# v58 — Bỏ matplotlib (-80MB Streamlit Cloud build). sparkline_b64 đã chuyển
+# sang pure SVG (xem hàm bên dưới). set_mpl_theme cũng bỏ import (unused).
 
 
 _PLOTLY_CONFIG = {
@@ -106,24 +105,62 @@ def _plotly_layout_base(T: dict, height: int = 360) -> dict:
 
 
 def sparkline_b64(prices, next_price, col, T: dict = None):
-    if T is None: T = theme()
-    set_mpl_theme(T)
+    """v58 — Pure SVG sparkline (không cần matplotlib).
+
+    Render thành inline SVG (text), encode base64 → trông giống PNG cũ
+    nhưng nhẹ hơn, không boot matplotlib (-80MB Streamlit Cloud + -3s khởi
+    động). Trả base64-encoded SVG; caller dùng `data:image/svg+xml;base64,...`
+    sẽ work giống `data:image/png;base64`.
+    """
+    if T is None:
+        T = theme()
     is_dark = T.get('is_dark', False)
     bg = T['bg_card']
     line_col = lighten_color(col, 0.20) if is_dark else col
-    prices = list(prices)
-    fig, ax = plt.subplots(figsize=(3.6, 1.3))
-    fig.patch.set_facecolor(bg); ax.set_facecolor(bg)
+
+    prices = [float(p) for p in prices]
+    next_price = float(next_price)
     n = len(prices)
-    ax.plot(range(n), prices, color=line_col, lw=2.0, solid_capstyle='round', zorder=3)
+    if n < 2:
+        # Trả empty SVG để caller không crash
+        empty = '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="80"/>'
+        return base64.b64encode(empty.encode()).decode()
+
+    # Toạ độ chart: 240 × 80 px, padding 4
+    W, H, PAD = 240, 80, 4
+    inner_w = W - 2 * PAD
+    inner_h = H - 2 * PAD
+    all_vals = prices + [next_price]
+    vmin, vmax = min(all_vals), max(all_vals)
+    span = max(vmax - vmin, 1e-9)
+
+    def _xy(i, v, total_pts):
+        x = PAD + (i / max(total_pts - 1, 1)) * inner_w
+        y = PAD + (1 - (v - vmin) / span) * inner_h
+        return x, y
+
+    # Path historical prices
+    pts = []
+    for i, p in enumerate(prices):
+        x, y = _xy(i, p, n + 1)
+        pts.append(f'{x:.1f},{y:.1f}')
+    path_hist = 'M ' + ' L '.join(pts)
+
+    # Segment dotted: last hist → next predicted
+    lx, ly = _xy(n - 1, prices[-1], n + 1)
+    nx, ny = _xy(n,     next_price, n + 1)
     chg     = next_price - prices[-1]
     seg_col = '#10B981' if chg >= 0 else '#EF4444'
-    ax.plot([n-1, n], [prices[-1], next_price], color=seg_col, lw=1.8, ls='--', alpha=.75, zorder=2)
-    ax.scatter([n], [next_price], color=seg_col, s=55, zorder=5)
-    for sp in ax.spines.values(): sp.set_visible(False)
-    ax.set_xticks([]); ax.set_yticks([])
-    plt.tight_layout(pad=0.1)
-    buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=120, bbox_inches='tight', facecolor=bg, edgecolor=bg)
-    plt.close(fig); buf.seek(0)
-    return base64.b64encode(buf.read()).decode()
+
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
+        f'viewBox="0 0 {W} {H}" preserveAspectRatio="none">'
+        f'<rect width="{W}" height="{H}" fill="{bg}"/>'
+        f'<path d="{path_hist}" stroke="{line_col}" stroke-width="2" '
+        f'fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+        f'<line x1="{lx:.1f}" y1="{ly:.1f}" x2="{nx:.1f}" y2="{ny:.1f}" '
+        f'stroke="{seg_col}" stroke-width="1.8" stroke-dasharray="4,3" opacity="0.75"/>'
+        f'<circle cx="{nx:.1f}" cy="{ny:.1f}" r="4" fill="{seg_col}"/>'
+        f'</svg>'
+    )
+    return base64.b64encode(svg.encode()).decode()

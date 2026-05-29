@@ -1,68 +1,18 @@
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from scipy import stats as sp_stats
 import streamlit as st
 
-from core.themes import theme, set_mpl_theme
+from core.themes import theme
 from core.constants import CLR, get_clr
 from core.i18n import t
 from charts.base import _plotly_axes_style, _plotly_layout_base
 
-
-def chart_test_result(res: dict, ticker: str, method: str, m_te: dict, T: dict = None):
-    if T is None: T = theme()
-    set_mpl_theme(T)
-    is_dark = T.get('is_dark', False)
-    bg = T['bg_chart']
-    CLR_NOW    = get_clr(T)
-    col        = CLR_NOW[ticker]
-    pred_col   = CLR_NOW['pred']
-    fill_pos   = '#10B981' if is_dark else CLR[ticker]
-    fill_neg   = CLR_NOW['pred']
-    diag_col   = '#94A3B8' if is_dark else '#888888'
-    scat_alpha = 0.45 if is_dark else 0.28
-
-    td = pd.to_datetime(res['dates_te'])
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
-    for ax in (ax1, ax2):
-        fig.patch.set_facecolor(bg); ax.set_facecolor(bg)
-
-    ax1.plot(td, res['yte'], color=col, lw=1.6, label='Thực tế', zorder=3)
-    ax1.plot(td, res['pte'], color=pred_col, lw=1.2, ls='--', alpha=.90,
-             label=f'Dự báo  MAPE={m_te["MAPE"]:.2f}%', zorder=4)
-    ax1.fill_between(td, res['yte'], res['pte'],
-                     where=(res['yte'] >= res['pte']), color=fill_pos, alpha=.09, interpolate=True)
-    ax1.fill_between(td, res['yte'], res['pte'],
-                     where=(res['yte'] < res['pte']),  color=fill_neg, alpha=.09, interpolate=True)
-    ax1.set_title(f'Kết quả dự báo — {method} · {ticker}\n'
-                  f'{str(res["dates_te"][0])} → {str(res["dates_te"][-1])}',
-                  fontsize=11, fontweight='bold', pad=14)
-    ax1.set_ylabel('Giá đóng cửa (nghìn VNĐ)', fontsize=9)
-    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%m/%Y'))
-    ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
-    plt.setp(ax1.xaxis.get_majorticklabels(), rotation=28, ha='right', fontsize=8)
-    ax1.legend(fontsize=8.5)
-
-    sl, ic, rv, *_ = sp_stats.linregress(res['yte'], res['pte'])
-    xl = np.linspace(res['yte'].min(), res['yte'].max(), 300)
-    ax2.scatter(res['yte'], res['pte'], color=col, alpha=scat_alpha, s=14, edgecolors='none', zorder=3)
-    ax2.plot(xl, ic + sl * xl, color=pred_col, lw=2.0, zorder=5, label=f'OLS  R²={rv**2:.4f}')
-    mn = min(res['yte'].min(), res['pte'].min()) * .975
-    mx = max(res['yte'].max(), res['pte'].max()) * 1.025
-    ax2.plot([mn, mx], [mn, mx], color=diag_col, lw=1.0, ls=':', alpha=.6, zorder=2, label='y = x (lý tưởng)')
-    ax2.set_xlim(mn, mx); ax2.set_ylim(mn, mx)
-    ax2.set_title(f'Thực tế vs Dự báo — MAPE={m_te["MAPE"]:.2f}%  R²={rv**2:.4f}',
-                  fontsize=11, fontweight='bold', pad=14)
-    ax2.set_xlabel('Thực tế (nghìn VNĐ)', fontsize=9)
-    ax2.set_ylabel('Dự báo (nghìn VNĐ)', fontsize=9)
-    ax2.legend(fontsize=8.5)
-    plt.tight_layout(); return fig
+# v58 — Bỏ matplotlib import + hàm chart_test_result() (dead, không gọi từ
+# app_pages/*). Active code dùng chart_test_result_plotly() bên dưới. Tiết
+# kiệm ~80MB Streamlit Cloud build.
 
 
 def chart_test_result_plotly(res: dict, ticker: str, method: str,

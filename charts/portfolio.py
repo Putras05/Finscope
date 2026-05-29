@@ -1,16 +1,15 @@
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import plotly.graph_objects as go
 from scipy.stats import norm as sp_norm
 
-from core.themes import theme, set_mpl_theme
+from core.themes import theme
 from core.constants import TICKERS, get_clr
 from core.i18n import t
 from charts.base import _plotly_layout_base
+
+# v58 — Bỏ matplotlib + chart_portfolio_compare() dead. Active code dùng
+# chart_portfolio_compare_plotly() bên trên.
 
 
 def chart_portfolio_compare_plotly(all_data: dict, train_ratio: float, T=None):
@@ -150,39 +149,6 @@ def chart_correlation_plotly(corr, T=None):
     )
 
     return fig
-
-
-def chart_portfolio_compare(all_data: dict, train_ratio: float, T: dict = None):
-    if T is None: T = theme()
-    set_mpl_theme(T)
-    is_dark = T.get('is_dark', False)
-    bg = T['bg_chart']
-    CLR_NOW   = get_clr(T)
-    split_col = '#94A3B8' if is_dark else '#888888'
-
-    fig, ax = plt.subplots(figsize=(14, 5))
-    fig.patch.set_facecolor(bg); ax.set_facecolor(bg)
-    for tk in TICKERS:
-        df = all_data[tk]
-        dt   = pd.to_datetime(df['Ngay'])
-        cl   = df['Close'].values
-        norm = cl / cl[0] * 100
-        ax.plot(dt, norm, color=CLR_NOW[tk], lw=1.8,
-                label=f'{tk}  (hiện tại: {cl[-1]*1000:,.0f} đ  →  {norm[-1]:.1f})')
-    nt_ref   = int(len(all_data['FPT']) * train_ratio)
-    split_dt = pd.to_datetime(all_data['FPT']['Ngay'].values[nt_ref])
-    ax.axvline(split_dt, color=split_col, lw=1.3, ls='--', alpha=.6, label='Ranh giới Train/Test')
-    ax.axhline(100, color=T['text_muted'], lw=0.8, ls=':', alpha=.45)
-    ax.set_ylabel('Hiệu suất chuẩn hóa (Base = 100)', fontsize=9)
-    ax.set_title('So sánh hiệu suất — FPT · HPG · VNM  (Chuẩn hóa về 100)', fontsize=11, fontweight='bold', pad=10)
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
-    ax.xaxis.set_major_locator(mdates.YearLocator(2))
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.14), ncol=4,
-              facecolor=T['bg_card'], edgecolor=T['border'],
-              labelcolor=T['text_primary'], fontsize=9)
-    ax.grid(True, alpha=.10, ls='--')
-    for sp in ['top', 'right']: ax.spines[sp].set_visible(False)
-    plt.tight_layout(rect=[0, 0, 1, 0.96]); return fig
 
 
 def chart_returns_hist(df: pd.DataFrame, ticker: str, T: dict = None) -> go.Figure:

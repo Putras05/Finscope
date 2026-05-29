@@ -16,11 +16,28 @@ def _fetch_raw(ticker: str) -> pd.DataFrame:
     import contextlib, io
     # v56 — Dùng singleton stock handle + throttle để stay dưới vnstock 20 r/m.
     # v57 — gọi từ user-initiated fetch → throttle_fg() (1.6s thay vì 3.4s).
+    # v58 — bọc try/except quanh network call để fail gracefully (vnstock down,
+    # rate-limit, ticker delisted, ...). Trả empty DataFrame schema thay vì
+    # raise — caller check df.empty rồi hiện banner thân thiện.
     from data._clients import vn_stock, throttle_fg
-    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        throttle_fg()
-        s  = vn_stock(ticker, DATA_SOURCE)
-        df = s.quote.history(start=DATA_START, end=DATA_END, interval='1D')
+    try:
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            throttle_fg()
+            s  = vn_stock(ticker, DATA_SOURCE)
+            df = s.quote.history(start=DATA_START, end=DATA_END, interval='1D')
+    except Exception:
+        # Trả empty df đúng schema → app phía trên không vỡ.
+        return pd.DataFrame(columns=[
+            'Ngay', 'Close', 'Open', 'High', 'Low', 'Volume',
+            'MA5', 'MA20', 'MA50', 'MA5_Vol',
+            'RSI14', 'MA5_ratio', 'MA20_ratio', 'Volume_ratio',
+            'Range', 'Range_ratio', 'Return',
+            'Close_L1', 'Volume_L1', 'Range_L1', 'Return_L1',
+            'Volume_ratio_L1', 'Range_ratio_L1',
+            'MA5_ratio_L1', 'MA20_ratio_L1', 'RSI14_L1',
+        ])
+    if df is None or df.empty:
+        return pd.DataFrame(columns=['Ngay', 'Close', 'Open', 'High', 'Low', 'Volume'])
     df = df.rename(columns={
         'time': 'Ngay', 'close': 'Close', 'open': 'Open',
         'high': 'High', 'low': 'Low', 'volume': 'Volume',

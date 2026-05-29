@@ -1,6 +1,8 @@
 import streamlit as st
-import matplotlib.pyplot as plt
 import colorsys
+
+# v58 — Bỏ matplotlib (chỉ sparkline dùng, giờ dùng SVG pure Python).
+# set_mpl_theme() giữ dạng no-op để tương thích call site cũ (nếu còn).
 
 THEMES = {
     'light': {
@@ -122,47 +124,7 @@ def lighten_color(hex_color: str, amount: float = 0.3) -> str:
 
 
 def set_mpl_theme(T: dict) -> None:
-    if T.get('is_dark', False):
-        plt.rcParams.update({
-            'figure.facecolor':   '#0F1C33',
-            'axes.facecolor':     '#0F1C33',
-            'axes.edgecolor':     '#334155',
-            'axes.labelcolor':    '#CBD5E1',
-            'axes.titlecolor':    '#F1F5F9',
-            'xtick.color':        '#94A3B8',
-            'ytick.color':        '#94A3B8',
-            'grid.color':         '#1E293B',
-            'grid.alpha':         0.6,
-            'text.color':         '#F1F5F9',
-            'legend.facecolor':   '#1E293B',
-            'legend.edgecolor':   '#334155',
-            'legend.labelcolor':  '#F1F5F9',
-            'savefig.facecolor':  '#0F1C33',
-            'savefig.edgecolor':  '#0F1C33',
-            'axes.spines.top':    False,
-            'axes.spines.right':  False,
-            'font.family':        'DejaVu Sans',
-            'font.size':          10,
-        })
-    else:
-        plt.rcParams.update({
-            'figure.facecolor':   '#FFFFFF',
-            'axes.facecolor':     '#FAFBFF',
-            'axes.edgecolor':     '#DDE8F5',
-            'axes.labelcolor':    '#556888',
-            'axes.titlecolor':    '#1A2A4A',
-            'xtick.color':        '#8090B0',
-            'ytick.color':        '#8090B0',
-            'grid.color':         '#E2E8F0',
-            'grid.alpha':         0.35,
-            'text.color':         '#1A2A4A',
-            'legend.facecolor':   '#FFFFFF',
-            'legend.edgecolor':   '#DDE8F5',
-            'legend.labelcolor':  '#1A2A4A',
-            'savefig.facecolor':  '#FFFFFF',
-            'savefig.edgecolor':  '#FFFFFF',
-            'axes.spines.top':    False,
-            'axes.spines.right':  False,
-            'font.family':        'DejaVu Sans',
-            'font.size':          10,
-        })
+    """v58 — No-op: matplotlib đã được loại bỏ khỏi app (sparkline dùng SVG
+    pure Python). Hàm giữ lại cho tương thích nếu code cũ còn gọi (cleanup
+    sẽ làm sau)."""
+    pass
