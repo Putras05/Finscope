@@ -594,39 +594,7 @@ div[data-testid="stChatInput"] button svg {{
     fill: {T['accent']} !important;
 }}
 
-/* ══ CHAT STATUS — theme-aware colors (FIX A3) ═══════════════════════════════ */
-{('''
-.chat-status-ok {
-    background: linear-gradient(90deg,rgba(52,211,153,.15) 0%,rgba(52,211,153,0) 100%) !important;
-    border-color: rgba(52,211,153,.35) !important;
-    color: #34D399 !important;
-}
-.chat-status-warn {
-    background: linear-gradient(90deg,rgba(251,191,36,.15) 0%,rgba(251,191,36,0) 100%) !important;
-    border-color: rgba(251,191,36,.35) !important;
-    color: #FBBF24 !important;
-}
-''' if T.get('is_dark') else '''
-.chat-status-ok {
-    background: linear-gradient(90deg,rgba(16,185,129,.10) 0%,rgba(16,185,129,0) 100%) !important;
-    border-color: rgba(16,185,129,.30) !important;
-    color: #047857 !important;
-}
-.chat-status-warn {
-    background: linear-gradient(90deg,rgba(245,158,11,.10) 0%,rgba(245,158,11,0) 100%) !important;
-    border-color: rgba(245,158,11,.30) !important;
-    color: #92400E !important;
-}
-''')}
-
-/* ══ CHAT BUBBLE BOT — border visible in both modes ═════════════════════════ */
-.chat-bubble-bot {{
-    border: 1px solid {T['border_strong']} !important;
-}}
-
-/* ══ CHAT LABELS — readable in both modes ═══════════════════════════════════ */
-.chat-label {{ color: {T['text_muted']} !important; }}
-.chat-time  {{ color: {T['text_muted']} !important; }}
+/* v58 — Chat CSS đã xoá vì chatbot page bị remove khỏi app (~50 dòng dead) */
 
 /* ══ ALL MAIN BUTTONS — legacy selectors + baseButton direct targeting ══════ */
 [data-testid="stMain"] .stButton > button,
@@ -812,22 +780,7 @@ html body [data-testid="stMain"] button[kind="primary"]:hover {{
     cursor: wait !important;
 }}
 
-/* ══ CHAT BUBBLE code block — dark mode readable ═════════════════════════════ */
-.bot-msg-container code {{
-    background: {'rgba(96,165,250,0.15)' if T.get('is_dark') else 'rgba(21,101,192,.08)'} !important;
-    color: {T['accent']} !important;
-}}
-.bot-msg-container pre {{
-    background: {'#0D1117' if T.get('is_dark') else '#0F172A'} !important;
-    color: {'#E2E8F0' if T.get('is_dark') else '#F8FAFC'} !important;
-}}
-
-/* ══ CHAT ROW bottom border — visual separator ═══════════════════════════════ */
-.chat-row + .chat-row {{
-    border-top: 1px solid {T['divider']} !important;
-    padding-top: 14px !important;
-    margin-top: 0 !important;
-}}
+/* v58 — Bot-msg + chat-row CSS đã xoá (chatbot page removed) */
 </style>"""
 
 
@@ -1310,95 +1263,7 @@ ul[role="listbox"] [aria-selected="true"],
     .fc-card:hover { transform: none !important; }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   CHATBOT MOBILE — sửa "dính một lèo từa lưa"
-   - Ẩn col lịch sử (history panel) → chat full-width
-   - Chat bubble max-width 92% (từ 78%) để dùng đủ màn hình
-   - Code/pre/KaTeX overflow-x:auto chống tràn ngang
-   - Chat container height nhỏ hơn để fit viewport
-   ═══════════════════════════════════════════════════════════ */
-@media screen and (max-width: 768px) {
-    /* Chatbot mobile layout — KHÔNG ẩn history (giữ chức năng new conv,
-     * switch, rename, delete). Thay vào đó: chat lên TRƯỚC (order:-1),
-     * history xuống DƯỚI. Cả 2 col full-width khi wrap.
-     * :has() — Safari 15.4+, Chrome 105+, Firefox 121+. Browser 2026 OK. */
-    [data-testid="stColumn"]:has(.chatbot-chat-marker) {
-        order: -1 !important;
-        flex: 1 1 100% !important;
-        min-width: 100% !important;
-        max-width: 100% !important;
-        width: 100% !important;
-    }
-    [data-testid="stColumn"]:has(.chatbot-history-marker) {
-        order: 1 !important;
-        flex: 1 1 100% !important;
-        min-width: 100% !important;
-        max-width: 100% !important;
-        width: 100% !important;
-        margin-top: 12px !important;
-        border-top: 1px solid rgba(255,255,255,0.08) !important;
-        padding-top: 12px !important;
-    }
-    /* v33 FIX #6 (corrected): Search bar [5,0.8,2,0.8] giữ 1 ROW.
-     * Marker bị Streamlit wrap trong `.element-container > .stMarkdown > div`.
-     * Siblings của marker ở level element-container, không phải marker level.
-     * Dùng :has() trên parent element-container để định danh container chứa marker,
-     * rồi target sibling element-container ngay sau (chứa stHorizontalBlock). */
-    .element-container:has(.chatbot-search-row-marker) + .element-container [data-testid="stHorizontalBlock"] {
-        flex-wrap: nowrap !important;
-        gap: 0.4rem !important;
-    }
-    .element-container:has(.chatbot-search-row-marker) + .element-container [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
-        min-width: 0 !important;
-        flex: 1 1 auto !important;
-        width: auto !important;
-    }
-    /* Chat bubble — rộng hơn trên mobile (78% → 92%) */
-    .chat-bubble-wrap { max-width: 92% !important; }
-    /* Avatar nhỏ hơn để tiết kiệm không gian */
-    .chat-avatar { width: 28px !important; height: 28px !important; font-size: 14px !important; }
-    /* v33 FIX #8: Code blocks pre+code differentiated.
-     * pre block: overflow-x:auto cho phép scroll ngang (KHÔNG pre-wrap vì
-     * sẽ contradict scroll). Inline code: pre-wrap cho phép break giữa từ. */
-    .bot-msg-container pre,
-    .chat-bubble pre {
-        max-width: 100% !important;
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        white-space: pre !important;
-    }
-    .bot-msg-container code,
-    .chat-bubble code {
-        max-width: 100% !important;
-        word-break: break-word !important;
-        white-space: pre-wrap !important;
-    }
-    /* KaTeX block math — horizontal scroll nếu công thức dài */
-    .katex-display,
-    .katex-display > .katex,
-    .chat-bubble .katex-display {
-        max-width: 100% !important;
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        -webkit-overflow-scrolling: touch !important;
-    }
-    /* v33 FIX #15: Scope tighter — chỉ container có chatbot-chat-marker (chat
-     * scroll area), không catch các bordered wrappers khác (dashboard, etc.). */
-    [data-testid="stVerticalBlockBorderWrapper"]:has(.chatbot-chat-marker) {
-        max-height: 60vh !important;
-        max-height: 60dvh !important;
-        height: auto !important;
-    }
-}
-
-/* Mobile landscape: viewport tall < 480px → chat container nhỏ hơn nữa */
-@media screen and (max-width: 768px) and (max-height: 480px) {
-    [data-testid="stVerticalBlockBorderWrapper"]:has(.chatbot-chat-marker) {
-        max-height: 50vh !important;
-        max-height: 50dvh !important;
-    }
-    /* v34: KHÔNG cap height plotly trên landscape — gây broken render */
-}
+/* v58 — Chatbot mobile + landscape CSS đã xoá (~100 dòng dead) */
 
 /* ═══════════════════════════════════════════════════════════
    SIDEBAR — DESKTOP DEFAULT OPEN, COLLAPSIBLE VIA TOGGLE
@@ -1803,163 +1668,7 @@ details > summary { font-size: 13px !important; font-weight: 600 !important; }
    CHATBOT — Premium redesigned UI
    ═══════════════════════════════════════════════════════════════ */
 
-/* Status banner */
-.chat-status {
-    display: flex; align-items: center; gap: 8px;
-    padding: 9px 14px; margin: 8px 0 12px;
-    font-size: 11.5px; font-weight: 600;
-    border-radius: 8px; border: 1px solid;
-}
-.chat-status-ok {
-    background: linear-gradient(90deg,rgba(16,185,129,.10) 0%,rgba(16,185,129,0) 100%);
-    border-color: rgba(16,185,129,.30); color: #047857;
-}
-.chat-status-warn {
-    background: linear-gradient(90deg,rgba(245,158,11,.10) 0%,rgba(245,158,11,0) 100%);
-    border-color: rgba(245,158,11,.30); color: #92400E;
-}
-
-/* Chat rows */
-.chat-row {
-    display: flex; gap: 12px; padding: 10px 6px; margin: 4px 0;
-    border-radius: 10px; animation: chatFadeIn .28s ease-out;
-    transition: background .15s;
-}
-.chat-row:hover { background: rgba(100,116,139,.04); }
-@keyframes chatFadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-.chat-row.chat-user { flex-direction: row-reverse; }
-.chat-row.chat-bot  { flex-direction: row; }
-
-/* Avatar */
-.chat-avatar {
-    width: 34px; height: 34px; min-width: 34px;
-    border-radius: 50%;
-    background: linear-gradient(135deg,#1565C0 0%,#7C3AED 100%);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 10px; font-weight: 800; color: white; letter-spacing: .5px;
-    box-shadow: 0 2px 10px rgba(21,101,192,.40);
-    flex-shrink: 0; margin-top: 2px;
-}
-.chat-row.chat-user .chat-avatar {
-    background: linear-gradient(135deg,#334155 0%,#475569 100%);
-    box-shadow: 0 2px 8px rgba(0,0,0,.20);
-}
-
-.chat-bubble-wrap {
-    display: flex; flex-direction: column; max-width: 78%; min-width: 0;
-}
-.chat-row.chat-user .chat-bubble-wrap { align-items: flex-end; }
-.chat-row.chat-bot  .chat-bubble-wrap { align-items: flex-start; flex: 1; }
-
-/* Meta row */
-.chat-meta {
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 4px; font-size: 9.5px;
-}
-.chat-label {
-    font-weight: 800; letter-spacing: 1.2px;
-    text-transform: uppercase; color: #64748B;
-}
-.chat-time  { color: #94A3B8; font-weight: 500; font-family: monospace; font-size: 9px; }
-
-/* Bubble */
-.chat-bubble {
-    padding: 11px 15px; font-size: 13.5px; line-height: 1.68;
-    word-wrap: break-word; word-break: break-word;
-    transition: box-shadow .18s;
-}
-.chat-bubble-user {
-    color: white; font-weight: 500;
-    border-radius: 16px 16px 4px 16px;
-    box-shadow: 0 3px 12px rgba(21,101,192,.28);
-}
-.chat-bubble-bot {
-    border-radius: 4px 16px 16px 16px;
-    box-shadow: 0 1px 4px rgba(0,0,0,.06);
-}
-.chat-bubble-bot:hover { box-shadow: 0 3px 10px rgba(0,0,0,.10); }
-
-/* Bot markdown content */
-.bot-msg-container h1,.bot-msg-container h2,.bot-msg-container h3,.bot-msg-container h4 {
-    font-weight: 700 !important; color: inherit !important;
-    border-bottom: 1px solid rgba(100,116,139,.15);
-    padding-bottom: 4px !important; margin-bottom: 8px !important;
-}
-.bot-msg-container h1 { font-size: 17px !important; margin-top: 14px !important; }
-.bot-msg-container h2 { font-size: 15.5px !important; margin-top: 12px !important; }
-.bot-msg-container h3 { font-size: 14.5px !important; margin-top: 10px !important; }
-.bot-msg-container h4 { font-size: 13.5px !important; margin-top: 8px !important; border: none !important; }
-.bot-msg-container p  { margin: 5px 0 !important; line-height: 1.72 !important; }
-.bot-msg-container ul { margin: 5px 0 5px 18px !important; list-style: disc !important; }
-.bot-msg-container ol { margin: 5px 0 5px 18px !important; }
-.bot-msg-container li { margin: 4px 0 !important; line-height: 1.6 !important; }
-.bot-msg-container code {
-    padding: 2px 6px !important; border-radius: 4px !important;
-    font-family: 'Menlo','Consolas',monospace !important; font-size: 12px !important;
-    font-weight: 600 !important;
-}
-.bot-msg-container pre {
-    padding: 12px 14px !important; border-radius: 8px !important;
-    overflow-x: auto !important; margin: 8px 0 !important;
-    font-size: 12px !important; line-height: 1.5 !important;
-}
-.bot-msg-container pre code {
-    background: transparent !important;
-    color: inherit !important;
-    padding: 0 !important;
-    font-size: 12px !important;
-}
-.bot-msg-container table {
-    border-collapse: collapse !important; width: 100% !important;
-    margin: 10px 0 !important; font-size: 12.5px !important;
-    border-radius: 6px !important; overflow: hidden !important;
-}
-.bot-msg-container th, .bot-msg-container td {
-    border: 1px solid rgba(100,116,139,.2) !important;
-    padding: 7px 11px !important; text-align: left !important;
-}
-.bot-msg-container th {
-    background: rgba(21,101,192,.08) !important;
-    font-weight: 700 !important; font-size: 11.5px !important;
-    text-transform: uppercase !important; letter-spacing: .4px !important;
-}
-.bot-msg-container blockquote {
-    border-left: 3px solid #F59E0B !important; padding: 7px 13px !important;
-    margin: 8px 0 !important; background: rgba(245,158,11,.06) !important;
-    border-radius: 0 8px 8px 0 !important; font-size: 12.5px !important;
-    font-style: italic !important;
-}
-.bot-msg-container hr {
-    border: none !important; border-top: 1px solid rgba(100,116,139,.2) !important;
-    margin: 10px 0 !important;
-}
-.bot-msg-container strong { font-weight: 700 !important; }
-.bot-msg-container em { font-style: italic !important; }
-
-/* Suggestion chip special — pill shape */
-.sug-chip button {
-    border-radius: 20px !important;
-    font-size: 12px !important;
-    padding: 5px 12px !important;
-    min-height: 34px !important;
-    font-weight: 500 !important;
-}
-
-/* Typing dots */
-.typing-dots { display: inline-flex; gap: 5px; padding: 10px 14px; }
-.typing-dots span {
-    width: 7px; height: 7px; border-radius: 50%; background: #94A3B8;
-    animation: typingBounce 1.4s infinite;
-}
-.typing-dots span:nth-child(2) { animation-delay: .18s; }
-.typing-dots span:nth-child(3) { animation-delay: .36s; }
-@keyframes typingBounce {
-    0%, 60%, 100% { transform: translateY(0); opacity: .35; }
-    30%            { transform: translateY(-7px); opacity: 1; }
-}
+/* v58 — Chat rows / avatars / bubbles / typing-dots CSS đã xoá (~155 dòng dead) */
 
 /* ═══════════════════════════════════════════════════════════════
    CHATBOT — Chat input
@@ -2138,6 +1847,23 @@ body.scrolling .fc-card:hover,
 body.scrolling [data-testid="stMetric"]:hover,
 body.scrolling .stButton > button:hover {
     transform: none !important;
+    box-shadow: none !important;
+}
+
+/* ══ v58: AGGRESSIVE — tắt mọi animation cho element off-screen.
+   `content-visibility: hidden` browser hoàn toàn skip render. Chỉ áp dụng
+   cho element thực sự off-screen (viewport scroll xa). content-visibility:
+   auto đã tự handle, nhưng force animation paused thêm để chắc.            */
+body.scrolling * {
+    animation-play-state: paused !important;
+}
+
+/* ══ v58: HINT browser dùng GPU compositor cho main scroll container
+   ═══════════════════════════════════════════════════════════════════════
+   `will-change: scroll-position` để browser pre-allocate compositor layer
+   cho main area. Lifetime ngắn — chỉ apply khi đang scroll.                */
+body.scrolling [data-testid="stMain"] {
+    will-change: scroll-position;
 }
 
 /* ══ v58: Pause infinite animation khi user đang scroll ═══════════════════

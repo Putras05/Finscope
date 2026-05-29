@@ -203,6 +203,7 @@ def _align_two(res_a, res_b, df):
         return None
 
 
+@st.fragment
 def _render_dm_section(all_models, df, _T, is_en=False):
     """Kiểm định Diebold–Mariano: mô hình tốt nhất có vượt trội ĐÁNG KỂ không?
 
@@ -444,6 +445,7 @@ def _render_fund_tech_divergence(ticker, ichi_code, ichi_score, _T, is_en=False)
         f'</div>{_hint}</div>', unsafe_allow_html=True)
 
 
+@st.fragment
 def _render_news_sentiment_card(ticker, _T, is_en=False):
     """Thẻ TÂM LÝ TIN TỨC — đọc RSS thị trường, chấm sentiment có trọng số.
 
