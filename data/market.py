@@ -29,7 +29,8 @@ def market_snapshot(symbols: tuple) -> pd.DataFrame:
     tỷ đ.
     """
     import contextlib, io
-    from vnstock import Trading
+    # v56 — Dùng singleton + throttle (chia rate-limit với fetcher/fundamental/capm)
+    from data._clients import vn_trading, throttle
     # ── Fail-safe: nếu VCI Trading down hoặc trả None/schema lạ → DataFrame
     # rỗng có schema đúng. CACHE sẽ giữ failure 5 phút → tránh dồn retry,
     # nhưng app KHÔNG vỡ (các trang gọi market_snapshot sẽ thấy empty df).
@@ -37,7 +38,8 @@ def market_snapshot(symbols: tuple) -> pd.DataFrame:
                    'change_pct','volume','value_M','market_cap_B','listed_share']
     try:
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            pb = Trading(source='VCI').price_board(symbols_list=list(symbols))
+            throttle()
+            pb = vn_trading('VCI').price_board(symbols_list=list(symbols))
         if pb is None or len(pb) == 0:
             return pd.DataFrame(columns=_empty_cols)
     except Exception:

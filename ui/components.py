@@ -1,30 +1,7 @@
 from core.i18n import t
 
-
-_SVG_ICONS = {
-    'home':        '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
-    'chart-bar':   '<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
-    'clock':       '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-    'trending-up': '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
-    'briefcase':   '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
-    'award':       '<circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>',
-    'alert':       '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
-    'refresh':     '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
-    'info':        '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
-    'check':       '<polyline points="20 6 9 17 4 12"/>',
-    'x':           '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
-    'minus':       '<line x1="5" y1="12" x2="19" y2="12"/>',
-    'activity':    '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
-    'pie-chart':   '<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
-}
-
-
-def svg_icon(name: str, size: int = 18, color: str = 'currentColor', stroke_w: float = 2) -> str:
-    path = _SVG_ICONS.get(name, '')
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" '
-            f'viewBox="0 0 24 24" fill="none" stroke="{color}" '
-            f'stroke-width="{stroke_w}" stroke-linecap="round" stroke-linejoin="round">'
-            f'{path}</svg>')
+# (Đã xoá _SVG_ICONS + svg_icon ngày 2026-05-29 — superseded by ui/icons.py
+#  với 25+ Bootstrap Icons paths. Function svg_icon() không có caller.)
 
 
 def sparkline_svg(prices, color: str, width: int = 240, height: int = 56) -> str:
@@ -327,3 +304,23 @@ def render_param_badge(p: int, T: dict) -> str:
         f'<span style="color:{_fg};font-weight:800;letter-spacing:0.3px">{p}</span>'
         f'</span>'
     )
+
+
+def friendly_error(title_vi: str, title_en: str,
+                    suggestion_vi: str = '', suggestion_en: str = '',
+                    detail: str = '', _T: dict = None) -> None:
+    """Render lỗi user-friendly: tiêu đề đậm + 1 dòng gợi ý + expander
+    'Chi tiết kỹ thuật' chứa raw error string.
+
+    Trước đây nhiều chỗ dùng st.caption(f'⚠ {e}') hiện stack-trace fragment
+    nhỏ tí teo không actionable. Hàm này thay thế chuẩn.
+    """
+    import streamlit as _st
+    is_en = _st.session_state.get('lang', 'VI') == 'EN'
+    title = title_en if is_en else title_vi
+    suggestion = (suggestion_en if is_en else suggestion_vi) or ''
+    _st.error(f'**{title}**' + (f'\n\n{suggestion}' if suggestion else ''))
+    if detail:
+        with _st.expander('Chi tiết kỹ thuật' if not is_en else 'Technical detail',
+                            expanded=False):
+            _st.code(str(detail)[:1000], language='text')

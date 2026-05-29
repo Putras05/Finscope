@@ -11,6 +11,7 @@ ARIMA: order, aic, bic, resid, fitted, các dải CI cho test + phiên kế ti�
 import warnings
 import numpy as np
 import streamlit as st
+from core.config import CACHE_TTL
 
 from data.fetcher import fetch_data
 
@@ -112,7 +113,7 @@ def _np_ar_fallback(y, nt, p, dates):
     )
 
 
-@st.cache_data(ttl=21600, show_spinner=False, persist="disk")
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False, persist="disk")
 def arima_future(ticker: str, p: int = 1, H: int = 10,
                  date_from=None, date_to=None) -> dict:
     """Dự báo H phiên TỚI (out-of-sample) bằng ARIMA fit trên TOÀN bộ dữ liệu.
@@ -167,7 +168,7 @@ def arima_future(ticker: str, p: int = 1, H: int = 10,
     )
 
 
-@st.cache_data(ttl=21600, show_spinner=False, persist="disk")
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False, persist="disk")
 def run_arima(ticker: str, train_ratio: float, p: int = 1,
               date_from=None, date_to=None) -> dict:
     """ARIMA(p,d,q) dự báo 1 phiên kế tiếp trên giá đóng cửa.

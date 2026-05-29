@@ -118,7 +118,9 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             _ret_ytd[_tk] = (_d_year['Close'].iloc[-1] /
                              _d_year['Close'].iloc[0] - 1) * 100
         else:
-            _ret_ytd[_tk] = float(_d['Return'].sum())
+            # Fallback: COMPOUND daily returns, KHÔNG sum (sum % ≠ tích lũy).
+            _r = _d['Return'].dropna() / 100.0   # df['Return'] đang ở scale %
+            _ret_ytd[_tk] = float(((1 + _r).prod() - 1) * 100) if len(_r) else 0.0
     _best_tk  = max(_ret_ytd, key=_ret_ytd.get)
     _worst_tk = min(_ret_ytd, key=_ret_ytd.get)
     _sharpe = {}
@@ -352,3 +354,496 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
     # Đã bỏ 2 chart "Ma trận tương quan return" và "Độ lệch chuẩn return hàng ngày"
     # theo yêu cầu user — bảng số liệu phía trên đã đủ thông tin tổng quan.
+
+    # ── Markowitz Mean-Variance Optimizer ──────────────────────────────
+    _render_optimizer_section(sel, all_data, _T, _is_en_p)
+
+
+def _render_optimizer_section(sel, all_data, _T, is_en):
+    """Section Optimizer Markowitz + biên hiệu quả (efficient frontier).
+
+    Dùng daily Return của các mã đã chọn để tính trọng số portfolio tối ưu
+    theo 3 chiến lược: Equal Weight, Min Variance, Max Sharpe (tangency).
+    """
+    import plotly.graph_objects as _go
+    from services.optimizer import optimize, efficient_frontier
+    from charts.base import _PLOTLY_CONFIG, _plotly_axes_style
+
+    st.markdown(
+        f'<div class="sec-hdr" style="margin-top:20px">'
+        f'{"Tối ưu danh mục — Markowitz Mean-Variance (1952)" if not is_en else "Portfolio Optimization — Markowitz Mean-Variance (1952)"}'
+        f' <span style="font-size:11px;font-weight:600;color:{_T["text_muted"]};margin-left:8px">'
+        f'{"Annualized 252 phiên · Long-only · Sum(w)=1" if not is_en else "Annualized 252 bars · Long-only · Sum(w)=1"}'
+        f'</span></div>',
+        unsafe_allow_html=True)
+
+    # Ghép returns DataFrame
+    rets = pd.DataFrame({tk: all_data[tk]['Return'] for tk in sel}).dropna()
+    if len(rets) < 60:
+        st.warning('Cần ≥ 60 phiên có đủ dữ liệu cho mọi mã.' if not is_en
+                    else 'Need ≥ 60 bars of overlapping data.')
+        return
+
+    try:
+        opt = optimize(rets)
+    except Exception as e:
+        st.error(f'Lỗi optimizer: {e}')
+        return
+
+    # 3 card chiến lược
+    cards_html = ''
+    palette = {'equal_weight': '#94A3B8',
+                'min_variance': '#0F766E',
+                'max_sharpe':   '#A855F7'}
+    for key in ('equal_weight', 'min_variance', 'max_sharpe'):
+        p = opt[key]
+        col = palette[key]
+        weights_html = ''
+        for tk, w in zip(opt['tickers'], p['weights']):
+            if w > 0.005:
+                pct = w * 100
+                bar_w = max(2.0, pct)
+                weights_html += (
+                    f'<div style="display:flex;justify-content:space-between;'
+                    f'align-items:center;margin-top:6px;font-size:11.5px">'
+                    f'<span style="font-weight:700;color:{_T["accent"]}">{tk}</span>'
+                    f'<span style="color:{_T["text_secondary"]}">{pct:.1f}%</span>'
+                    f'</div>'
+                    f'<div style="height:5px;background:{_T["bg_elevated"]};'
+                    f'border-radius:999px;overflow:hidden">'
+                    f'<div style="height:100%;width:{bar_w}%;background:{col};'
+                    f'border-radius:999px"></div></div>')
+        # Sharpe có thể NaN → tính trước rồi nhúng (tránh ternary trong f-string concat)
+        _shp_txt = (f'{p["sharpe"]:+.2f}' if p["sharpe"] == p["sharpe"] else 'N/A')
+        cards_html += (
+            f'<div style="flex:1;min-width:240px;background:{_T["bg_card"]};'
+            f'border:1px solid {_T["border"]};border-top:4px solid {col};'
+            f'border-radius:12px;padding:14px 16px">'
+            f'<div style="font-size:11px;color:{_T["text_muted"]};font-weight:700;'
+            f'text-transform:uppercase;letter-spacing:.7px">'
+            f'{p["name"]}</div>'
+            f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;'
+            f'margin:8px 0 6px">'
+            f'<div><div style="font-size:10px;color:{_T["text_muted"]}">'
+            f'{"Lợi suất" if not is_en else "Return"} (ann.)</div>'
+            f'<div style="font-size:15px;font-weight:800;color:{col}">'
+            f'{p["expected_return"]*100:+.2f}%</div></div>'
+            f'<div><div style="font-size:10px;color:{_T["text_muted"]}">'
+            f'{"Biến động" if not is_en else "Volatility"} (ann.)</div>'
+            f'<div style="font-size:15px;font-weight:800;color:{col}">'
+            f'{p["volatility"]*100:.2f}%</div></div>'
+            f'<div><div style="font-size:10px;color:{_T["text_muted"]}">Sharpe</div>'
+            f'<div style="font-size:15px;font-weight:800;color:{col}">'
+            f'{_shp_txt}</div></div>'
+            f'</div>'
+            f'<div style="border-top:1px solid {_T["divider"]};margin-top:6px;'
+            f'padding-top:4px">{weights_html}</div></div>')
+
+    st.markdown(
+        f'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">{cards_html}</div>',
+        unsafe_allow_html=True)
+
+    # ── Biên hiệu quả (efficient frontier) ─────────────────────────────
+    st.markdown(
+        f'<div class="sec-hdr" style="margin-top:16px">'
+        f'{"Biên hiệu quả (Efficient Frontier)" if not is_en else "Efficient Frontier"}'
+        f' <span style="font-size:11px;font-weight:600;color:{_T["text_muted"]};margin-left:8px">'
+        f'{"Mỗi điểm = trọng số tối ưu giảm thiểu σ với mức lợi suất kỳ vọng cho trước" if not is_en else "Each point = optimal weights minimizing σ given target return"}'
+        f'</span></div>',
+        unsafe_allow_html=True)
+
+    try:
+        ef = efficient_frontier(rets, n_points=30)
+    except Exception as e:
+        st.caption(f'Lỗi frontier: {e}')
+        return
+    if not ef['points']:
+        st.caption('Không tính được biên hiệu quả.' if not is_en
+                    else 'Frontier could not be computed.')
+        return
+
+    # Chart
+    fig = _go.Figure()
+    fr_vol = [p['volatility'] * 100 for p in ef['points']]
+    fr_ret = [p['expected_return'] * 100 for p in ef['points']]
+    fig.add_trace(_go.Scatter(
+        x=fr_vol, y=fr_ret, mode='lines+markers',
+        line=dict(color='#0F766E', width=2.4),
+        marker=dict(size=6, color='#0F766E', line=dict(color='#fff', width=1)),
+        name=('Biên hiệu quả' if not is_en else 'Efficient Frontier'),
+        hovertemplate='σ %{x:.2f}%<br>R %{y:+.2f}%<extra></extra>'))
+
+    # Plot 3 portfolio đặc biệt + từng mã riêng
+    for key, color, label_vi, label_en, sym in [
+        ('equal_weight', '#94A3B8', 'Cân bằng', 'Equal', 'square'),
+        ('min_variance', '#0F766E', 'Min Var', 'Min Var', 'diamond'),
+        ('max_sharpe',   '#A855F7', 'Max Sharpe', 'Max Sharpe', 'star'),
+    ]:
+        p = opt[key]
+        fig.add_trace(_go.Scatter(
+            x=[p['volatility'] * 100], y=[p['expected_return'] * 100],
+            mode='markers+text',
+            marker=dict(size=14, color=color, symbol=sym,
+                         line=dict(color='#fff', width=2)),
+            text=[label_en if is_en else label_vi],
+            textposition='top center',
+            textfont=dict(size=10, color=color),
+            name=label_en if is_en else label_vi,
+            hovertemplate=f'<b>{p["name"]}</b><br>σ %{{x:.2f}}%<br>R %{{y:+.2f}}%<extra></extra>'))
+
+    # Plot từng mã
+    mu_arr = opt['mu_annual']
+    cov_arr = np.array(opt['cov_annual'])
+    for i, tk in enumerate(opt['tickers']):
+        fig.add_trace(_go.Scatter(
+            x=[float(np.sqrt(max(cov_arr[i, i], 0.0))) * 100],
+            y=[mu_arr[i] * 100],
+            mode='markers+text',
+            marker=dict(size=10, color='#F59E0B', symbol='circle-open',
+                         line=dict(color='#F59E0B', width=2)),
+            text=[tk], textposition='bottom right',
+            textfont=dict(size=10, color=_T['text_muted']),
+            showlegend=False,
+            hovertemplate=f'<b>{tk}</b><br>σ %{{x:.2f}}%<br>R %{{y:+.2f}}%<extra></extra>'))
+
+    fig.update_layout(
+        height=400, margin=dict(l=60, r=30, t=10, b=50),
+        paper_bgcolor=_T['bg_card'], plot_bgcolor=_T['bg_card'],
+        font=dict(family='Inter', size=11, color=_T['text_primary']),
+        xaxis_title=('Biến động hoá năm σ (%)' if not is_en else 'Annualized volatility σ (%)'),
+        yaxis_title=('Lợi suất hoá năm μ (%)' if not is_en else 'Annualized return μ (%)'),
+        legend=dict(orientation='h', y=-0.18, x=0.5, xanchor='center',
+                     bgcolor='rgba(0,0,0,0)'),
+        hovermode='closest')
+    _plotly_axes_style(fig, _T)
+    st.plotly_chart(fig, use_container_width=True, config=_PLOTLY_CONFIG)
+
+    st.caption(
+        ('Markowitz (1952) chứng minh: với cùng mức rủi ro σ, portfolio nằm trên biên hiệu quả cho lợi suất kỳ vọng cao nhất; với cùng lợi suất, biên hiệu quả cho rủi ro thấp nhất. Điểm Max Sharpe = portfolio tangency tiếp xúc với đường thị trường vốn (Capital Market Line) — cân bằng tốt nhất giữa lợi suất và rủi ro.'
+         if not is_en else
+         'Markowitz (1952) shows: for the same risk σ, portfolios on the efficient frontier yield the highest expected return; for the same return, the frontier has the lowest risk. Max Sharpe = the tangency portfolio touching the Capital Market Line — optimal risk-adjusted return.'))
+
+
+
+    # ── CAPM + PCA + Cointegration (Sprint B math additions) ───────────
+    # Bug fix v51: _is_en_p chỉ tồn tại trong render(); ở đây là
+    # _render_optimizer_section nên dùng param `is_en` của hàm này.
+    _render_capm_section(sel, all_data, _T, is_en)
+    _render_pca_section(sel, all_data, _T, is_en)
+    _render_cointegration_section(sel, all_data, _T, is_en)
+
+
+def _render_capm_section(sel, all_data, _T, is_en):
+    """CAPM Beta + Alpha vs VN-Index (Sharpe 1964, Lintner 1965)."""
+    import plotly.graph_objects as _go
+    from services.capm import fetch_vnindex, capm_table
+    from charts.base import _PLOTLY_CONFIG, _plotly_axes_style
+
+    st.markdown(
+        f'<div class="sec-hdr" style="margin-top:20px">'
+        f'CAPM — Beta & Alpha vs VN-Index'
+        f' <span style="font-size:11px;font-weight:600;color:{_T["text_muted"]};margin-left:8px">'
+        f'{"Sharpe 1964, Lintner 1965 · OLS hồi quy excess returns" if not is_en else "Sharpe 1964, Lintner 1965 · OLS on excess returns"}'
+        f'</span></div>', unsafe_allow_html=True)
+
+    # rf input (annual %)
+    rf_pct = st.slider(
+        ('Lãi suất phi rủi ro (%/năm) — mặc định 4.7% lãi gửi 12 tháng SBV'
+         if not is_en else
+         'Risk-free rate (%/year) — default 4.7% SBV 12m deposit'),
+        min_value=0.0, max_value=10.0, value=4.7, step=0.1, key='_capm_rf')
+
+    with st.spinner('Đang tải VN-Index...' if not is_en else 'Loading VN-Index...'):
+        try:
+            vn = fetch_vnindex()
+        except Exception as e:
+            st.warning(
+                f'{"Không tải được VN-Index" if not is_en else "Could not load VN-Index"}: {e}')
+            return
+
+    rows = capm_table(all_data, vn, rf_annual_pct=float(rf_pct))
+    if not rows:
+        st.info('Không có dữ liệu CAPM.' if not is_en else 'No CAPM data.')
+        return
+
+    # Bảng beta/alpha
+    hdr = (['Mã', 'β (Beta)', 'α/năm (%)', 'R²', 't-stat β', 'p-value', 'n']
+            if not is_en else
+            ['Ticker', 'β (Beta)', 'α/year (%)', 'R²', 't-stat β', 'p-value', 'n'])
+    rows_html = ''
+    for r in rows:
+        b = r.get('beta')
+        a = r.get('alpha_annual_pct')
+        # NaN/None check — error rows ("thiếu dữ liệu") render colspan muted,
+        # KHÔNG render +nan% bằng đỏ (looks like real underperformer).
+        bad = (b is None or b != b or a is None or a != a)
+        if bad:
+            _err_msg = (r.get('error') or ('thiếu dữ liệu' if not is_en else 'missing data'))
+            rows_html += (
+                f'<tr style="border-top:1px solid {_T["divider"]};'
+                f'color:{_T["text_muted"]}">'
+                f'<td style="padding:8px 12px;font-weight:700;color:{_T["accent"]}">{r["ticker"]}</td>'
+                f'<td colspan="6" style="padding:8px 12px;font-style:italic">{_err_msg}</td>'
+                f'</tr>')
+            continue
+        b_col = ('#0F766E' if b < 1 else ('#A855F7' if b < 1.5 else '#DC2626'))
+        a_col = '#0F766E' if a > 0 else '#DC2626'
+        rows_html += (
+            f'<tr style="border-top:1px solid {_T["divider"]};color:{_T["text_primary"]}">'
+            f'<td style="padding:8px 12px;font-weight:700;color:{_T["accent"]}">{r["ticker"]}</td>'
+            f'<td style="padding:8px 12px;color:{b_col};font-weight:700">{b:.3f}</td>'
+            f'<td style="padding:8px 12px;color:{a_col};font-weight:700">{a:+.2f}%</td>'
+            f'<td style="padding:8px 12px">{r["r_squared"]:.3f}</td>'
+            f'<td style="padding:8px 12px">{r["t_beta"]:.2f}</td>'
+            f'<td style="padding:8px 12px">{r["p_beta"]:.4f}</td>'
+            f'<td style="padding:8px 12px">{r["n_obs"]}</td>'
+            f'</tr>')
+    th = ''.join(f'<th style="padding:9px 12px;text-align:left">{h}</th>' for h in hdr)
+    st.markdown(
+        f'<div style="border-radius:12px;overflow-x:auto;border:1px solid {_T["border"]}">'
+        f'<table style="width:100%;border-collapse:collapse;font-size:13px">'
+        f'<thead><tr style="background:{_T["accent"]};color:#fff">{th}</tr></thead>'
+        f'<tbody>{rows_html}</tbody></table></div>',
+        unsafe_allow_html=True)
+
+    # SML chart: β trục X, lợi suất kỳ vọng trục Y
+    # Lọc NaN beta trước — `max(...) * 1.2` trên all-NaN → NaN axis crash.
+    _good = [r for r in rows
+             if r.get('beta') is not None and r.get('beta') == r.get('beta')]
+    if len(_good) < 2:
+        st.caption(
+            ('Không đủ mã có β hợp lệ để vẽ SML (cần ≥ 2 mã đủ data overlap).'
+             if not is_en else
+             'Not enough tickers with valid β to draw SML (need ≥ 2 with sufficient overlap).'))
+    elif len(_good) >= 2:
+        fig = _go.Figure()
+        rm_excess_daily = (vn['Return'].dropna().mean() - rf_pct/100/252)
+        rm_excess_annual = rm_excess_daily * 252 * 100
+        beta_range = [0, max(r['beta'] for r in _good) * 1.2]
+        sml_x = beta_range
+        sml_y = [rf_pct + b * rm_excess_annual for b in beta_range]
+        fig.add_trace(_go.Scatter(
+            x=sml_x, y=sml_y, mode='lines',
+            line=dict(color=_T['text_muted'], width=2, dash='dash'),
+            name=('Security Market Line' if is_en else 'Đường thị trường (SML)'),
+            hovertemplate='SML: β=%{x:.2f}, E[R]=%{y:.2f}%<extra></extra>'))
+        for r in _good:
+            er_annual = (r['alpha'] + r['beta'] * rm_excess_daily) * 252 * 100 + rf_pct
+            fig.add_trace(_go.Scatter(
+                x=[r['beta']], y=[er_annual],
+                mode='markers+text',
+                marker=dict(size=14, color='#0F766E' if r['alpha_annual_pct'] > 0 else '#DC2626',
+                             line=dict(color='#fff', width=2)),
+                text=[r['ticker']], textposition='top center',
+                textfont=dict(size=11, color=_T['text_primary']),
+                showlegend=False,
+                hovertemplate=f'<b>{r["ticker"]}</b><br>β=%{{x:.3f}}<br>E[R]/{ "y" if is_en else "năm"}=%{{y:.2f}}%<extra></extra>'))
+        fig.update_layout(
+            height=360, margin=dict(l=60, r=30, t=10, b=50),
+            paper_bgcolor=_T['bg_card'], plot_bgcolor=_T['bg_card'],
+            font=dict(family='Inter', size=11, color=_T['text_primary']),
+            xaxis_title='β (Beta)',
+            yaxis_title=('Lợi suất kỳ vọng năm (%)' if not is_en else 'Expected annual return (%)'),
+            hovermode='closest')
+        _plotly_axes_style(fig, _T)
+        st.plotly_chart(fig, use_container_width=True, config=_PLOTLY_CONFIG)
+
+    st.caption(
+        ('<b>β > 1</b>: cổ phiếu nhạy hơn thị trường (volatile). <b>β < 1</b>: defensive. '
+         '<b>α > 0</b>: vượt CAPM expectation (outperform thị trường sau khi điều chỉnh rủi ro). '
+         'Mã NẰM TRÊN đường SML = outperform; NẰM DƯỚI = underperform.'
+         if not is_en else
+         '<b>β > 1</b>: more volatile than market. <b>β < 1</b>: defensive. '
+         '<b>α > 0</b>: outperforms CAPM (risk-adjusted alpha). '
+         'Tickers ABOVE SML = outperform; BELOW = underperform.'),
+        unsafe_allow_html=True)
+
+
+def _render_pca_section(sel, all_data, _T, is_en):
+    """PCA decomposition + biplot (Hotelling 1933, Jolliffe 2002)."""
+    import plotly.graph_objects as _go
+    from services.pca import pca_decompose
+    from charts.base import _PLOTLY_CONFIG, _plotly_axes_style
+
+    st.markdown(
+        f'<div class="sec-hdr" style="margin-top:24px">'
+        f'{"Phân tích Thành phần Chính (PCA)" if not is_en else "Principal Component Analysis (PCA)"}'
+        f' <span style="font-size:11px;font-weight:600;color:{_T["text_muted"]};margin-left:8px">'
+        f'{"Hotelling 1933 · eigendecomp ma trận tương quan" if not is_en else "Hotelling 1933 · correlation matrix eigendecomposition"}'
+        f'</span></div>', unsafe_allow_html=True)
+
+    rets = pd.DataFrame({tk: all_data[tk]['Return'] for tk in sel}).dropna()
+    if len(rets) < 30 or rets.shape[1] < 2:
+        st.info('Cần ≥ 30 phiên và ≥ 2 mã.' if not is_en
+                else 'Need ≥ 30 sessions and ≥ 2 tickers.')
+        return
+
+    try:
+        pca = pca_decompose(rets)
+    except Exception as e:
+        st.warning(f'{"PCA lỗi" if not is_en else "PCA error"}: {e}'); return
+
+    col_a, col_b = st.columns(2)
+    with col_a:
+        ev = pca['var_explained']
+        cv = pca['cum_var_explained']
+        x = [f'PC{i+1}' for i in range(len(ev))]
+        fig_scree = _go.Figure()
+        fig_scree.add_trace(_go.Bar(
+            x=x, y=[e*100 for e in ev],
+            marker=dict(color='#0F766E'),
+            name=('Var explained (%)' if is_en else 'Phương sai (%)'),
+            hovertemplate='%{x}: %{y:.1f}%<extra></extra>'))
+        fig_scree.add_trace(_go.Scatter(
+            x=x, y=[c*100 for c in cv], mode='lines+markers',
+            line=dict(color='#A855F7', width=2.5),
+            marker=dict(size=8, color='#A855F7'),
+            name=('Cumulative (%)' if is_en else 'Tích lũy (%)'),
+            yaxis='y2',
+            hovertemplate='Cum: %{y:.1f}%<extra></extra>'))
+        fig_scree.update_layout(
+            height=300, margin=dict(l=50, r=50, t=30, b=40),
+            paper_bgcolor=_T['bg_card'], plot_bgcolor=_T['bg_card'],
+            font=dict(family='Inter', size=11, color=_T['text_primary']),
+            title=dict(text=('Scree plot' if is_en else 'Biểu đồ Scree'),
+                        font=dict(size=12, color=_T['text_primary'])),
+            yaxis=dict(title='%'),
+            yaxis2=dict(title='Cum %', overlaying='y', side='right'),
+            legend=dict(orientation='h', y=-0.2, x=0.5, xanchor='center',
+                         bgcolor='rgba(0,0,0,0)'))
+        _plotly_axes_style(fig_scree, _T)
+        st.plotly_chart(fig_scree, use_container_width=True, config=_PLOTLY_CONFIG)
+
+    with col_b:
+        loadings = pca['pc1_pc2_loadings']
+        fig_bp = _go.Figure()
+        for ld in loadings:
+            fig_bp.add_trace(_go.Scatter(
+                x=[0, ld['loading_pc1']], y=[0, ld['loading_pc2']],
+                mode='lines', line=dict(color='#94A3B8', width=1.5),
+                showlegend=False, hoverinfo='skip'))
+            fig_bp.add_trace(_go.Scatter(
+                x=[ld['loading_pc1']], y=[ld['loading_pc2']],
+                mode='markers+text',
+                marker=dict(size=12, color='#0F766E',
+                             line=dict(color='#fff', width=2)),
+                text=[ld['ticker']], textposition='top right',
+                textfont=dict(size=11, color=_T['text_primary']),
+                showlegend=False,
+                hovertemplate=f'<b>{ld["ticker"]}</b><br>PC1=%{{x:.3f}}<br>PC2=%{{y:.3f}}<extra></extra>'))
+        fig_bp.update_layout(
+            height=300, margin=dict(l=50, r=30, t=30, b=40),
+            paper_bgcolor=_T['bg_card'], plot_bgcolor=_T['bg_card'],
+            font=dict(family='Inter', size=11, color=_T['text_primary']),
+            title=dict(text=('PC1 vs PC2 biplot' if is_en else 'Biplot PC1 vs PC2'),
+                        font=dict(size=12, color=_T['text_primary'])),
+            xaxis_title=f'PC1 ({ev[0]*100:.1f}%)' if len(ev) >= 1 else 'PC1',
+            yaxis_title=f'PC2 ({ev[1]*100:.1f}%)' if len(ev) >= 2 else 'PC2',
+            hovermode='closest')
+        _plotly_axes_style(fig_bp, _T)
+        st.plotly_chart(fig_bp, use_container_width=True, config=_PLOTLY_CONFIG)
+
+    pc1_var = pca['var_explained'][0] * 100 if pca['var_explained'] else 0
+    st.caption(
+        (f'<b>PC1</b> giải thích <b>{pc1_var:.1f}%</b> phương sai — thường là "market factor" '
+         '(yếu tố thị trường chung mà toàn bộ rổ mã chia sẻ). PC2/PC3 có thể là sector / size / momentum factor.'
+         if not is_en else
+         f'<b>PC1</b> explains <b>{pc1_var:.1f}%</b> of variance — typically the "market factor".'),
+        unsafe_allow_html=True)
+
+
+def _render_cointegration_section(sel, all_data, _T, is_en):
+    """Engle-Granger cointegration test (Engle-Granger 1987 — Nobel 2003)."""
+    import plotly.graph_objects as _go
+    from services.cointegration import pair_matrix, spread_zscore
+    from charts.base import _PLOTLY_CONFIG, _plotly_axes_style
+
+    st.markdown(
+        f'<div class="sec-hdr" style="margin-top:24px">'
+        f'{"Đồng tích hợp (Cointegration) — Engle-Granger" if not is_en else "Cointegration — Engle-Granger"}'
+        f' <span style="font-size:11px;font-weight:600;color:{_T["text_muted"]};margin-left:8px">'
+        f'Engle-Granger 1987 (Nobel 2003) · pairs-trading framework'
+        f'</span></div>', unsafe_allow_html=True)
+
+    prices = pd.DataFrame({tk: all_data[tk]['Close'] for tk in sel}).dropna()
+    if prices.shape[1] < 2 or len(prices) < 60:
+        st.info('Cần ≥ 2 mã và ≥ 60 phiên overlap.' if not is_en
+                else 'Need ≥ 2 tickers and ≥ 60 overlapping sessions.')
+        return
+
+    with st.spinner('Đang test cointegration...' if not is_en else 'Testing cointegration...'):
+        try:
+            pm = pair_matrix(prices)
+        except Exception as e:
+            st.warning(f'{"Lỗi test cointegration" if not is_en else "Cointegration test error"}: {e}')
+            return
+
+    pairs = pm['pairs_significant']
+    n_coint = sum(1 for p in pairs if p['is_cointegrated'])
+    st.markdown(
+        f'<div style="font-size:13px;color:{_T["text_secondary"]};margin-bottom:8px">'
+        f'{"Tìm được" if not is_en else "Found"} <b style="color:{_T["accent"]}">{n_coint}</b> '
+        f'{"cặp đồng tích hợp (p < 0.05) trong tổng" if not is_en else "cointegrated pairs (p < 0.05) out of"} '
+        f'<b>{len(pairs)}</b> {"cặp." if not is_en else "pairs."}</div>',
+        unsafe_allow_html=True)
+
+    hdr = (['Cặp', 'p-value', 'β (hedge)', 'z hiện tại', 'Đồng tích hợp?']
+           if not is_en else
+           ['Pair', 'p-value', 'β (hedge)', 'Current z', 'Cointegrated?'])
+    rows_html = ''
+    for p in pairs[:12]:
+        z = p.get('current_z', 0) or 0
+        z_col = '#DC2626' if abs(z) > 2 else ('#F59E0B' if abs(z) > 1 else _T['text_secondary'])
+        ci_html = ('<span style="color:#0F766E;font-weight:800">✓</span>' if p['is_cointegrated']
+                    else '<span style="color:#94A3B8">—</span>')
+        rows_html += (
+            f'<tr style="border-top:1px solid {_T["divider"]};color:{_T["text_primary"]}">'
+            f'<td style="padding:8px 12px;font-weight:700;color:{_T["accent"]}">{p["a"]} ↔ {p["b"]}</td>'
+            f'<td style="padding:8px 12px">{p["p_value"]:.4f}</td>'
+            f'<td style="padding:8px 12px">{p["beta"]:.3f}</td>'
+            f'<td style="padding:8px 12px;color:{z_col};font-weight:700">{z:+.2f}σ</td>'
+            f'<td style="padding:8px 12px;text-align:center">{ci_html}</td>'
+            f'</tr>')
+    th = ''.join(f'<th style="padding:9px 12px;text-align:left">{h}</th>' for h in hdr)
+    st.markdown(
+        f'<div style="border-radius:12px;overflow-x:auto;border:1px solid {_T["border"]}">'
+        f'<table style="width:100%;border-collapse:collapse;font-size:13px">'
+        f'<thead><tr style="background:{_T["accent"]};color:#fff">{th}</tr></thead>'
+        f'<tbody>{rows_html}</tbody></table></div>',
+        unsafe_allow_html=True)
+
+    if pairs and pairs[0]['is_cointegrated']:
+        best = pairs[0]
+        sp = spread_zscore(prices[best['a']].values, prices[best['b']].values,
+                            beta=best['beta'])
+        z = sp['z']
+        if len(z) > 0:
+            fig = _go.Figure()
+            fig.add_trace(_go.Scatter(
+                x=list(range(len(z))), y=z, mode='lines',
+                line=dict(color='#A855F7', width=1.6),
+                name=f'z-score spread {best["a"]} − {best["beta"]:.2f}×{best["b"]}',
+                hovertemplate='z=%{y:+.2f}σ<extra></extra>'))
+            for level, lbl, color in [(2, '+2σ', '#DC2626'), (-2, '−2σ', '#DC2626'),
+                                        (0, 'mean', _T['text_muted'])]:
+                fig.add_hline(y=level, line=dict(color=color, width=1, dash='dash'))
+            fig.update_layout(
+                height=280, margin=dict(l=50, r=30, t=10, b=40),
+                paper_bgcolor=_T['bg_card'], plot_bgcolor=_T['bg_card'],
+                font=dict(family='Inter', size=11, color=_T['text_primary']),
+                xaxis_title='phiên', yaxis_title='z-score (σ)',
+                showlegend=True,
+                legend=dict(orientation='h', y=-0.2, x=0.5, xanchor='center',
+                             bgcolor='rgba(0,0,0,0)'))
+            _plotly_axes_style(fig, _T)
+            st.plotly_chart(fig, use_container_width=True, config=_PLOTLY_CONFIG)
+
+    st.caption(
+        ('<b>p-value < 0.05</b>: hai chuỗi giá đồng tích hợp — spread A − β·B '
+         'mean-reverting. <b>Lưu ý</b>: HOSE không cho phép bán khống, cặp này '
+         'chỉ dùng để hiểu mối tương quan dài hạn.'
+         if not is_en else
+         '<b>p-value < 0.05</b>: the two price series are cointegrated — '
+         'spread A − β·B is mean-reverting. <b>Note</b>: HOSE prohibits '
+         'short-selling; this pair is for long-term correlation insight only.'),
+        unsafe_allow_html=True)

@@ -14,6 +14,12 @@ import warnings
 import matplotlib
 matplotlib.use('Agg')
 warnings.filterwarnings('ignore')
+# Streamlit 1.56+ emit deprecation warnings cho `use_container_width` (sẽ bỏ
+# 2025-12-31) và `st.components.v1.html` (2026-06-01). App đang dùng diện rộng;
+# migration toàn diện rủi ro. Suppress để demo không lộ yellow banner.
+warnings.filterwarnings('ignore', category=DeprecationWarning, module='streamlit.*')
+warnings.filterwarnings('ignore', message='.*use_container_width.*')
+warnings.filterwarnings('ignore', message='.*st.components.v1.html.*')
 
 from core.config import PAGE_TITLE, PAGE_ICON, LAYOUT, SIDEBAR_STATE
 from core.themes import theme
@@ -87,15 +93,53 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Splash/cover page: chỉ hiện 1 lần khi user vào app, click "Vào Ngay" để đến main app
+# Splash/cover page: hiện 1 lần khi user vào app — bắt buộc đăng nhập / khách
+# rồi mới vào main app. _splash_done được set bởi splash auth panel.
 if not st.session_state.get('_splash_done'):
     from app_pages import splash as _pg_splash
     _pg_splash.render()
     st.stop()
 
+# Cập nhật last_seen — THROTTLE 5 phút/lần.
+# Trước đây ghi `users.json` MỖI rerun (lock thread, đọc + mutate + os.replace).
+# Risk corrupt khi 2 tab cùng user, và chậm. Giờ chỉ persist khi quá 300s từ
+# lần cuối — gate qua session_state, đỡ hàng trăm disk write/session.
+try:
+    import time as _time
+    from auth.session import current_user as _cu, is_guest as _ig
+    from auth.store import update_last_seen as _uls
+    if not _ig():
+        _u = _cu()
+        if _u and _u.get('id'):
+            _now = _time.time()
+            _last = st.session_state.get('_last_seen_at', 0)
+            if _now - _last > 300:
+                _uls(_u['id'])
+                st.session_state['_last_seen_at'] = _now
+except Exception:
+    pass
+
 # Preload mã mặc định 1 lần duy nhất mỗi session → UX mượt hơn
 from core.preload import preload_all_tickers, trigger_bg_arima
 preload_all_tickers()
+
+# v56 — Tiered background warmer cho TẤT CẢ 53 mã (priority queue, rate-limit-aware)
+# Daemon thread drain ~17 req/min < vnstock 20 ceiling. Khi user chọn mã,
+# topbar gọi `prioritize(tk)` để chen lên đầu queue (priority 0).
+# Sau ~3 phút splash mở, mọi mã đã warm → chuyển ticker = sub-second.
+try:
+    import os as _os
+    # Disable warmer trong AppTest — bg thread + throttle gây timeout.
+    # Detect bằng env var STREAMLIT_TEST_MODE hoặc absence of script_runner.
+    _in_test = _os.environ.get('STREAMLIT_TEST') == '1' or _os.environ.get('PYTEST_CURRENT_TEST')
+    if not _in_test:
+        from services.warmup import start_warmer, seed_queue
+        start_warmer()        # idempotent qua cache_resource
+        if not st.session_state.get('_warmup_seeded'):
+            seed_queue(default_ticker='FPT')
+            st.session_state['_warmup_seeded'] = True
+except Exception:
+    pass
 
 # Điều hướng + tham số ở TOP main area (luôn hiển thị, không phụ thuộc sidebar)
 page, ticker, train_ratio, date_from, date_to, ar_order = render_topbar()
@@ -122,12 +166,12 @@ except Exception as _fe:
                  f'Could not load data for <b>{ticker}</b>. '
                  f'Please pick another ticker. (Detail: {_msg[:120]})')
     st.markdown(
-        f'<div style="background:#FEF3C7;border:2px solid #D97706;border-radius:12px;'
+        f'<div style="background:{_T["warning_bg"]};border:2px solid {_T["warning"]};border-radius:12px;'
         f'padding:22px 26px;margin:20px 0">'
-        f'<div style="font-size:14px;font-weight:800;color:#92400E;'
+        f'<div style="font-size:14px;font-weight:800;color:{_T["warning"]};'
         f'text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">'
         f'{"Tạm thời chưa tải được dữ liệu" if not _is_en_err else "Data temporarily unavailable"}</div>'
-        f'<div style="font-size:13px;color:#78350F;line-height:1.6">{_body}</div>'
+        f'<div style="font-size:13px;color:{_T["text_primary"]};line-height:1.6">{_body}</div>'
         f'</div>', unsafe_allow_html=True)
     st.stop()
 
@@ -137,12 +181,12 @@ _valid   = validate_params(ar_order, _n_total, train_ratio)
 
 if _valid['overall'] == 'err':
     _err_html = (
-        f'<div style="background:#FEE2E2;border:2px solid #DC2626;'
+        f'<div style="background:{_T["danger_bg"]};border:2px solid {_T["danger"]};'
         f'border-radius:12px;padding:24px 28px;margin:20px 0">'
-        f'<div style="font-size:14px;font-weight:800;color:#991B1B;'
+        f'<div style="font-size:14px;font-weight:800;color:{_T["danger"]};'
         f'letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">'
         f'{t("validate.blocked")}</div>'
-        f'<div style="font-size:13px;color:#7F1D1D;'
+        f'<div style="font-size:13px;color:{_T["text_primary"]};'
         f'margin-bottom:6px;font-family:monospace">'
         f'{_valid["p_msg"]}</div>'
         f'</div>'
@@ -185,30 +229,32 @@ if _need_reload:
     _show(1, 3, ('Huấn luyện song song các mô hình...'
                  if st.session_state.get('lang', 'VI') == 'VI'
                  else 'Training models in parallel...'))
-    from concurrent.futures import ThreadPoolExecutor as _TPE
+    # v56 — Dùng SHARED pool singleton (core.executors) thay vì spawn pool mới
+    # mỗi rerun. with-block KHÔNG dùng vì shutdown=False → pool tồn tại.
+    from core.executors import get_pool
     from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
     from models.ml import run_gbr
     _mkw = dict(p=ar_order, date_from=date_from, date_to=date_to)
-    with _TPE(max_workers=8) as _ex:
-        _futs = {
-            'ar':      _ex.submit(run_ar,      ticker, train_ratio, **_mkw),
-            'mlr':     _ex.submit(run_mlr,     ticker, train_ratio, **_mkw),
-            'arima':   _ex.submit(run_arima,   ticker, train_ratio, **_mkw),
-            'sarima':  _ex.submit(run_sarima,  ticker, train_ratio, **_mkw),
-            'ets':     _ex.submit(run_ets,     ticker, train_ratio, **_mkw),
-            'garch':   _ex.submit(run_garch,   ticker, train_ratio, **_mkw),
-            'sarimax': _ex.submit(run_sarimax, ticker, train_ratio, **_mkw),
-            'gbr':     _ex.submit(run_gbr,     ticker, train_ratio, **_mkw),
-        }
-        r1 = _futs['ar'].result()
-        r2 = _futs['mlr'].result()
-        r3 = _futs['arima'].result()
-        # mô hình nâng cao + GBR — chỉ cần .result() để warm cache (bỏ qua lỗi lẻ)
-        for _k in ('sarima', 'ets', 'garch', 'sarimax', 'gbr'):
-            try:
-                _futs[_k].result()
-            except Exception:
-                pass
+    _ex = get_pool()
+    _futs = {
+        'ar':      _ex.submit(run_ar,      ticker, train_ratio, **_mkw),
+        'mlr':     _ex.submit(run_mlr,     ticker, train_ratio, **_mkw),
+        'arima':   _ex.submit(run_arima,   ticker, train_ratio, **_mkw),
+        'sarima':  _ex.submit(run_sarima,  ticker, train_ratio, **_mkw),
+        'ets':     _ex.submit(run_ets,     ticker, train_ratio, **_mkw),
+        'garch':   _ex.submit(run_garch,   ticker, train_ratio, **_mkw),
+        'sarimax': _ex.submit(run_sarimax, ticker, train_ratio, **_mkw),
+        'gbr':     _ex.submit(run_gbr,     ticker, train_ratio, **_mkw),
+    }
+    r1 = _futs['ar'].result()
+    r2 = _futs['mlr'].result()
+    r3 = _futs['arima'].result()
+    # mô hình nâng cao + GBR — chỉ cần .result() để warm cache (bỏ qua lỗi lẻ)
+    for _k in ('sarima', 'ets', 'garch', 'sarimax', 'gbr'):
+        try:
+            _futs[_k].result()
+        except Exception:
+            pass
 
     _show(2, 3, t('load.metrics'))
     m1 = calc_metrics(r1['yte'], r1['pte'], k=ar_order)
@@ -283,6 +329,12 @@ elif page == 'Danh mục Đầu tư':
 elif page == 'Giao dịch Demo':
     from app_pages import paper as _pg_paper
     _pg_paper.render(*_args)
+elif page == 'Cơ sở Toán học':
+    from app_pages import math as _pg_math
+    _pg_math.render(*_args)
+elif page == 'Hồ sơ':
+    from app_pages import profile as _pg_profile
+    _pg_profile.render(*_args)
 elif page == 'Hướng dẫn Sử dụng':
     from app_pages import guide as _pg_guide
     _pg_guide.render(*_args)

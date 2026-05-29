@@ -13,6 +13,15 @@
 # Paper trading state — sổ giao dịch ảo riêng từng máy
 paper_state.json
 
+# Dữ liệu cá nhân hoá per-user — KHÔNG bao giờ commit (chứa hash mật khẩu,
+# email, sổ giao dịch riêng, watchlist, alerts, journal của user)
+user_data/
+*.user.json
+
+# Streamlit Cloud cache local
+.streamlit/cache_data/
+.streamlit/cache_resource/
+
 # ═══════════════════════════════════════════════════════════════
 # Python
 # ═══════════════════════════════════════════════════════════════
@@ -64,3 +73,24 @@ ENV/
 # data/cache/
 # *.csv.cache
 temp_vatly12/
+
+# ═══════════════════════════════════════════════════════════════
+# LaTeX build artifacts (báo cáo / mô tả sản phẩm / nhật ký AI)
+# ═══════════════════════════════════════════════════════════════
+*.aux
+*.toc
+*.out
+*.log
+*.bbl
+*.blg
+*.lof
+*.lot
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+texput.log
+# Minted cache files (Pygments cache khi build PDF code)
+_*.data.minted
+_minted-*
+# Giữ PDF cuối cùng đã build
+!*.pdf

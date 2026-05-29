@@ -1,0 +1,172 @@
+% =====================================================================
+%  MÔ TẢ SẢN PHẨM NGẮN GỌN — FinScope
+%  Bắt buộc theo quy chế: Mo_ta_san_pham.pdf
+%    - Tên đề tài
+%    - Thông tin thành viên (Họ tên, MSSV, Ngành)
+%    - Danh mục các file có trong thư mục + hướng dẫn sơ lược cách xem/chạy
+%  Hội thi Toán học — Lý thuyết và Ứng dụng năm học 2025-2026
+%  Chủ đề: "Toán học trong kỷ nguyên trí tuệ nhân tạo"
+%  pdflatex compile 2 lần (TOC không cần)
+% =====================================================================
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{vietnam}
+\usepackage[left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm]{geometry}
+\usepackage[fontsize=13pt]{scrextend}
+\usepackage{mathrsfs,times}
+\usepackage{amssymb,amsmath}
+\usepackage{graphicx}
+\usepackage{xcolor,setspace}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{array,tabularx}
+\usepackage{indentfirst}
+\usepackage[unicode,colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue]{hyperref}
+\usepackage{titlesec}
+\usepackage{lastpage}
+\usepackage[most]{tcolorbox}
+
+\graphicspath{{picture/}}
+
+% Title format -- compact section style
+\titleformat{\section}[hang]
+  {\bfseries\fontsize{14}{17}\selectfont}
+  {\thesection.}{0.6em}{}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+\setlength\parindent{1.27cm}
+\renewcommand{\baselinestretch}{1.15}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small\itshape Mô tả sản phẩm -- FinScope}
+\fancyhead[R]{\small \thepage/\pageref{LastPage}}
+\setlength{\headheight}{14pt}
+\fancypagestyle{plain}{\fancyhf{}\renewcommand{\headrulewidth}{0pt}}
+
+\begin{document}
+
+% =====================================================================
+%  TRANG BÌA — đồng bộ style với Bao_cao_san_pham.pdf
+% =====================================================================
+\begin{titlepage}
+\thispagestyle{empty}
+\centerline{\large\bfseries TỔNG LIÊN ĐOÀN LAO ĐỘNG VIỆT NAM}
+\vspace*{0.2cm}
+\centerline{\large\bfseries TRƯỜNG ĐẠI HỌC TÔN ĐỨC THẮNG}
+\centerline{------------------------------}
+\vspace*{1cm}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.3\linewidth]{picture/TDT_logo}
+\end{figure}
+\vspace*{1.0cm}
+\centerline{\large\bfseries Hội thi Toán học -- Lý thuyết và Ứng dụng năm học 2025--2026}
+\vspace*{0.3cm}
+\centerline{\itshape Chủ đề: ``Toán học trong kỷ nguyên trí tuệ nhân tạo''}
+\vspace*{2.0cm}
+\centerline{\Large\bfseries MÔ TẢ SẢN PHẨM}
+\vspace*{0.3cm}
+\centerline{\Large\bfseries FINSCOPE -- PHÂN TÍCH VÀ DỰ BÁO}
+\centerline{\Large\bfseries CHỨNG KHOÁN VIỆT NAM ĐA MÔ HÌNH}
+\vspace*{3cm}
+\noindent\textbf{ĐƠN VỊ:}\quad KHOA TOÁN -- THỐNG KÊ
+
+\vspace*{0.4cm}
+\noindent\textbf{NHÓM SINH VIÊN THỰC HIỆN:}\\
+$\begin{array}{llll}
+  \mbox{1.} &\mbox{Nguyễn Thành Danh \;(Trưởng nhóm)} &-&\mbox{C2300014}\\
+  \mbox{2.} &\mbox{Trần Huỳnh Nhã Trúc}               &-&\mbox{C2300189}
+\end{array}$
+\vfill
+\centerline{\bfseries TP. Hồ Chí Minh, tháng 5 năm 2026}
+\end{titlepage}
+
+\setcounter{page}{1}
+
+% =====================================================================
+%  1. TÊN ĐỀ TÀI
+% =====================================================================
+\section{Tên đề tài}
+
+\indent\textbf{FinScope -- Ứng dụng phân tích và dự báo chứng khoán
+Việt Nam đa mô hình}, triển khai trực tuyến trên Streamlit Community
+Cloud, tích hợp 8 mô hình thống kê -- học máy, kiểm định
+Diebold--Mariano khách quan, bốn thuật toán toán -- tài chính cổ điển
+(Markowitz, CAPM, PCA, Engle--Granger Cointegration) cùng mô phỏng
+giao dịch ảo theo biểu phí HOSE.
+
+% =====================================================================
+%  2. THÔNG TIN THÀNH VIÊN
+% =====================================================================
+\section{Thông tin thành viên}
+
+\noindent\textbf{Đơn vị:} Khoa Toán -- Thống kê, Trường Đại học Tôn Đức Thắng.
+
+\vspace{4pt}
+\renewcommand{\arraystretch}{1.4}
+\noindent\begin{tabular}{|>{\centering\arraybackslash}p{0.7cm}|p{5.8cm}|p{2.2cm}|p{3.2cm}|}
+\hline
+\textbf{STT} & \textbf{Họ và tên}   & \textbf{MSSV} & \textbf{Ngành}  \\
+\hline
+1 & Nguyễn Thành Danh \emph{(Trưởng nhóm)} & C2300014 & Toán Ứng dụng \\
+\hline
+2 & Trần Huỳnh Nhã Trúc                    & C2300189 & Thống kê \\
+\hline
+\end{tabular}
+
+\vspace{6pt}\noindent\textit{Liên hệ trưởng nhóm:}
+\href{mailto:thanhdanhgvt@gmail.com}{thanhdanhgvt@gmail.com}\,\,\textbar\,\,
+0931 740 509.
+
+% =====================================================================
+%  3. DANH MỤC CÁC FILE TRONG THƯ MỤC
+% =====================================================================
+\section{Danh mục các file có trong thư mục dự thi}
+
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{4pt}
+\noindent\begin{tabularx}{\linewidth}{|>{\raggedright\arraybackslash}p{5.6cm}|>{\raggedright\arraybackslash}X|}
+\hline
+\textbf{Tên file / thư mục} & \textbf{Mô tả nội dung} \\
+\hline
+\texttt{Mo\_ta\allowbreak\_san\allowbreak\_pham.pdf} & Mô tả ngắn gọn sản phẩm (tệp này) -- bắt buộc theo quy chế. \\
+\hline
+\texttt{Bao\_cao\allowbreak\_san\allowbreak\_pham.pdf} & Báo cáo chi tiết sản phẩm (cơ sở khoa học, kiến trúc, công thức, kết quả). \\
+\hline
+\texttt{Nhat\_ky\allowbreak\_su\allowbreak\_dung\allowbreak\_AI.pdf} & Nhật ký sử dụng trí tuệ nhân tạo trong quá trình phát triển (5 trang). \\
+\hline
+\texttt{Code\_nguon\_du\_lieu.pdf} & Trích đoạn mã Python phần \textbf{lấy và xử lý nguồn dữ liệu} HOSE (data/fetcher.py, data/\_clients.py, data/market.py) để ban giám khảo đối chiếu logic. Toàn bộ mã nguồn còn lại chạy trực tiếp trên Streamlit Cloud. \\
+\hline
+\texttt{video\_minh\_hoa.mp4} & Video ghi hình thao tác trực tiếp với sản phẩm. \\
+\hline
+\end{tabularx}
+
+% =====================================================================
+%  4. HƯỚNG DẪN SƠ LƯỢC CÁCH XEM / CHẠY SẢN PHẨM
+% =====================================================================
+\section{Hướng dẫn sơ lược cách xem và chạy sản phẩm}
+
+\noindent\textbf{Phương án truy cập trực tuyến (khuyến nghị).} Sản phẩm
+đã được nhóm tác giả triển khai trên Streamlit Community Cloud. Ban
+giám khảo chỉ cần:
+\begin{enumerate}[leftmargin=22pt,topsep=2pt,itemsep=2pt]
+  \item Mở trình duyệt (Chrome / Edge / Firefox / Safari) trên máy
+        tính hoặc điện thoại.
+  \item Truy cập đường dẫn công khai do nhóm tác giả cung cấp kèm sản
+        phẩm.
+  \item Đợi khoảng 25--30 giây cho ứng dụng khởi động lần đầu (cache
+        nguội); các thao tác sau đó dưới 1 giây mỗi lần chuyển trang.
+  \item Có thể dùng ngay chế độ \emph{Khách} để trải nghiệm 14 trang
+        chức năng, hoặc đăng ký tài khoản để lưu danh mục cá nhân.
+\end{enumerate}
+
+\vspace{4pt}
+\noindent\textbf{Khuyến nghị thử nghiệm.} Nhóm tác giả khuyến nghị
+thử ba mã đại diện: \textbf{FPT} (cổ phiếu công nghệ blue-chip),
+\textbf{ACB} (ngân hàng -- để thấy ngưỡng D/E riêng cho nhóm ngân
+hàng), \textbf{HVN} (mã hàng không -- minh hoạ ứng xử với cổ phiếu
+biến động mạnh). Khi xem báo cáo chi tiết và slide, có thể đối chiếu
+kết quả trên ứng dụng với các giá trị minh hoạ trong tài liệu.
+
+\end{document}

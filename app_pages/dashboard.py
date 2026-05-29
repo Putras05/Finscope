@@ -308,6 +308,34 @@ def _render_dm_section(all_models, df, _T, is_en=False):
         f'</div>', unsafe_allow_html=True)
 
 
+@st.cache_data(ttl=1800, show_spinner=False)
+def _ft_kpis_cached(ticker: str):
+    """Trả (P/E, ROE, D/E) — tính 1 lần / 30 phút, share giữa các rerun.
+
+    Trước đây _render_fund_tech_divergence gọi fetch_financials + market_snapshot
+    + compute_kpis MỖI rerun (~50-150ms). Wrap thành function cached → hit ≈ 0ms.
+    Trả None nếu thiếu dữ liệu (caller xử lý gracefully).
+    """
+    try:
+        from data.fundamental import fetch_financials, extract_series, compute_kpis
+        from data.market import market_snapshot
+        _msn = market_snapshot((ticker,))
+        if _msn.empty:
+            return None
+        _row = _msn.iloc[0]
+        _fin = fetch_financials(ticker)
+        _ext = extract_series(_fin)
+        _kpi = compute_kpis(_ext, last_price_vnd=_row['last_price'],
+                            listed_share=_row['listed_share'])
+        return (
+            float(_kpi.get('pe',  float('nan'))),
+            float(_kpi.get('roe', float('nan'))),
+            float(_kpi.get('de',  float('nan'))),
+        )
+    except Exception:
+        return None
+
+
 def _render_fund_tech_divergence(ticker, ichi_code, ichi_score, _T, is_en=False):
     """Card so sánh kết luận CƠ BẢN (P/E + ROE + D/E) vs KỸ THUẬT (Ichimoku).
 
@@ -320,20 +348,11 @@ def _render_fund_tech_divergence(ticker, ichi_code, ichi_score, _T, is_en=False)
     Fail-safe: thiếu BCTC → caption nhẹ, không sập trang.
     """
     try:
-        from data.fundamental import fetch_financials, extract_series, compute_kpis
-        from data.market import market_snapshot
         from core.constants import ticker_sector
-        _msn = market_snapshot((ticker,))
-        if _msn.empty:
+        _kpi_tuple = _ft_kpis_cached(ticker)
+        if _kpi_tuple is None:
             return
-        _row = _msn.iloc[0]
-        _fin = fetch_financials(ticker)
-        _ext = extract_series(_fin)
-        _kpi = compute_kpis(_ext, last_price_vnd=_row['last_price'],
-                            listed_share=_row['listed_share'])
-        _pe  = _kpi.get('pe', float('nan'))
-        _roe = _kpi.get('roe', float('nan'))
-        _de  = _kpi.get('de',  float('nan'))
+        _pe, _roe, _de = _kpi_tuple
     except Exception:
         return
 

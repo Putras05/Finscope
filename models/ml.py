@@ -6,6 +6,7 @@ Trả về dict cùng shape AR/MLR/ARIMA (ytr/ptr/yte/pte/dates/next_pred + CI).
 """
 import numpy as np
 import streamlit as st
+from core.config import CACHE_TTL
 
 from data.fetcher import fetch_data
 
@@ -14,7 +15,7 @@ _Z95 = 1.959963985
 _Z80 = 1.281551566
 
 
-@st.cache_data(ttl=21600, show_spinner=False, persist="disk")
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False, persist="disk")
 def run_gbr(ticker: str, train_ratio: float, p: int = 1,
             date_from=None, date_to=None) -> dict:
     """Gradient Boosting Regressor — dự báo lợi suất phiên kế tiếp.

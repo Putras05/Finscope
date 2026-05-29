@@ -14,9 +14,12 @@ def _fetch_raw(ticker: str) -> pd.DataFrame:
     cp1252 các ký tự đó gây UnicodeEncodeError → vỡ fetch (đã thấy ở ACB).
     """
     import contextlib, io
-    from vnstock import Vnstock
+    # v56 — Dùng singleton stock handle + throttle để stay dưới vnstock 20 r/m.
+    # v57 — gọi từ user-initiated fetch → throttle_fg() (1.6s thay vì 3.4s).
+    from data._clients import vn_stock, throttle_fg
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        s  = Vnstock().stock(symbol=ticker, source=DATA_SOURCE)
+        throttle_fg()
+        s  = vn_stock(ticker, DATA_SOURCE)
         df = s.quote.history(start=DATA_START, end=DATA_END, interval='1D')
     df = df.rename(columns={
         'time': 'Ngay', 'close': 'Close', 'open': 'Open',

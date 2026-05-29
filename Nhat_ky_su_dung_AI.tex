@@ -1,0 +1,216 @@
+% =====================================================================
+%  NHẬT KÝ SỬ DỤNG AI — Phụ lục sản phẩm FinScope (tối đa 5 trang)
+%  Đề tài: Xây dựng ứng dụng FinScope — Phân tích & Dự báo Chứng khoán
+%  Nhóm tác giả:  Nguyễn Thành Danh (C2300014, trưởng nhóm)
+%                 Trần Huỳnh Nhã Trúc (C2300189)
+%  Form theo NCKH 2025-2026 — pdflatex compile 2 lần
+% =====================================================================
+% Preamble theo NCKH gốc (D:\NCKH_CH_XAYDUNGCHATBOT\NCKH\main.tex)
+% — DÙNG ARTICLE CLASS để section đóng vai trò Chương, không tự ngắt trang
+%   (vì Nhat_ky bị giới hạn 5 trang). Vẫn giữ font 13pt + Times + parindent
+%   1.27cm + Vietnamese package chuẩn NCKH.
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{vietnam}
+\usepackage[left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm]{geometry}
+\usepackage[fontsize=13pt]{scrextend}
+\usepackage{mathrsfs,multicol,times}
+\usepackage{mathtools,amssymb,amsmath}
+\usepackage{graphicx,caption,subcaption,float}
+\usepackage{xcolor,setspace}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{multirow,booktabs}
+\usepackage{indentfirst}
+\usepackage[unicode,colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue]{hyperref}
+\usepackage[most]{tcolorbox}
+\usepackage{titlesec}
+\usepackage{lastpage}
+
+\graphicspath{{picture/}}
+
+% Section đóng vai trò "Chương" (article class) — NCKH style centered display
+% Subsection đóng vai trò "section" gốc của NCKH.
+\titleformat{\section}[display]
+  {\bfseries\fontsize{15}{18}\selectfont\centering}
+  {Chương \thesection}{0ex}{}
+\titlespacing*{\section}{0pt}{6pt}{4pt}
+\titleformat{\subsection}[hang]
+  {\bfseries\fontsize{14}{18}\selectfont}
+  {\thesection.\arabic{subsection}}{1.2ex}{}
+\titlespacing*{\subsection}{0pt}{8pt}{2pt}
+\titleformat{\subsubsection}[hang]
+  {\bfseries\itshape\fontsize{13}{15}\selectfont}
+  {}{0pt}{}
+\titlespacing*{\subsubsection}{0pt}{4pt}{1pt}
+
+% Đánh số subsection theo "X.Y" thay vì "Y" mặc định
+\renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+
+% NCKH typesetting — line spacing 1.15 (gọn để fit 5 trang theo quy chế)
+\allowdisplaybreaks
+\everymath{\displaystyle}
+\setlength\parindent{1.27cm}
+\renewcommand{\baselinestretch}{1.15}
+\setcounter{secnumdepth}{3}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small\itshape Nhật ký sử dụng AI -- FinScope}
+\fancyhead[R]{\small \thepage/\pageref{LastPage}}
+\setlength{\headheight}{14pt}
+\fancypagestyle{plain}{\fancyhf{}\renewcommand{\headrulewidth}{0pt}}
+
+% Khung prompt — viền đen mảnh, nền trắng, có nhãn "PROMPT" dán góc trên-trái
+\newtcolorbox{promptbox}{
+  enhanced, colback=white, colframe=black!55, boxrule=0.5pt,
+  arc=1pt, left=10pt, right=10pt, top=3pt, bottom=4pt,
+  before skip=4pt, after skip=4pt, breakable,
+  title={\textsf{PROMPT}}, coltitle=black!75,
+  fonttitle=\bfseries\footnotesize,
+  attach boxed title to top left={xshift=10pt, yshift=-7pt},
+  boxed title style={colback=white, colframe=white, sharp corners,
+    top=0pt, bottom=0pt, left=4pt, right=4pt, boxrule=0pt}
+}
+
+\begin{document}
+
+% =====================================================================
+%  TRANG BÌA — khung double-line + tcolorbox đồng bộ Mo_ta_san_pham.pdf
+% =====================================================================
+\begin{titlepage}
+\thispagestyle{empty}
+\centerline{\large\bfseries TỔNG LIÊN ĐOÀN LAO ĐỘNG VIỆT NAM}
+\vspace*{0.2cm}
+\centerline{\large\bfseries TRƯỜNG ĐẠI HỌC TÔN ĐỨC THẮNG}
+\centerline{------------------------------}
+\vspace*{1cm}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.3\linewidth]{picture/TDT_logo}
+\end{figure}
+\vspace*{1.0cm}
+\centerline{\large\bfseries Hội thi Toán học -- Lý thuyết và Ứng dụng năm học 2025--2026}
+\vspace*{0.3cm}
+\centerline{\itshape Chủ đề: ``Toán học trong kỷ nguyên trí tuệ nhân tạo''}
+\vspace*{2.0cm}
+\centerline{\Large\bfseries NHẬT KÝ SỬ DỤNG TRÍ TUỆ NHÂN TẠO}
+\vspace*{0.3cm}
+\centerline{\Large\bfseries TRONG QUÁ TRÌNH PHÁT TRIỂN ỨNG DỤNG}
+\centerline{\Large\bfseries FINSCOPE -- PHÂN TÍCH VÀ DỰ BÁO}
+\centerline{\Large\bfseries CHỨNG KHOÁN ĐA MÔ HÌNH}
+\vspace*{3cm}
+\noindent\textbf{ĐƠN VỊ:}\quad KHOA TOÁN -- THỐNG KÊ
+
+\vspace*{0.4cm}
+\noindent\textbf{NHÓM SINH VIÊN THỰC HIỆN:}\\
+$\begin{array}{llll}
+  \mbox{1.} &\mbox{Nguyễn Thành Danh \;(Trưởng nhóm)} &-&\mbox{C2300014}\\
+  \mbox{2.} &\mbox{Trần Huỳnh Nhã Trúc}               &-&\mbox{C2300189}
+\end{array}$
+\vfill
+\centerline{\bfseries TP. Hồ Chí Minh, tháng 5 năm 2026}
+\end{titlepage}
+
+% Trang bìa không tính số trang; nội dung bắt đầu từ trang 1
+\setcounter{page}{1}
+
+% =====================================================================
+%  CHƯƠNG 1 — TỔNG QUAN PHƯƠNG PHÁP
+% =====================================================================
+\section{Tổng quan phương pháp cộng tác với AI}
+
+\subsection{Bối cảnh và phân vai}
+
+\indent Đề tài \textbf{FinScope} đặt ra khối lượng kỹ thuật lớn: ứng dụng web Streamlit 14 trang chức năng, 8 mô hình dự báo (AR, MLR, ARIMA, SARIMA, Holt--Winters ETS, GARCH, SARIMAX, Gradient Boosting) kèm Ensemble theo trọng số nghịch đảo MAPE, dữ liệu thực từ thư viện \texttt{vnstock 4.x}, kiểm định Diebold--Mariano so với Random Walk. Với hai sinh viên trong một học kỳ, nhóm em quyết định sử dụng một \textbf{trợ lý AI lập trình} (large language model) làm cộng tác viên thực thi, với ranh giới phân vai rõ ràng duy trì xuyên suốt toàn bộ quá trình phát triển.
+
+\textbf{Nhóm em quyết định:} ý tưởng đề tài, kiến trúc, ngăn xếp công nghệ, danh mục mô hình, ngưỡng nghiệp vụ (phí HOSE, D/E theo nhóm ngành, kiểm định DM), thiết kế giao diện cuối, đánh giá độ chính xác. \textbf{AI thực thi:} viết mã Python theo đặc tả, sinh biểu đồ Plotly, refactor, rà chéo nhiều file song song. \textbf{Kiểm soát:} mọi mã do AI sinh ra đều được nhóm em đọc lại, chạy qua \texttt{streamlit.testing.v1.AppTest} 14 trang $\times$ 3 mã đại diện (FPT blue-chip, ACB ngân hàng, HVN small-cap), đối chiếu chuẩn nghiệp vụ thực tế (CafeF, Vietstock, TradingView) trước khi giữ lại.
+
+% =====================================================================
+%  CHƯƠNG 2 — ĐẶC TẢ TIÊU BIỂU
+% =====================================================================
+\section{Các đặc tả tiêu biểu nhóm em đã chỉ đạo AI}
+
+\indent Mỗi đặc tả gồm \emph{mục tiêu nghiệp vụ}, \emph{yêu cầu kỹ thuật} đủ chi tiết để tái thiết phần đó, và \emph{kết quả sau kiểm thử}. Đây là minh chứng nhóm em đã chỉ đạo AI ở mức tinh tường nhờ nền tảng Toán -- Thống kê và Tài chính, không phải prompt mơ hồ.
+
+\subsection{Đặc tả tổng quan -- toàn bộ định hướng sản phẩm}
+
+\textit{Mục tiêu nghiệp vụ:} thiết lập \textbf{đặc tả gốc} đầy đủ tới mức một trợ lý AI có thể sinh ra \emph{khung sườn dự án} (tree thư mục + module skeleton) ngay từ lần chạy đầu, để mọi đặc tả con sau đó đều có chỗ neo.
+
+\begin{promptbox}
+\footnotesize \textbf{Vai trò của bạn:} kiến trúc sư phần mềm và Quant nội bộ của nhóm. Hãy \textbf{thiết kế và sinh khung sườn} ứng dụng web \textbf{FinScope} -- ``Phân tích và Dự báo Chứng khoán Việt Nam Đa Mô hình'' -- dưới dạng cây thư mục có chú thích, mỗi module ghi rõ trách nhiệm, đầu vào, đầu ra.\\[2pt]
+\textbf{Ngăn xếp công nghệ bắt buộc.} Python 3.11.9, Streamlit 1.56 (Community Cloud-ready); dữ liệu HOSE qua \texttt{vnstock 4.0.4}; mô hình thống kê: \texttt{statsmodels 0.14} (ARIMA/SARIMA/SARIMAX/ETS/ADF/coint), \texttt{arch} (GARCH), \texttt{scikit-learn} (GBR); biểu đồ \texttt{plotly}; xác thực PBKDF2-HMAC-SHA256 200k vòng tự cài; sentiment \texttt{transformers} (PhoBERT, tuỳ chọn) có fallback từ điển.\\[2pt]
+\textbf{Phạm vi sản phẩm.} (i) 53 mã HOSE đại diện đủ ngành; dữ liệu end-of-day. (ii) 14 trang chức năng chia 4 nhóm: \emph{thị trường} (Dashboard, Tổng quan, Phân tích cơ bản, Phân tích kỹ thuật, Tin tức, Tín hiệu \& Cảnh báo, Lịch sử dữ liệu); \emph{dự báo} (Mô hình nâng cao -- 8 mô hình + Ensemble); \emph{chiến lược} (Chiến lược giao dịch, Giao dịch Demo -- phí HOSE 0,15\% + thuế 0,10\%); \emph{danh mục \& học thuật} (Danh mục đầu tư -- Markowitz/CAPM/PCA/Cointegration, Cơ sở Toán học, Hồ sơ cá nhân, Hướng dẫn). (iii) Song ngữ Việt--Anh, chế độ sáng--tối, dữ liệu cá nhân hoá per-user (Paper, Watchlist, Alerts, Journal). (iv) Triển khai trực tuyến Streamlit Community Cloud.\\[2pt]
+\textbf{Kiến trúc bắt buộc.} 5 tầng độc lập, giao tiếp qua hàm thuần hoặc cache đĩa: (1) \texttt{app\_pages/} + \texttt{ui/} -- giao diện 14 trang + topbar + sidebar + CSS + components + icons SVG; (2) \texttt{services/} -- signal engine 8 trụ cột, optimizer Markowitz, Monte Carlo + Itô + VaR/CVaR, backtest walk-forward, alerts/watchlist/journal; (3) \texttt{models/} -- AR, MLR, ARIMA, advanced (SARIMA/ETS/GARCH/SARIMAX), GBR, ensemble; (4) \texttt{data/} -- fetcher (vnstock + cache + throttle 3,4s), market, fundamental, news, ichimoku, technicals, metrics, paper; (5) \texttt{core/} + \texttt{auth/} -- config, themes, i18n, validate, cache fingerprint; PBKDF2 store + session.\\[2pt]
+\textbf{Hệ thống cache 5 tầng.} (a) \texttt{@st.cache\_data(persist="disk", ttl=24h)} cho fetch giá thô và 8 mô hình; (b) \texttt{@st.cache\_data(ttl=15min)} cho signal engine, technicals, Ichimoku, optimizer, MC; (c) \texttt{@st.cache\_resource} cho singleton vnstock + ThreadPoolExecutor; (d) đĩa-persist sống qua restart; (e) tiered warmer nền cho 53 mã, ưu tiên Hot/Warm/Cold, chạy 17,6 yêu cầu/phút (dưới ngưỡng 20).\\[2pt]
+\textbf{Phương pháp đánh giá khoa học.} Mỗi mô hình báo cáo MAPE, RMSE, MAE, $R^2$ trên cùng tập kiểm thử. \textbf{Bắt buộc} kiểm định Diebold--Mariano có hiệu chỉnh Harvey--Leybourne--Newbold cho mọi cặp $(i,j)$ và đối chứng Random Walk; in ma trận $p$-value trực quan. Bộ gộp Ensemble dùng trọng số nghịch đảo MAPE: $w_i = (\mathrm{MAPE}_i + 0{,}1)^{-1}$ chuẩn hoá.\\[2pt]
+\textbf{Định dạng đầu ra.} (1) Cây thư mục đánh nhãn rõ ràng dạng \texttt{FinScope/}, \texttt{|--app.py}, \texttt{|--app\_pages/}, \texttt{|--services/} ... với 1--2 dòng chú thích trách nhiệm/đầu vào/đầu ra cho mỗi mục. (2) Liệt kê tên file cụ thể trong từng thư mục con. (3) Tóm tắt hợp đồng giữa các tầng (ai gọi ai, kiểu dữ liệu trao đổi). (4) Danh sách rủi ro kỹ thuật cần xử lý ngay từ ngày đầu (rate-limit vnstock, NaN trong RSI, console cp1252 trên Windows, ngưỡng D/E khác nhau giữa ngân hàng và phi tài chính).\\[2pt]
+\textbf{Ràng buộc.} Không dùng API trả phí; không tự ý mở rộng sang phái sinh/intraday; mọi mã do bạn sinh ra phải sẵn sàng cho \texttt{streamlit.testing.v1.AppTest} sweep 14 trang $\times$ 3 mã đại diện (FPT blue-chip, ACB ngân hàng, HVN small-cap).
+\end{promptbox}
+
+\textit{Kết quả.} Trợ lý AI sinh ngay được khung sườn 5 tầng với hơn 30 module rỗng kèm chú thích trách nhiệm; nhóm em chỉ cần điều chỉnh tên 4--5 module cho thuận tay rồi bắt đầu lấp logic theo các đặc tả con bên dưới. Đặc tả này được nhóm duy trì xuyên suốt; mỗi khi AI muốn thêm tính năng ngoài phạm vi (intraday, API trả phí), đối chiếu lại để loại bỏ -- giữ sản phẩm tập trung.
+
+\subsection{Đặc tả tầng dữ liệu và tài chính}
+
+\textit{Mục tiêu:} truy xuất HOSE đáng tin cậy, phân biệt ngưỡng đánh giá ngân hàng và doanh nghiệp.
+
+\begin{promptbox}
+\footnotesize Module \texttt{data/fetcher.py} dùng vnstock 4.x VCI source, trả \texttt{DataFrame} với cột Open/High/Low/Close/Volume kèm chỉ báo MA5/20/50, RSI14, lag-1 cho MLR. Cache \texttt{@st.cache\_data(ttl=300)}. Bọc mọi lệnh vnstock trong \texttt{contextlib.redirect\_stdout} để tránh crash console Windows cp1252. Khi RSI14 NaN (giá đứng yên 14 phiên), \texttt{fillna(50)} thay vì \texttt{dropna()}. Module \texttt{data/fundamental.py} cung cấp Big-3 (Kết quả KD, Cân đối, Lưu chuyển tiền tệ) qua \texttt{ThreadPoolExecutor max\_workers=3}; \texttt{compute\_kpis} tính P/E, P/B, ROE, ROA, biên LN, D/E, FCF, P/FCF. \textbf{Ngưỡng riêng cho ngân hàng}: D/E 5--12x bình thường, ROA 0.8--2.5\% bình thường; doanh nghiệp khác: D/E $<$ 1 an toàn, ROA $>$ 8\% tốt. Bổ sung \texttt{peer\_kpis} so sánh tối đa 6 mã cùng ngành, fallback nhóm dẫn dắt theo vốn hóa khi ngành quá hẹp.
+\end{promptbox}
+
+\textit{Kết quả.} Trước khi áp ngưỡng riêng, AI đánh đỏ tất cả 12 mã ngân hàng do dùng ngưỡng doanh nghiệp; sau khi nhóm em bổ sung ngữ cảnh nghiệp vụ, các mã được đánh giá đúng tính chất ngành -- minh chứng AI cần kiến thức chuyên môn từ nhóm em mới ra đúng kết quả.
+
+\subsection{Đặc tả tầng mô hình và kiểm định DM}
+
+\textit{Mục tiêu:} dự báo có thể kiểm chứng học thuật, không chỉ liệt kê MAPE.
+
+\begin{promptbox}
+\footnotesize Triển khai 8 mô hình trong \texttt{models/}: AR$(p)$ tuyến tính \texttt{numpy.linalg.lstsq}, MLR đa biến 7 lag-1 \texttt{statsmodels.OLS}, ARIMA chọn order theo AIC, SARIMA mùa 5 phiên/tuần \texttt{seasonal\_order=(1,0,1,5)}, Holt--Winters ETS, GARCH(1,1) (gói \texttt{arch}), SARIMAX với exog là khối lượng chuẩn hóa, GBR (\texttt{sklearn}). Mỗi mô hình trả \texttt{\{yte, pte, next\_pred, next\_lower, next\_upper, dates\_te\}}. \texttt{models/ensemble.py} gộp theo $w_i = 1/(\text{MAPE}_i + 0.1)$ chuẩn hóa, CI 95\% theo $\sigma$ phần dư. \textbf{Bắt buộc} kiểm định Diebold--Mariano (HLN small-sample correction) so mô hình tốt nhất với từng mô hình còn lại \emph{và Random Walk} -- nếu không vượt RW có ý nghĩa ($p<0.05$) thì hệ thống báo rõ ``khác biệt không có ý nghĩa thống kê''.
+\end{promptbox}
+
+\textit{Kết quả.} Với FPT, ARIMA và Ensemble vượt Random Walk có ý nghĩa ($p<0.001$); một số mô hình khác không khác biệt đáng kể -- phát hiện chỉ xuất hiện khi nhóm em chủ động yêu cầu DM, AI không tự đề xuất.
+
+\subsection{Đặc tả tầng giao diện và tối ưu hiệu năng}
+
+\textit{Mục tiêu:} đạt chuẩn tài chính chuyên nghiệp, chuyển trang mượt.
+
+\begin{promptbox}
+\footnotesize Streamlit 1.56, theme light/dark, topbar 14 trang. \textbf{Trang chủ}: dự báo + biểu đồ nến 6 lớp phủ (SMA, Ichimoku, Bollinger, VWAP, S/R, Parabolic SAR) + card đối sánh Cơ bản vs Kỹ thuật phát hiện 5 trạng thái (đồng thuận tăng/giảm, value trap, momentum trap, trung tính); \textbf{Thị trường}: heatmap 53 mã kèm sparkline 5 phiên; \textbf{Cơ bản}: KPI strip + Big-3 BCTC + peer 6 mã có fallback bluechip; \textbf{Giao dịch Demo}: sổ lệnh với \emph{phí 0.15\% mua/bán + thuế 0.10\% chỉ bán} chuẩn HOSE retail, equity curve, Max Drawdown, Sharpe annualized. Plotly modebar mặc định hover-only; override CSS \texttt{[data-stale="true"]\{opacity:1!important;filter:none\}} + thanh progress 3px gradient teal ở đỉnh page khi rerun -- tránh hiệu ứng mờ trang cũ mặc định.
+\end{promptbox}
+
+\textit{Kết quả.} Stress-test \texttt{AppTest} 14 trang $\times$ 3 mã = 42 ô: 42/42 vượt qua không exception. Cold-start Dashboard $\sim$25--30 giây (train 8 mô hình + tiered warmer); chuyển trang sau warm-up $<$ 1 giây nhờ cache 5 tầng.
+
+\subsection{Rà soát chéo bốn agent song song trước khi nộp}
+
+\textit{Mục tiêu:} phát hiện ``dư hoặc thiếu'' trước hạn nộp, theo chuẩn nghiệp vụ chứng khoán Việt Nam.
+
+\begin{promptbox}
+\footnotesize Spawn 4 agent độc lập song song rà soát: (1) tính nhất quán logic giữa các trang -- Dashboard/Signals/News có cho cùng kết luận Ichimoku và sentiment không; (2) liệt kê DƯ/THIẾU trên 6 trang chính theo chuẩn nghiệp vụ; (3) i18n VN/EN; (4) stress-test \texttt{AppTest} 14 trang $\times$ 3 mã. Báo cáo gọn dưới 500 từ mỗi agent. Nhóm em chốt các fix \emph{free-tier} tác động cao đến cảm nhận chuyên nghiệp.
+\end{promptbox}
+
+\textit{Kết quả.} Bốn agent hoàn thành rà soát toàn dự án trong $\sim$2 phút. Nhóm em chốt 4 cải tiến: (i) phí + thuế HOSE + MDD + Sharpe cho Paper; (ii) card đối sánh Cơ bản vs Kỹ thuật; (iii) bảng peer ngành; (iv) gộp 2 bảng ``Dự báo'' và ``Xếp hạng'' trùng nội dung 80\% thành 1 bảng 10 cột.
+
+% =====================================================================
+%  CHƯƠNG 3 — ĐÁNH GIÁ
+% =====================================================================
+\section{Đánh giá hợp tác và khẳng định vai trò tác giả}
+
+\subsection{Đánh giá hợp tác với AI}
+
+\textbf{Giá trị AI mang lại:} (i) \textit{tăng tốc thực thi} -- 4 agent rà chéo toàn dự án trong 2 phút; (ii) \textit{phát hiện lỗi tinh vi} (RSI NaN $\to$ silent dropna, \texttt{market\_snapshot} không catch khi VCI down dẫn đến cache exception 5 phút); (iii) \textit{hiểu mô tả phi kỹ thuật} -- ánh xạ ``tab phóng to thu nhỏ lag'' $\to$ Plotly modebar always-visible, ``mờ mờ trang cũ'' $\to$ Streamlit \texttt{data-stale} CSS.
+
+\textbf{Giới hạn AI:} (i) xu hướng tối đa hóa thay đổi khi yêu cầu mơ hồ; (ii) đôi khi tự tin sai -- báo ``đã fix peer comparison'' nhưng FPT không hiện vì là mã CNTT duy nhất, phải bổ sung fallback bluechip; (iii) thiên về thêm, hiếm khi đề xuất cắt; (iv) không thay được domain knowledge -- ngưỡng D/E bank, phí HOSE, mùa 5 phiên/tuần đều do nhóm em mang vào.
+
+\textbf{Bài học:} luôn kiểm thử qua \texttt{AppTest}; đặc tả cụ thể; yêu cầu lý do; phản biện ngay; commit nhỏ; giữ chủ động về domain.
+
+\subsection{Khẳng định vai trò của nhóm tác giả}
+
+\textbf{FinScope là sản phẩm của Nguyễn Thành Danh và Trần Huỳnh Nhã Trúc.} AI giúp nhóm em \emph{thực thi nhanh hơn} và \emph{rà soát chéo sâu hơn}, nhưng các quyết định cốt lõi đều thuộc về nhóm tác giả: (i) ý tưởng đề tài; (ii) kiến trúc tổng thể -- nhóm em tự đánh giá Streamlit so với Dash, Plotly so với matplotlib, statsmodels so với Prophet; (iii) danh mục 8 mô hình -- dựa trên môn Chuỗi thời gian và Thống kê tài chính; (iv) ngưỡng nghiệp vụ Việt Nam -- phí HOSE 0.15\%, thuế 0.10\%, D/E ngân hàng, mùa 5 phiên/tuần đều do nhóm em mang vào đặc tả; (v) phương pháp đánh giá độ chính xác -- bổ sung Diebold--Mariano so với Random Walk là quyết định học thuật của nhóm em.
+
+\vspace{4pt}
+\noindent\rule{\textwidth}{0.3pt}\\[-2pt]
+\noindent\footnotesize\textit{Công cụ AI:} trợ lý lập trình dựa trên mô hình ngôn ngữ lớn (LLM).
+\textit{Kho mã nguồn:} repository riêng tư của nhóm.
+\textit{Cơ chế kiểm thử:} \texttt{streamlit.testing.v1.AppTest} sweep 14 trang $\times$ 3 mã đại diện (FPT, ACB, HVN).
+
+\end{document}

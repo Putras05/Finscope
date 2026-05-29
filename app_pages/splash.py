@@ -76,6 +76,41 @@ def render():
                     market_snapshot(tuple(_TICKERS))
                 except Exception:
                     pass
+                # ── v52 PRE-WARM AGGRESSIVE — warm thêm cho tab switching mượt ──
+                # Warm VN-Index để CAPM section (Portfolio) tức thì
+                try:
+                    from services.capm import fetch_vnindex
+                    fetch_vnindex()
+                except Exception:
+                    pass
+                # Warm signal engine 8 trụ + ichimoku + technicals cho top 3 mã
+                # → các tab Tín hiệu, Paper Pro Suggest, Strategy mở tức thì
+                try:
+                    from services.signal_engine import build_signal_report
+                    from data.fetcher import fetch_data as _fd
+                    from data.ichimoku import add_ichimoku
+                    from data import technicals as _TA
+                    for _tk_warm in TICKERS[:3]:                # FPT, MWG, MSN
+                        try:
+                            _df = _fd(_tk_warm)
+                            add_ichimoku(_df)                  # cache ichimoku
+                            _TA.support_resistance(_df)       # cache S/R
+                            _TA.trend_channel(_df, lookback=90)
+                            _TA.adx(_df); _TA.obv(_df)
+                            _TA.parabolic_sar(_df)
+                            _TA.candlestick_patterns(_df, lookback=12)
+                            build_signal_report(_df, _tk_warm,
+                                                  include_fundamentals=False)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+                # Warm peer_kpis cho mã đầu tiên (Phân tích Cơ bản tab Peer)
+                try:
+                    from data.fundamental import peer_kpis
+                    peer_kpis(TICKERS[0], max_peers=6)
+                except Exception:
+                    pass
             except Exception:
                 pass
         _th.Thread(target=_warm_default, daemon=True).start()
@@ -153,10 +188,21 @@ div[data-testid="stButton"] > button:hover { transform: translateY(-3px) scale(1
         '</div>',
         '<div class="splash-badge">Phân tích Chứng khoán Đa mô hình · 2026</div>',
         '<div class="splash-title">',
-        ('<span style="font-size:46px;font-weight:800;color:#1E40AF;letter-spacing:-1.5px;'
-         'display:inline-flex;align-items:center;gap:14px;justify-content:center">'
-         + mark_gradient(52) + 'FinScope</span><br/>'),
-        '<span style="font-size:18px;color:#334155;font-weight:600;display:inline-block;margin-top:4px">PHÂN TÍCH &amp; DỰ BÁO CHỨNG KHOÁN</span><br/>',
+        # Wordmark style: "Fin" solid dark + "Scope" gradient blue→cyan→teal
+        # (giống topbar — đã verified user duyệt). Letter-spacing âm chặt
+        # hơn cho cảm giác hiện đại; font-feature liga + tnum cho fintech.
+        ('<span style="display:inline-flex;align-items:center;gap:16px;'
+         'justify-content:center;font-family:Inter,system-ui,sans-serif;'
+         'font-size:58px;font-weight:900;letter-spacing:-2.2px;line-height:1;'
+         'font-feature-settings:\'liga\' 1,\'tnum\' 1">'
+         + mark_gradient(56) +
+         '<span style="display:inline-block">'
+         '<span style="color:#0F172A">Fin</span>'
+         '<span style="background:linear-gradient(90deg,#1E40AF 0%,#0891B2 50%,#0F766E 100%);'
+         '-webkit-background-clip:text;background-clip:text;color:transparent;'
+         '-webkit-text-fill-color:transparent">Scope</span>'
+         '</span></span><br/>'),
+        '<span style="font-size:18px;color:#334155;font-weight:600;display:inline-block;margin-top:6px;letter-spacing:.3px">PHÂN TÍCH &amp; DỰ BÁO CHỨNG KHOÁN</span><br/>',
         '<span style="font-size:14px;color:#64748B;font-weight:500;font-style:italic">Dựa trên Mô hình Thống kê &amp; Học máy · Khoảng tin cậy · Chiến lược Giao dịch</span>',
         '</div>',
         '<span class="splash-sep"></span>',
@@ -177,11 +223,8 @@ div[data-testid="stButton"] > button:hover { transform: translateY(-3px) scale(1
     logo_html = ''.join(html_parts)
     st.markdown(logo_html, unsafe_allow_html=True)
 
-    _bc1, _bc2, _bc3 = st.columns([1, 1.1, 1])
-    with _bc2:
-        if st.button('VÀO NGAY', key='splash_enter', use_container_width=True):
-            st.session_state['_splash_done'] = True
-            st.rerun()
+    # ── KHỐI XÁC THỰC NGƯỜI DÙNG ──────────────────────────────────────
+    _render_auth_panel()
 
     footer_html = (
         '<div class="splash-footer">'
@@ -191,3 +234,85 @@ div[data-testid="stButton"] > button:hover { transform: translateY(-3px) scale(1
         '</div>'
     )
     st.markdown(footer_html, unsafe_allow_html=True)
+
+
+def _render_auth_panel() -> None:
+    """3 tab: Đăng nhập · Đăng ký · Khách. Khi xác thực thành công → vào app."""
+    import streamlit as _st
+    from auth.store import create_user, verify_credentials, update_last_seen
+    from auth.session import login_user, login_as_guest
+
+    _st.markdown(
+        '<div style="max-width:560px;margin:18px auto 6px;'
+        'background:#FFFFFF;border:1px solid rgba(148,163,184,0.30);'
+        'border-radius:14px;padding:6px 22px 14px;'
+        'box-shadow:0 4px 18px rgba(15,23,42,.06);position:relative;z-index:5">'
+        '<div style="text-align:center;font-size:11px;font-weight:800;'
+        'color:#1E40AF;text-transform:uppercase;letter-spacing:2.2px;'
+        'padding:10px 0 4px">Tài khoản · Account</div>',
+        unsafe_allow_html=True)
+
+    tab_login, tab_reg, tab_guest = _st.tabs([
+        '  Đăng nhập  ', '  Đăng ký  ', '  Dùng thử (Khách)  ',
+    ])
+
+    with tab_login:
+        with _st.form('_login_form', clear_on_submit=False):
+            u = _st.text_input('Tên đăng nhập', key='_lg_u',
+                                placeholder='ví dụ: thanhdanh')
+            p = _st.text_input('Mật khẩu', type='password', key='_lg_p',
+                                placeholder='Tối thiểu 6 ký tự')
+            ok = _st.form_submit_button('ĐĂNG NHẬP', use_container_width=True,
+                                          type='primary')
+        if ok:
+            ok2, msg, rec = verify_credentials(u or '', p or '')
+            if ok2 and rec:
+                login_user(rec)
+                update_last_seen(rec['id'])
+                _st.session_state['_splash_done'] = True
+                _st.rerun()
+            else:
+                _st.error(msg)
+
+    with tab_reg:
+        with _st.form('_reg_form', clear_on_submit=False):
+            u = _st.text_input('Tên đăng nhập', key='_rg_u',
+                                placeholder='3–32, chỉ chữ thường + số + . _ -')
+            d = _st.text_input('Tên hiển thị', key='_rg_d',
+                                placeholder='Ví dụ: Nguyễn Thành Danh')
+            e = _st.text_input('Email (tuỳ chọn)', key='_rg_e')
+            p1 = _st.text_input('Mật khẩu', type='password', key='_rg_p1',
+                                  placeholder='Tối thiểu 6 ký tự')
+            p2 = _st.text_input('Nhập lại mật khẩu', type='password', key='_rg_p2')
+            ok = _st.form_submit_button('TẠO TÀI KHOẢN', use_container_width=True,
+                                          type='primary')
+        if ok:
+            if (p1 or '') != (p2 or ''):
+                _st.error('Hai lần nhập mật khẩu không khớp.')
+            else:
+                ok2, msg, rec = create_user(u or '', p1 or '', d or '', e or None)
+                if ok2 and rec:
+                    login_user(rec)
+                    _st.session_state['_splash_done'] = True
+                    _st.success(msg)
+                    _st.rerun()
+                else:
+                    _st.error(msg)
+
+    with tab_guest:
+        _st.markdown(
+            '<div style="font-size:13px;color:#475569;line-height:1.7;'
+            'padding:8px 4px 14px">'
+            'Chế độ Khách dùng chung 1 sổ Paper Trading <i>(paper_state.json)</i> '
+            'và không lưu watchlist riêng. Phù hợp khi muốn chạy thử nhanh, '
+            'không cần đăng ký. Bạn có thể tạo tài khoản bất cứ lúc nào để có '
+            'sổ + danh mục yêu thích riêng.'
+            '</div>',
+            unsafe_allow_html=True)
+        if _st.button('VÀO NHANH VỚI TƯ CÁCH KHÁCH', key='_guest_enter',
+                       use_container_width=True, type='primary'):
+            login_as_guest()
+            _st.session_state['_splash_done'] = True
+            _st.rerun()
+
+    _st.markdown('</div>', unsafe_allow_html=True)

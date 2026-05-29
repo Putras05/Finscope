@@ -1,10 +1,11 @@
 import streamlit as st
+from core.config import CACHE_TTL
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from data.fetcher import fetch_data
 
 
-@st.cache_data(ttl=21600, show_spinner=False, persist="disk")
+@st.cache_data(ttl=CACHE_TTL, show_spinner=False, persist="disk")
 def run_mlr(ticker: str, train_ratio: float, p: int = 1,
             date_from=None, date_to=None) -> dict:
     """

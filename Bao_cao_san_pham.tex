@@ -1,0 +1,1431 @@
+% =====================================================================
+%  BÁO CÁO SẢN PHẨM — FinScope (tài liệu nội bộ chi tiết)
+%  Hội thi Toán học — Lý thuyết và Ứng dụng năm học 2025-2026
+%  Chủ đề: "Toán học trong kỷ nguyên trí tuệ nhân tạo"
+%  File này KHÔNG phải Mo_ta_san_pham.pdf bắt buộc theo quy chế;
+%  Mo_ta_san_pham.pdf là phiên bản ngắn 1–2 trang nộp kèm.
+%  Tác giả:  Nguyễn Thành Danh (C2300014, trưởng nhóm)
+%            Trần Huỳnh Nhã Trúc (C2300189)
+%  Form chuẩn NCKH 2025-2026 — pdflatex compile 2 lần
+% =====================================================================
+\documentclass[12pt,a4paper,openany,oneside]{report}
+\usepackage[utf8]{vietnam}
+\usepackage[left=2.5cm, right=2.5cm, top=3cm, bottom=3cm]{geometry}
+\usepackage[fontsize=13pt]{scrextend}
+\usepackage{mathrsfs,multicol,times}
+\usepackage{mathtools,amssymb,amsmath}
+\usepackage{graphicx,caption,subcaption,float}
+\usepackage{xcolor,setspace}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{multirow,booktabs,array,tabularx}
+\usepackage{indentfirst}
+\usepackage[unicode,colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue]{hyperref}
+\usepackage{titlesec}
+\usepackage{titletoc}
+\usepackage{lastpage}
+\usepackage{tcolorbox}
+\usepackage{longtable}
+\usepackage[authoryear,round]{natbib}
+\bibliographystyle{plainnat}
+\tcbuselibrary{skins,breakable}
+
+\graphicspath{{picture/}}
+
+% Equation numbering theo chương (chuẩn NCKH)
+\numberwithin{equation}{chapter}
+
+% Chapter / Section format — chuẩn NCKH (đen tuyền, không màu)
+\titleformat{\chapter}[display]
+  {\bfseries\fontsize{20}{22}\selectfont\centering}
+  {Chương \thechapter}{0ex}{}
+\titlespacing{\chapter}{0ex}{0ex}{5ex}
+\titleformat{\section}[hang]
+  {\bfseries\fontsize{16}{20}\selectfont}
+  {\thesection}{1.5ex}{}
+\titleformat{\subsection}[hang]
+  {\bfseries\fontsize{13}{16}\selectfont}
+  {\thesubsection}{1ex}{}
+
+% Mục lục — chuẩn NCKH (CHƯƠNG x. + section dotfill)
+\titlecontents{chapter}[0pt]{\bfseries}
+  {\MakeUppercase{\chaptername}\ \thecontentslabel.~}{}{\hfill\contentspage}
+\titlecontents{section}[2.5ex]{}
+  { \thecontentslabel\quad}{}{\dotfill\contentspage}
+
+% NCKH typesetting standard
+\allowdisplaybreaks
+\everymath{\displaystyle}
+\setlength\parindent{1.27cm}
+\renewcommand{\baselinestretch}{1.5}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small\itshape Báo cáo sản phẩm -- FinScope}
+\fancyhead[R]{\small \thepage/\pageref{LastPage}}
+\setlength{\headheight}{14pt}
+\fancypagestyle{plain}{\fancyhf{}\renewcommand{\headrulewidth}{0pt}}
+
+% Mục lục chữ in đậm hơn
+\renewcommand{\contentsname}{\bfseries\centering MỤC LỤC}
+
+\begin{document}
+
+% =====================================================================
+%  TRANG BÌA — đóng khung double-line, có logo, tên đề tài và nhóm
+% =====================================================================
+% Title page — wrap titlepage to suppress fancy header + force fresh page.
+\begin{titlepage}
+\thispagestyle{empty}
+\centerline{\large\bfseries TỔNG LIÊN ĐOÀN LAO ĐỘNG VIỆT NAM}
+\vspace*{0.2cm}
+\centerline{\large\bfseries TRƯỜNG ĐẠI HỌC TÔN ĐỨC THẮNG}
+\centerline{------------------------------}
+\vspace*{1cm}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.3\linewidth]{picture/TDT_logo}
+\end{figure}
+\vspace*{1.0cm}
+\centerline{\large\bfseries Hội thi Toán học -- Lý thuyết và Ứng dụng năm học 2025--2026}
+\vspace*{0.3cm}
+\centerline{\itshape Chủ đề: ``Toán học trong kỷ nguyên trí tuệ nhân tạo''}
+\vspace*{2.0cm}
+\centerline{\Large\bfseries BÁO CÁO SẢN PHẨM}
+\vspace*{0.3cm}
+\centerline{\Large\bfseries FINSCOPE -- PHÂN TÍCH VÀ DỰ BÁO}
+\centerline{\Large\bfseries CHỨNG KHOÁN VIỆT NAM ĐA MÔ HÌNH}
+\vspace*{3cm}
+\noindent\textbf{ĐƠN VỊ:}\quad KHOA TOÁN -- THỐNG KÊ
+
+\vspace*{0.4cm}
+\noindent\textbf{NHÓM SINH VIÊN THỰC HIỆN:}\\
+$\begin{array}{llll}
+  \mbox{1.} &\mbox{Nguyễn Thành Danh \;(Trưởng nhóm)} &-&\mbox{C2300014}\\
+  \mbox{2.} &\mbox{Trần Huỳnh Nhã Trúc}               &-&\mbox{C2300189}
+\end{array}$
+\vfill
+\centerline{\bfseries TP. Hồ Chí Minh, tháng 5 năm 2026}
+\end{titlepage}
+
+% =====================================================================
+%  MỤC LỤC
+% =====================================================================
+\setcounter{page}{1}               % bắt đầu đếm trang từ MỤC LỤC
+\pagestyle{fancy}                  % bật lại fancy header cho mọi trang sau
+\tableofcontents
+\clearpage
+
+% =====================================================================
+%  CHƯƠNG 1 — TỔNG QUAN ĐỀ TÀI
+% =====================================================================
+\chapter{Tổng quan đề tài}
+
+\section{Tên đề tài}
+
+\indent\textbf{FinScope -- Ứng dụng phân tích và dự báo chứng khoán
+Việt Nam đa mô hình.}
+
+\indent Sản phẩm là một ứng dụng web tương tác xây dựng trên nền tảng
+Streamlit (Python), triển khai trực tuyến trên Streamlit Community
+Cloud. FinScope tích hợp dữ liệu thực 53 mã chứng khoán niêm yết trên
+Sở Giao dịch Chứng khoán Thành phố Hồ Chí Minh (HOSE) qua thư viện
+\texttt{vnstock}, kết hợp 8 mô hình thống kê -- học máy cùng nhiều
+công cụ phân tích kỹ thuật, tối ưu danh mục, đánh giá rủi ro và mô
+phỏng giao dịch -- tạo nên một bộ công cụ học thuật toàn diện cho việc
+nghiên cứu thị trường chứng khoán Việt Nam.
+
+\section{Mô tả tổng quan sản phẩm}
+
+\indent FinScope được tổ chức thành \textbf{14 trang chức năng độc
+lập} chia sẻ chung một tầng dữ liệu và một bộ tham số người dùng
+(mã chứng khoán, khoảng thời gian, tỉ lệ huấn luyện, ngôn ngữ
+Việt -- Anh, chế độ sáng -- tối). Mọi trang đều bám theo cùng một
+khuôn mẫu: tham số đầu vào ở thanh phía trên, bảng kết quả số ở giữa,
+biểu đồ tương tác Plotly ở dưới và phần trích dẫn tài liệu tham khảo
+cuối trang.
+
+\subsection{Bốn nhóm tính năng cốt lõi}
+
+\begin{itemize}[leftmargin=22pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Nhóm 1 -- Phân tích thị trường và mã đơn lẻ}: Bảng
+        điều khiển (Dashboard), Tổng quan thị trường (heatmap ngành,
+        top tăng/giảm/khối lượng), Phân tích cơ bản (P/E, P/B, ROE,
+        ROA, EPS, biên lợi nhuận), Phân tích kỹ thuật chi tiết
+        (Ichimoku, MACD, RSI, Bollinger, Stochastic, ADX, OBV).
+  \item \textbf{Nhóm 2 -- Dự báo và mô hình nâng cao}: tám mô hình dự
+        báo (AR, MLR, ARIMA, SARIMA, ETS, GARCH, SARIMAX, GBR) cùng
+        bộ gộp FinScope Ensemble; kiểm định khách quan
+        Diebold--Mariano; biểu đồ quạt phân vị; Monte Carlo + công
+        thức Itô.
+  \item \textbf{Nhóm 3 -- Chiến lược và giao dịch}: bộ máy tín hiệu 8
+        trụ cột chấm điểm tin cậy; ba kịch bản giao dịch Thận trọng /
+        Cân bằng / Tích cực; Giao dịch Demo (Paper Trading) mô phỏng
+        đặt lệnh với phí khớp lệnh 0,15\% và thuế bán 0,10\% theo
+        biểu phí HOSE; nhật ký giao dịch (Thesis -- Lesson -- Tag --
+        Rating); kiểm thử lùi (backtest) walk-forward.
+  \item \textbf{Nhóm 4 -- Danh mục và cơ sở toán học}: tối ưu danh mục
+        Markowitz (Equal Weight, Minimum-Variance, Tangency / Max
+        Sharpe) kèm biên hiệu quả; mô hình CAPM với hệ số $\beta$,
+        alpha Jensen và đường thị trường chứng khoán (SML); phân tích
+        thành phần chính (PCA) với biểu đồ độ dốc và biplot; kiểm
+        định đồng tích hợp Engle--Granger cho chiến lược giao dịch
+        cặp; trang Cơ sở Toán học với 25 công thức LaTeX kèm trích dẫn
+        APA 7th.
+\end{itemize}
+
+\subsection{Năng lực cá nhân hoá người dùng}
+
+\begin{itemize}[leftmargin=22pt,topsep=2pt,itemsep=3pt]
+  \item \textbf{Xác thực an toàn} bằng PBKDF2-HMAC-SHA256 200.000 vòng
+        lặp; mật khẩu lưu dưới dạng băm + muối, không lưu mật khẩu
+        gốc.
+  \item \textbf{Dữ liệu cá nhân hoá} per-user: sổ Paper Trading,
+        danh sách theo dõi (watchlist), cảnh báo giá, nhật ký giao
+        dịch và huy hiệu thành tích (achievements).
+  \item \textbf{Chế độ khách} cho phép truy cập nhanh không cần đăng
+        ký, phù hợp khán giả hội thi và ban giám khảo trải nghiệm
+        thử.
+  \item \textbf{Song ngữ Việt -- Anh} và \textbf{chế độ sáng -- tối}
+        toàn ứng dụng, chuyển đổi bằng nút trên thanh điều hướng.
+\end{itemize}
+
+\subsection{Đặc trưng kỹ thuật nổi bật}
+
+\begin{itemize}[leftmargin=22pt,topsep=2pt,itemsep=3pt]
+  \item \textbf{Hệ thống cache 5 tầng} (\texttt{cache\_data} đĩa 24
+        giờ + 15 phút, \texttt{cache\_resource} singleton, hàng đợi
+        khởi nóng nền và bộ chia tốc độ theo phiên) giúp chuyển trang
+        dưới 1 giây sau khi đã ấm.
+  \item \textbf{Bộ khởi nóng phân tầng} (tiered warmer) cho 53 mã
+        HOSE, ưu tiên Hot / Warm / Cold, chạy ở 17,6 yêu cầu/phút
+        (dưới mức 20 yêu cầu/phút của \texttt{vnstock}).
+  \item \textbf{Khoảng 28.000 dòng Python} chia thành các tầng rõ
+        ràng (\texttt{data}, \texttt{models}, \texttt{services},
+        \texttt{charts}, \texttt{ui}, \texttt{auth}, \texttt{core},
+        \texttt{app\_pages}) -- xem chi tiết tại Chương 3.
+  \item \textbf{Triển khai trực tuyến} trên Streamlit Community Cloud
+        (không cần cài đặt phía người dùng); mã nguồn cho phép chạy
+        cục bộ phục vụ phát triển và kiểm thử.
+\end{itemize}
+
+\subsection{Đóng góp khoa học}
+
+\begin{itemize}[leftmargin=22pt,topsep=2pt,itemsep=3pt]
+  \item Tích hợp đồng thời tám mô hình dự báo và kiểm định
+        Diebold--Mariano \emph{trong cùng một giao diện} cho dữ liệu
+        HOSE -- điểm hiếm thấy ở các công cụ sinh viên hiện có.
+  \item Trực quan hoá bốn thuật toán toán -- tài chính cổ điển
+        (Markowitz 1952, CAPM 1964, PCA, Engle--Granger 1987) thành
+        biểu đồ tương tác có thể chỉnh tham số trên trình duyệt.
+  \item Cung cấp giao diện ``đọc được'' (explainable): mỗi tín hiệu
+        gắn liền với điểm số trụ cột, mỗi dự báo gắn liền với chỉ số
+        sai số (MAPE / RMSE / MAE / $R^2$), mỗi danh mục gắn liền với
+        ràng buộc toán học và nguồn trích dẫn.
+\end{itemize}
+
+\section{Lý do và mục tiêu}
+
+\indent Thị trường chứng khoán Việt Nam đang ngày càng thu hút sự quan
+tâm của sinh viên ngành Toán -- Thống kê, song các công cụ phân tích
+chuyên dụng phần lớn là phần mềm thương mại đắt tiền hoặc nền tảng nước
+ngoài không hỗ trợ tốt cho mã HOSE. FinScope ra đời nhằm:
+
+\begin{enumerate}[leftmargin=22pt,topsep=2pt,itemsep=4pt]
+  \item Cung cấp môi trường \emph{học thuật miễn phí, mã nguồn mở} cho
+   sinh viên thực hành các phương pháp dự báo chuỗi thời gian, phân
+   tích kỹ thuật và lý thuyết danh mục trên dữ liệu thực Việt Nam.
+  \item Trực quan hóa các \emph{thuật toán cổ điển} (Markowitz 1952,
+   CAPM 1964, PCA, Engle--Granger 1987) bằng giao diện web tương
+   tác, giúp người học hiểu trực giác trước khi đọc công thức.
+  \item Triển khai 8 mô hình dự báo song song và \emph{kiểm định khách
+   quan} (Diebold--Mariano) thay vì so sánh chủ quan -- nhấn mạnh tinh
+   thần khoa học dữ liệu.
+  \item Mô phỏng \emph{giao dịch ảo có phí thực tế HOSE} (phí khớp lệnh
+   0{,}15\%, thuế bán 0{,}10\%) để người dùng luyện kỷ luật giao dịch
+   mà không rủi ro vốn thật.
+\end{enumerate}
+
+\section{Phù hợp chủ đề ``Toán học trong kỷ nguyên trí tuệ nhân tạo''}
+
+\indent Sản phẩm bám sát chủ đề hội thi qua ba khía cạnh: (i) ứng dụng
+\emph{8 mô hình thống kê -- học máy} (AR, MLR, ARIMA, SARIMA, ETS, GARCH,
+SARIMAX, Gradient Boosting) song song với \emph{kiểm định Diebold--Mariano}
+khách quan để chọn mô hình tốt nhất theo dữ liệu, không dựa cảm tính;
+(ii) tích hợp \emph{4 thuật toán toán -- tài chính cổ điển} (Markowitz,
+CAPM, PCA, Engle--Granger Cointegration -- Nobel 2003) thường chỉ xuất
+hiện trong giáo trình cao học, trực quan hoá thành biểu đồ tương tác;
+(iii) sử dụng \emph{trợ lý AI lập trình} (mô hình ngôn ngữ lớn) làm
+\textbf{công cụ hỗ trợ phát triển} -- nhóm vẫn giữ vai trò thiết kế, đọc
+hiểu, kiểm thử và sửa lỗi mọi đoạn mã. Nhật ký sử dụng AI chi tiết được
+trình bày trong phụ lục \texttt{Nhat\_ky\_su\_dung\_AI.pdf} theo đúng
+quy chế hội thi.
+
+\section{Phạm vi sản phẩm}
+
+\indent FinScope giới hạn ở phân tích \emph{cổ phiếu niêm yết trên HOSE}
+với dữ liệu cuối ngày (end-of-day), KHÔNG bao gồm chứng khoán phái sinh,
+trái phiếu, hợp đồng tương lai hay dữ liệu intraday.
+
+
+% =====================================================================
+%  CHƯƠNG 2 — THÔNG TIN NHÓM THỰC HIỆN
+% =====================================================================
+\chapter{Thông tin nhóm thực hiện}
+
+\section{Đơn vị}
+
+\indent\textbf{Khoa Toán -- Thống kê, Trường Đại học Tôn Đức Thắng.}
+Trưởng nhóm thuộc ngành Toán Ứng dụng; thành viên còn lại thuộc ngành
+Thống kê.
+
+\section{Danh sách thành viên}
+
+\renewcommand{\arraystretch}{1.4}
+\noindent\begin{tabular}{|>{\centering\arraybackslash}p{0.7cm}|p{4.2cm}|p{1.8cm}|p{3cm}|p{2.7cm}|}
+\hline
+\textbf{STT} & \textbf{Họ và tên} & \textbf{MSSV} & \textbf{Ngành} & \textbf{Vai trò} \\
+\hline
+1 & Nguyễn Thành Danh   & C2300014 & Toán Ứng dụng & Trưởng nhóm \\
+\hline
+2 & Trần Huỳnh Nhã Trúc & C2300189 & Thống kê       & Thành viên  \\
+\hline
+\end{tabular}
+
+\vspace{6pt}\noindent\textit{Liên hệ trưởng nhóm:}
+\href{mailto:thanhdanhgvt@gmail.com}{thanhdanhgvt@gmail.com}\,\,\textbar\,\,
+0931 740 509.
+
+\section{Vị trí kiêm nhiệm trong nhóm}
+
+\indent Do quy mô nhóm nhỏ (hai thành viên) và phạm vi sản phẩm rộng
+(14 trang chức năng, 8 mô hình dự báo, 4 thuật toán toán -- tài chính
+cổ điển), mỗi thành viên đảm nhiệm song song nhiều vị trí. Phân vai cụ
+thể như sau:
+
+\vspace{4pt}
+\noindent\textbf{Nguyễn Thành Danh -- C2300014} (Trưởng nhóm):
+\begin{itemize}[leftmargin=22pt,topsep=2pt,itemsep=2pt]
+  \item \textbf{Team Leader} -- điều phối tiến độ, phân chia công việc,
+        chốt kiến trúc.
+  \item \textbf{Backend \& Data Engineer} -- thiết kế tầng dữ liệu, tích
+        hợp \texttt{vnstock}, cache 5 tầng, hệ thống xác thực PBKDF2.
+  \item \textbf{ML \& Quant Engineer} -- cài đặt 8 mô hình dự báo, kiểm
+        định Diebold--Mariano, Markowitz, CAPM, PCA, Cointegration.
+  \item \textbf{UI/UX Designer} -- thiết kế giao diện 14 trang, hệ thống
+        icon SVG, chế độ sáng / tối, ngôn ngữ Việt--Anh.
+  \item \textbf{DevOps} -- cấu hình môi trường, đẩy mã lên Streamlit
+        Community Cloud, viết tài liệu kỹ thuật.
+\end{itemize}
+
+\vspace{4pt}
+\noindent\textbf{Trần Huỳnh Nhã Trúc -- C2300189} (Thành viên):
+\begin{itemize}[leftmargin=22pt,topsep=2pt,itemsep=2pt]
+  \item \textbf{Financial Analyst} -- kiểm thử dữ liệu HOSE, đối sánh
+        kết quả phân tích cơ bản và kỹ thuật.
+  \item \textbf{Tester} -- kiểm thử người dùng đầu cuối, ghi nhận lỗi,
+        xác minh chỉ số trên các mã đại diện.
+  \item \textbf{Documentation} -- biên soạn tài liệu mô tả sản phẩm và
+        slide báo cáo (đồng tác giả).
+\end{itemize}
+
+% =====================================================================
+%  CHƯƠNG 3 — KIẾN TRÚC HỆ THỐNG
+% =====================================================================
+\chapter{Kiến trúc hệ thống}
+
+\section{Tổng quan kiến trúc}
+
+\indent FinScope được tổ chức theo \emph{kiến trúc phân tầng} (layered
+architecture) gồm 5 tầng độc lập, mỗi tầng có nhiệm vụ rõ ràng và giao
+tiếp qua hàm thuần (pure function) hoặc cache đĩa:
+
+\begin{enumerate}[leftmargin=22pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Tầng giao diện} (\texttt{app\_pages/}, \texttt{ui/}) --
+   14 trang Streamlit + topbar, sidebar, CSS, components.
+  \item \textbf{Tầng dịch vụ} (\texttt{services/}) -- logic nghiệp vụ
+   thuần tính: signal engine 8 trụ, optimizer Markowitz, Monte Carlo,
+   CAPM, PCA, cointegration, backtest, watchlist, alerts, journal.
+  \item \textbf{Tầng mô hình} (\texttt{models/}) -- 8 mô hình thống kê
+   -- học máy + Ensemble.
+  \item \textbf{Tầng dữ liệu} (\texttt{data/}) -- truy xuất giá, tài
+   chính, tin tức, paper trading book.
+  \item \textbf{Tầng cấu hình \& tiện ích} (\texttt{core/},
+   \texttt{auth/}) -- hằng số, theme, i18n, xác thực PBKDF2, cache,
+   tham chiếu APA.
+\end{enumerate}
+
+\section{Cấu trúc thư mục sản phẩm}
+
+\renewcommand{\arraystretch}{1.25}
+\setlength{\tabcolsep}{4pt}
+{\small
+\noindent\begin{tabularx}{\linewidth}{|>{\raggedright\arraybackslash}p{4.5cm}|>{\raggedright\arraybackslash}X|}
+\hline
+\textbf{Tệp / Thư mục} & \textbf{Mô tả chức năng} \\
+\hline
+\texttt{app.py} & Điểm vào ứng dụng Streamlit; điều phối tầng dữ liệu, mô hình và 14 trang. \\
+\hline
+\texttt{app\_pages/} & 14 trang chức năng (chi tiết Chương 5). \\
+\hline
+\texttt{data/} & \texttt{fetcher}, \texttt{market}, \texttt{fundamental},
+   \texttt{news}, \texttt{news\_ai}, \texttt{ichimoku}, \texttt{technicals},
+   \texttt{metrics}, \texttt{paper}, \texttt{\_clients}. \\
+\hline
+\texttt{models/} & \texttt{ar}, \texttt{mlr}, \texttt{arima},
+   \texttt{advanced} (SARIMA/ETS/GARCH/SARIMAX), \texttt{ml} (GBR),
+   \texttt{ensemble}. \\
+\hline
+\texttt{services/} & \texttt{signal\_engine}, \texttt{trade\_planner},
+   \texttt{risk}, \texttt{watchlist}, \texttt{alerts}, \texttt{journal},
+   \texttt{achievements}, \texttt{backtest}, \texttt{optimizer},
+   \texttt{monte\_carlo}, \texttt{capm}, \texttt{pca},
+   \texttt{cointegration}, \texttt{warmup}. \\
+\hline
+\texttt{charts/} & \texttt{base}, \texttt{comparison}, \texttt{technicals},
+   \texttt{arima\_diag}, \texttt{ichimoku}, \texttt{portfolio},
+   \texttt{price} (Plotly). \\
+\hline
+\texttt{auth/} & \texttt{passwords} (PBKDF2-HMAC-SHA256 200k vòng),
+   \texttt{store} (JSON DB), \texttt{session}. \\
+\hline
+\texttt{ui/} & \texttt{topbar}, \texttt{css}, \texttt{js},
+   \texttt{logo}, \texttt{components}, \texttt{icons} (25+ SVG). \\
+\hline
+\texttt{core/} & \texttt{config}, \texttt{themes}, \texttt{i18n},
+   \texttt{constants}, \texttt{preload}, \texttt{references} (38 APA),
+   \texttt{validate}, \texttt{cache}, \texttt{executors}. \\
+\hline
+\texttt{user\_data/} & Dữ liệu cá nhân hoá: \texttt{users.json},
+   \texttt{paper/\{uid\}.json}, \texttt{watchlist/\{uid\}.json},
+   \texttt{alerts/\{uid\}.json}, \texttt{journal/\{uid\}.json}. \\
+\hline
+\texttt{static/} & Logo, favicon FinScope. \\
+\hline
+\texttt{picture/} & Logo TDT và ảnh minh hoạ. \\
+\hline
+\texttt{requirements.txt} & Danh sách thư viện Python cần cài. \\
+\hline
+\end{tabularx}}
+
+\section{Luồng xử lý điển hình}
+
+\indent Khi người dùng mở ứng dụng và chọn một mã cổ phiếu:
+
+\begin{enumerate}[leftmargin=22pt,topsep=2pt,itemsep=3pt]
+  \item \texttt{app.py} kiểm tra trạng thái đăng nhập; nếu chưa, hiển
+   thị trang bìa kèm form đăng nhập / đăng ký / khách.
+  \item Sau khi vào ứng dụng, \texttt{ui.topbar} dựng thanh điều hướng
+   ngang gồm 14 trang chức năng + bộ lọc Ngành / Mã / Khoảng thời gian.
+  \item Tầng dữ liệu \texttt{data.fetcher.fetch\_data(ticker)} gọi
+   \texttt{vnstock} thông qua singleton client (cache đĩa, throttle 3{,}4s
+   để dưới mức 20 yêu cầu / phút mà \texttt{vnstock} cho phép).
+  \item \texttt{app.py} huấn luyện song song 8 mô hình thông qua
+   \texttt{ThreadPoolExecutor} singleton; mỗi mô hình có cache đĩa 24
+   giờ nên các lần truy cập sau chỉ tốn dưới 1 giây.
+  \item Trang đích nhận đối tượng dữ liệu + kết quả mô hình + tham số
+   theme và render giao diện qua Plotly + Streamlit.
+\end{enumerate}
+
+% =====================================================================
+%  CHƯƠNG 4 — CƠ SỞ KHOA HỌC
+% =====================================================================
+\chapter{Cơ sở khoa học}
+
+\section{Bảng ký hiệu}
+
+\indent Để tiện theo dõi các công thức trong chương này, nhóm liệt kê
+trước các ký hiệu được sử dụng xuyên suốt trong các mô hình thống kê,
+tài chính và toán học mà sản phẩm triển khai.
+
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{4pt}
+{\small
+\begin{longtable}{|>{\raggedright\arraybackslash}p{3.3cm}|>{\raggedright\arraybackslash}p{11.5cm}|}
+\hline
+\textbf{Ký hiệu} & \textbf{Ý nghĩa} \\
+\hline\endfirsthead
+\hline
+\textbf{Ký hiệu} & \textbf{Ý nghĩa (tiếp)} \\
+\hline\endhead
+\hline\endfoot
+$y_t,\; C_t$ & Giá đóng cửa của mã cổ phiếu tại phiên $t$ (đơn vị: nghìn đồng). \\
+\hline
+$H_t,\; L_t,\; O_t$ & Giá cao nhất / thấp nhất / mở cửa tại phiên $t$. \\
+\hline
+$V_t$ & Khối lượng giao dịch (số cổ phiếu khớp lệnh) tại phiên $t$. \\
+\hline
+$R_t,\; r_t$ & Lợi suất theo ngày, $R_t = \log(C_t/C_{t-1})$ hoặc $r_t = C_t/C_{t-1}-1$. \\
+\hline
+$\varepsilon_t$ & Sai số ngẫu nhiên (white noise) tại phiên $t$, $\varepsilon_t \sim N(0,\sigma^2)$. \\
+\hline
+$\phi_i,\; \theta_j$ & Hệ số AR bậc $i$ và MA bậc $j$ trong họ Box--Jenkins. \\
+\hline
+$\beta_i,\; \beta_0$ & Hệ số hồi quy của biến độc lập thứ $i$ và hằng số. \\
+\hline
+$p,\; q,\; d$ & Bậc AR, bậc MA, số lần sai phân trong ARIMA. \\
+\hline
+$(P,D,Q)_s$ & Bậc SARIMA mùa vụ với chu kỳ $s = 5$ phiên (1 tuần HOSE). \\
+\hline
+$\alpha,\;\beta,\;\gamma$ & Tham số làm mượt level / trend / seasonal trong Holt--Winters. \\
+\hline
+$\sigma_t^2$ & Phương sai có điều kiện tại $t$ trong mô hình GARCH. \\
+\hline
+$\omega,\;\alpha,\;\beta$ & Tham số GARCH(1,1): hằng số, ARCH, GARCH (yêu cầu $\alpha+\beta<1$). \\
+\hline
+$\mathbf{w}$ & Vector trọng số danh mục, $\mathbf{w} \in \mathbb{R}^n,\; \mathbf{w}^{\!\top}\mathbf{1}=1$. \\
+\hline
+$\boldsymbol{\mu}$ & Vector lợi suất kỳ vọng hoá năm của $n$ tài sản trong rổ. \\
+\hline
+$\boldsymbol{\Sigma}$ & Ma trận hiệp phương sai lợi suất hoá năm, kích thước $n\times n$. \\
+\hline
+$R_f,\; r_f$ & Lãi suất phi rủi ro hoá năm (mặc định 4{,}7\% lãi gửi 12 tháng SBV). \\
+\hline
+$R_m,\; R_M$ & Lợi suất chỉ số thị trường (VN-Index trong sản phẩm). \\
+\hline
+$\beta_i^{\text{CAPM}}$ & Hệ số nhạy cảm thị trường của mã $i$, tính bằng $\mathrm{Cov}(R_i,R_m)$ chia cho $\mathrm{Var}(R_m)$. \\
+\hline
+$\alpha_i^{\text{CAPM}}$ & Lợi suất vượt CAPM (Jensen alpha) của mã $i$. \\
+\hline
+$\mathbf{V},\; \boldsymbol{\Lambda}$ & Ma trận vector riêng và ma trận đường chéo giá trị riêng trong PCA. \\
+\hline
+$u_t$ & Phần dư hồi quy (residual) trong Engle--Granger 2 bước. \\
+\hline
+$\rho$ & Hệ số trong test ADF: $\Delta u_t = \rho u_{t-1} + \varepsilon_t$. \\
+\hline
+$f^{\star}$ & Tỉ lệ Kelly tối ưu (full Kelly), $f^{\star} = W - (1-W)/b$. \\
+\hline
+$W,\; b$ & Win-rate và payoff ratio $b = \text{avg win}/|\text{avg loss}|$. \\
+\hline
+$g^{\star}$ & Tốc độ tăng trưởng kỳ vọng log-vốn (expected log-growth). \\
+\hline
+$\text{VaR}_\alpha,\; \text{CVaR}_\alpha$ & Value-at-Risk và Conditional VaR ở mức tin cậy $1-\alpha$. \\
+\hline
+$S_t,\; S_T$ & Giá tài sản tại $t$ và tại thời điểm cuối horizon trong Monte Carlo. \\
+\hline
+$W_t$ & Brownian motion chuẩn trong mô hình Geometric Brownian Motion. \\
+\hline
+MAPE, RMSE, MAE & Sai số dự báo trung bình tuyệt đối \%, căn bậc 2 sai số bình phương, sai số tuyệt đối. \\
+\hline
+$L(\cdot)$ & Hàm tổn thất (loss function), thường lấy $L(e) = e^2$ trong DM. \\
+\hline
+$\bar{d},\; \hat{V}(\bar{d})$ & Trung bình mẫu và ước lượng phương sai của chuỗi chênh tổn thất $d_t = L(e_{1,t}) - L(e_{2,t})$ trong kiểm định DM. \\
+\hline
+\end{longtable}}
+
+\section{Tám mô hình dự báo}
+
+\indent FinScope triển khai song song tám mô hình thống kê -- học máy
+khác biệt về giả định và phạm vi áp dụng. Mỗi mô hình được trình bày
+theo cùng một khuôn mẫu gồm bốn mục: \emph{ý tưởng -- công thức -- diễn
+giải tham số -- tài liệu tham khảo}. Toàn bộ tám mô hình huấn luyện trên
+cùng một tập dữ liệu (lịch sử đóng cửa hiệu chỉnh) và đánh giá bằng
+cùng một bộ chỉ số (MAPE, RMSE, MAE, $R^2$).
+
+\subsection{Mô hình tự hồi quy AR($p$) -- Autoregressive}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} giá trị hiện tại được giải thích bởi $p$ giá
+        trị quá khứ kề nhau (mô hình tự hồi quy bậc $p$).
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          y_t \;=\; c \;+\; \sum_{i=1}^{p}\phi_i\, y_{t-i} \;+\; \varepsilon_t,
+          \qquad \varepsilon_t \sim \mathcal{N}(0,\sigma^2).
+          \label{eq:ar}
+        \end{equation}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $y_t$: giá trị (giá đóng cửa hoặc lợi suất logarit) tại phiên $t$.
+          \item $c$: hằng số chặn (intercept), ước lượng cùng với hệ số tự hồi quy.
+          \item $\phi_i$: hệ số tự hồi quy bậc $i$, $i = 1,\dots,p$.
+          \item $\varepsilon_t$: nhiễu trắng, kỳ vọng bằng 0, phương sai $\sigma^2$.
+          \item $p$: bậc tự hồi quy, chọn theo Tiêu chuẩn Thông tin
+                Akaike (AIC) \citep{Akaike1974} hoặc hàm tự tương quan
+                riêng phần (PACF).
+        \end{itemize}
+  \item \textbf{Điều kiện và ước lượng:} chuỗi dừng yếu khi mọi nghiệm
+        của $1 - \sum_{i=1}^{p}\phi_i z^i = 0$ nằm ngoài đường tròn
+        đơn vị; ước lượng bằng phương pháp bình phương cực tiểu thông
+        thường (OLS) hoặc phương trình Yule--Walker.
+  \item \textbf{Tài liệu tham khảo:} \citet{BoxJenkins1970}, \citet{Akaike1974}.
+\end{itemize}
+
+\subsection{Hồi quy tuyến tính bội MLR -- Multiple Linear Regression}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} mô hình hoá biến mục tiêu bằng tổ hợp tuyến
+        tính của $k$ biến ngoại sinh trễ (lợi suất logarit, biên độ
+        biến động, khối lượng), $k = 3p$.
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          y_t \;=\; \beta_0 \;+\; \sum_{j=1}^{k}\beta_j\, x_{j,t}
+          \;+\; \varepsilon_t.
+          \label{eq:mlr}
+        \end{equation}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $y_t$: biến phụ thuộc (giá hoặc lợi suất).
+          \item $\beta_0$: hệ số chặn (intercept).
+          \item $\beta_j$: hệ số hồi quy của biến độc lập thứ $j$.
+          \item $x_{j,t}$: biến ngoại sinh thứ $j$ tại phiên $t$.
+          \item $\varepsilon_t$: sai số ngẫu nhiên, giả định phân phối
+                chuẩn $N(0,\sigma^2)$ độc lập đồng phân phối.
+        \end{itemize}
+  \item \textbf{Tính chất:} ước lượng bình phương cực tiểu thông thường
+        (OLS) đạt tính chất ước lượng tuyến tính không chệch tốt nhất
+        (BLUE -- Best Linear Unbiased Estimator) theo định lý
+        Gauss--Markov khi các giả định tuyến tính, đồng nhất phương sai
+        và độc lập được đáp ứng.
+  \item \textbf{Tài liệu tham khảo:} \citet{Greene2018}.
+\end{itemize}
+
+\subsection{Mô hình tự hồi quy tích hợp trung bình trượt ARIMA($p,d,q$) -- Autoregressive Integrated Moving Average}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} kết hợp thành phần tự hồi quy bậc $p$, sai
+        phân bậc $d$ và trung bình trượt bậc $q$ để xử lý chuỗi không
+        dừng.
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          \Phi(L)\,(1-L)^{d}\, y_t \;=\; \Theta(L)\,\varepsilon_t.
+          \label{eq:arima}
+        \end{equation}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $L$: toán tử trễ (lag operator), $L\,y_t = y_{t-1}$.
+          \item $\Phi(L) = 1 - \phi_1 L - \cdots - \phi_p L^p$: đa thức
+                tự hồi quy (AR) bậc $p$.
+          \item $\Theta(L) = 1 + \theta_1 L + \cdots + \theta_q L^q$: đa
+                thức trung bình trượt (MA -- Moving Average) bậc $q$.
+          \item $(1-L)^d$: toán tử sai phân bậc $d$, biến chuỗi không
+                dừng thành dừng.
+          \item $\varepsilon_t$: nhiễu trắng.
+        \end{itemize}
+  \item \textbf{Ước lượng:} cực đại hợp lý (MLE -- Maximum Likelihood
+        Estimation); bậc $(p,d,q)$ chọn theo Tiêu chuẩn Thông tin Akaike
+        (AIC) hoặc Tiêu chuẩn Thông tin Bayes (BIC).
+  \item \textbf{Tài liệu tham khảo:} \citet{BoxJenkinsReinsel2008}.
+\end{itemize}
+
+\subsection{Mô hình ARIMA mùa vụ SARIMA($p,d,q$)($P,D,Q$)$_s$ -- Seasonal ARIMA}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} mở rộng Mô hình Tự hồi quy Tích hợp Trung
+        bình trượt (ARIMA) với thành phần mùa vụ chu kỳ $s$ phiên.
+        FinScope dùng $s = 5$ ứng với tuần giao dịch trên Sở Giao dịch
+        Chứng khoán Thành phố Hồ Chí Minh (HOSE).
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          \Phi(L)\Phi_s(L^s)\,(1-L)^d(1-L^s)^D\, y_t
+          \;=\; \Theta(L)\Theta_s(L^s)\,\varepsilon_t.
+          \label{eq:sarima}
+        \end{equation}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $\Phi(L),\,\Theta(L)$: đa thức tự hồi quy (AR) và trung
+                bình trượt (MA) không mùa vụ.
+          \item $\Phi_s(L^s),\,\Theta_s(L^s)$: đa thức tự hồi quy (AR)
+                và trung bình trượt (MA) mùa vụ theo bước nhảy $s$.
+          \item $(1-L^s)^D$: toán tử sai phân mùa vụ bậc $D$.
+          \item $(P, D, Q)$: bậc tự hồi quy, sai phân và trung bình
+                trượt mùa vụ.
+          \item $s$: độ dài chu kỳ mùa vụ, $s = 5$ trong FinScope.
+        \end{itemize}
+  \item \textbf{Tài liệu tham khảo:} \citet{BoxJenkinsReinsel2008}.
+\end{itemize}
+
+\subsection{Mô hình làm mượt mũ Holt--Winters ETS -- Exponential Smoothing}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} phân rã chuỗi thời gian thành ba thành phần
+        \emph{mức (level)}, \emph{xu thế (trend)} và \emph{mùa vụ
+        (seasonal)}; mỗi thành phần làm mượt theo cấp số nhân.
+  \item \textbf{Công thức gốc (mô hình cộng):}
+        \begin{align}
+          \ell_t &= \alpha (y_t - s_{t-m}) + (1-\alpha)(\ell_{t-1} + b_{t-1}),\\
+          b_t    &= \beta (\ell_t - \ell_{t-1}) + (1-\beta) b_{t-1},
+                   \label{eq:ets}\\
+          s_t    &= \gamma (y_t - \ell_{t-1} - b_{t-1}) + (1-\gamma) s_{t-m}.
+        \end{align}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $\ell_t$: thành phần mức (level), giá trị trung bình hiện tại.
+          \item $b_t$: thành phần xu thế (trend), độ dốc tăng/giảm.
+          \item $s_t$: thành phần mùa vụ (seasonal) chu kỳ $m$.
+          \item $\alpha,\beta,\gamma \in [0,1]$: ba tham số làm mượt,
+                ước lượng cực tiểu Tổng bình phương sai số (SSE -- Sum
+                of Squared Errors) trên tập huấn luyện.
+          \item $m$: độ dài chu kỳ mùa vụ.
+        \end{itemize}
+  \item \textbf{Tài liệu tham khảo:} \citet{Holt1957}, \citet{Winters1960};
+        tổng hợp hiện đại: \citet{HyndmanAthanasopoulos2021}.
+\end{itemize}
+
+\subsection{Mô hình phương sai có điều kiện tổng quát GARCH(1,1) -- Generalized Autoregressive Conditional Heteroskedasticity}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} mô hình hoá \emph{phương sai có điều kiện}
+        của lợi suất logarit, nắm bắt hiện tượng cụm biến động
+        (volatility clustering).
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          \sigma_t^2 \;=\; \omega \;+\; \alpha\,\varepsilon_{t-1}^{2}
+                                  \;+\; \beta\,\sigma_{t-1}^{2}.
+          \label{eq:garch}
+        \end{equation}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $\sigma_t^2$: phương sai có điều kiện tại phiên $t$.
+          \item $\omega > 0$: hằng số đảm bảo phương sai dương ngặt.
+          \item $\alpha \ge 0$: hệ số tự hồi quy có điều kiện
+                (ARCH -- Autoregressive Conditional Heteroskedasticity),
+                đo phản ứng theo cú sốc gần nhất.
+          \item $\beta \ge 0$: hệ số tổng quát hoá (GARCH), đo tính
+                dai dẳng của biến động.
+          \item Điều kiện dừng: $\alpha + \beta < 1$.
+          \item $\varepsilon_{t-1}^{2}$: bình phương sai số phiên trước.
+        \end{itemize}
+  \item \textbf{Tài liệu tham khảo:} \citet{Bollerslev1986}, mở rộng từ
+        mô hình ARCH của \citet{Engle1982}.
+\end{itemize}
+
+\subsection{Mô hình SARIMAX -- SARIMA with Exogenous Regressors}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} mở rộng mô hình SARIMA cho biến ngoại sinh
+        $\mathbf{x}_t$; trong FinScope là khối lượng (Volume) và biên
+        độ trong ngày (Range).
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          \Phi(L)\Phi_s(L^s)\,(1-L)^d(1-L^s)^D\bigl(y_t -
+          \boldsymbol{\beta}^{\!\top}\mathbf{x}_t\bigr)
+          \;=\; \Theta(L)\Theta_s(L^s)\,\varepsilon_t.
+          \label{eq:sarimax}
+        \end{equation}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $\mathbf{x}_t$: vec-tơ biến ngoại sinh tại phiên $t$.
+          \item $\boldsymbol{\beta}$: vec-tơ hệ số hồi quy cho biến
+                ngoại sinh.
+          \item Các thành phần còn lại giữ nguyên ý nghĩa của Mô hình
+                SARIMA (xem mục 4.2.4).
+        \end{itemize}
+  \item \textbf{Cài đặt:} biểu diễn không gian trạng thái (state-space
+        representation) theo \citet{Hyndman2008state}.
+  \item \textbf{Tài liệu tham khảo:} \citet{BoxJenkinsReinsel2008},
+        \citet{Hyndman2008state}.
+\end{itemize}
+
+\subsection{Hồi quy tăng cường gradient GBR -- Gradient Boosting Regression}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} mô hình tổ hợp (ensemble) cộng dồn các cây hồi
+        quy yếu; mỗi cây được học để khớp với gradient âm của hàm mất
+        mát từ bộ tổ hợp trước -- nguyên lý tăng cường (boosting) của
+        Friedman.
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          F_M(\mathbf{x}) \;=\; F_0(\mathbf{x}) \;+\;
+          \sum_{m=1}^{M} \nu\, h_m(\mathbf{x}),
+          \qquad
+          h_m \;=\; \arg\min_{h}\sum_{i=1}^{n}
+                    \bigl[\,r_{i,m} - h(\mathbf{x}_i)\,\bigr]^2.
+          \label{eq:gbr}
+        \end{equation}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $F_M(\mathbf{x})$: dự báo cuối cùng sau $M$ vòng tăng cường (boosting).
+          \item $F_0(\mathbf{x})$: giá trị khởi tạo, thường là trung bình mẫu.
+          \item $h_m(\mathbf{x})$: cây hồi quy yếu thứ $m$.
+          \item $r_{i,m} = -\partial L(y_i,F_{m-1}(\mathbf{x}_i))/\partial F_{m-1}$:
+                gradient âm, còn gọi là phần dư giả (pseudo-residual).
+          \item $\nu \in (0,1]$: tốc độ học (learning rate), co rút
+                ảnh hưởng của mỗi cây.
+          \item $M$: số vòng tăng cường (boosting iterations).
+        \end{itemize}
+  \item \textbf{Tài liệu tham khảo:} \citet{Friedman2001}.
+\end{itemize}
+
+\subsection{Bộ gộp FinScope Ensemble}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} gộp tám dự báo bằng \emph{trọng số nghịch đảo
+        sai số}; mô hình chính xác hơn nhận trọng số lớn hơn.
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          \hat{y}_t^{\,\text{ens}} \;=\; \sum_{i=1}^{8} w_i\,\hat{y}_t^{(i)},
+          \qquad
+          w_i \;=\; \dfrac{1/(\text{MAPE}_i + 0{,}1)}
+                          {\sum_{j=1}^{8} 1/(\text{MAPE}_j + 0{,}1)}.
+          \label{eq:ensemble}
+        \end{equation}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $\hat{y}_t^{(i)}$: dự báo của mô hình thứ $i$ tại phiên $t$.
+          \item $w_i$: trọng số gộp, tổng các $w_i$ bằng 1.
+          \item $\text{MAPE}_i$: Sai số Phần trăm Tuyệt đối Trung bình
+                (Mean Absolute Percentage Error) của mô hình $i$ trên
+                tập kiểm thử.
+          \item $0{,}1$: hằng số làm trơn, chống chia cho 0 khi MAPE quá nhỏ.
+        \end{itemize}
+  \item \textbf{Cơ sở lý thuyết:} \citet{StockWatson2004} chứng minh
+        thực nghiệm phương pháp gộp thường vượt mô hình tốt nhất riêng
+        lẻ; nền tảng lý thuyết kinh điển: \citet{BatesGranger1969}.
+\end{itemize}
+
+\section{Kiểm định Diebold--Mariano (DM, 1995)}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} so sánh khách quan độ chính xác giữa hai mô
+        hình dự báo dựa trên thống kê tiệm cận phân phối chuẩn của
+        trung bình chênh tổn thất.
+  \item \textbf{Công thức gốc} (hiệu chỉnh mẫu nhỏ
+        Harvey--Leybourne--Newbold, HLN 1997):
+        \begin{equation}
+          \text{DM} = \frac{\bar{d}}{\sqrt{\hat{V}(\bar{d})/n}} \;\to\; N(0,1),
+          \qquad d_t = L(e_{1,t}) - L(e_{2,t}).
+          \label{eq:dm}
+        \end{equation}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $e_{1,t},\,e_{2,t}$: sai số dự báo của mô hình 1 và 2
+                tại phiên $t$.
+          \item $L(\cdot)$: hàm tổn thất (loss function), thường lấy
+                $L(e) = e^2$ (bình phương).
+          \item $d_t$: chênh lệch tổn thất giữa hai mô hình tại phiên $t$.
+          \item $\bar{d}$: trung bình mẫu của $d_t$.
+          \item $\hat{V}(\bar{d})$: ước lượng phương sai dài hạn (long-run
+                variance) của $\bar{d}$, có hiệu chỉnh tự tương quan.
+          \item $n$: số quan sát kiểm thử.
+          \item $N(0,1)$: phân phối tiệm cận chuẩn hoá; bác bỏ giả thuyết
+                hai mô hình tương đương khi $|\mathrm{DM}|$ lớn.
+        \end{itemize}
+  \item \textbf{Ứng dụng:} áp dụng cho mọi cặp $(i, j)$ trong 8 mô hình
+        và đối chứng với Bước đi ngẫu nhiên (Random Walk), in ra ma trận
+        giá trị $p$ một cách trực quan.
+  \item \textbf{Tài liệu tham khảo:} \citet{DieboldMariano1995},
+        \citet{HarveyLeybourneNewbold1997}.
+\end{itemize}
+
+\section{Phân tích Ichimoku Kinko Hyo (Hosoda 1969)}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} hệ thống biểu đồ ``một cái nhìn cân bằng''
+        gồm năm thành phần đo trên cửa sổ 9, 26 và 52 phiên giúp xác
+        định xu hướng, hỗ trợ và kháng cự đồng thời.
+  \item \textbf{Công thức gốc:}
+        \begin{align}
+          \text{Tenkan-sen} &= \tfrac{1}{2}\!\left(\max_{9}H + \min_{9}L\right),\\
+          \text{Kijun-sen}  &= \tfrac{1}{2}\!\left(\max_{26}H + \min_{26}L\right),
+                              \label{eq:ichimoku}\\
+          \text{Senkou A}_t &= \tfrac{1}{2}\!\left(\text{Tenkan}_t + \text{Kijun}_t\right) \;\text{(đẩy +26)},\\
+          \text{Senkou B}_t &= \tfrac{1}{2}\!\left(\max_{52}H + \min_{52}L\right) \;\text{(đẩy +26)},\\
+          \text{Chikou}_t   &= C_t \;\text{(đẩy }-26).
+        \end{align}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item Tenkan-sen (đường chuyển đổi): trung bình cao--thấp 9 phiên.
+          \item Kijun-sen (đường cơ sở): trung bình cao--thấp 26 phiên.
+          \item Senkou Span A và B: tạo ``mây'' (Kumo) chiếu trước 26 phiên.
+          \item Chikou Span (đường trễ): giá đóng cửa lùi về 26 phiên.
+          \item $H_t, L_t, C_t$: giá cao nhất, thấp nhất, đóng cửa tại phiên $t$.
+        \end{itemize}
+  \item \textbf{Phân tầng tín hiệu:} sản phẩm chia tín hiệu thành bốn
+        tầng -- vị trí so với mây, giao cắt Tenkan--Kijun (TK cross),
+        xác nhận của Chikou và mây tương lai. Toàn bộ tuân thủ nguyên
+        tắc \emph{anti-leak}: tại thời điểm $t$ chỉ dùng dữ liệu có sẵn
+        đến $t$.
+  \item \textbf{Tài liệu tham khảo:} \citet{Hosoda1969}.
+\end{itemize}
+
+\section{Lý thuyết danh mục Markowitz (1952)}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} chọn vec-tơ trọng số $\mathbf{w}$ cho danh mục
+        chỉ mua (long-only) để cực tiểu rủi ro với một mức lợi suất kỳ
+        vọng cho trước, hình thành biên hiệu quả (efficient frontier).
+  \item \textbf{Công thức gốc (bài toán quy hoạch toàn phương):}
+        \begin{equation}
+          \min_{\mathbf{w}}\;\mathbf{w}^{\!\top}\boldsymbol{\Sigma}\mathbf{w}
+          \quad\text{s.t.}\quad
+          \mathbf{w}^{\!\top}\boldsymbol{\mu} = R_{\text{target}},\;\;
+          \mathbf{w}^{\!\top}\mathbf{1} = 1,\;\;
+          \mathbf{w}\ge\mathbf{0}.
+          \label{eq:markowitz}
+        \end{equation}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $\mathbf{w} \in \mathbb{R}^n$: vec-tơ trọng số $n$ tài sản.
+          \item $\boldsymbol{\Sigma}$: ma trận hiệp phương sai lợi suất
+                hoá năm, kích thước $n\times n$.
+          \item $\boldsymbol{\mu}$: vec-tơ lợi suất kỳ vọng hoá năm.
+          \item $R_{\text{target}}$: mức lợi suất kỳ vọng mục tiêu.
+          \item $\mathbf{w}^{\!\top}\mathbf{1} = 1$: ràng buộc tổng trọng số.
+          \item $\mathbf{w}\ge\mathbf{0}$: ràng buộc chỉ mua (long-only).
+        \end{itemize}
+  \item \textbf{Ba danh mục đặc biệt và nghiệm đóng:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item Equal-Weight: $w_i = 1/n$ (chuẩn so sánh -- benchmark).
+          \item Minimum-Variance:
+                $\mathbf{w}^{\star}_{\text{MV}} \propto \boldsymbol{\Sigma}^{-1}\mathbf{1}$.
+          \item Tangency (Max Sharpe):
+                $\mathbf{w}^{\star}_{\text{tan}} \propto
+                 \boldsymbol{\Sigma}^{-1}(\boldsymbol{\mu} - r_f\mathbf{1})$.
+        \end{itemize}
+  \item \textbf{Cài đặt biên hiệu quả:} hạ gradient có chiếu (projected
+        gradient descent) thuần \texttt{numpy}, kết hợp chiếu lên đơn
+        hình (simplex) theo \citet{WangCarreira2013}.
+  \item \textbf{Tài liệu tham khảo:} \citet{Markowitz1952},
+        \citet{WangCarreira2013}.
+\end{itemize}
+
+\section{Mô hình CAPM -- Capital Asset Pricing Model (Sharpe 1964, Lintner 1965)}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} lợi suất kỳ vọng vượt phi rủi ro của một mã
+        tỉ lệ với phần bù rủi ro thị trường, hệ số tỉ lệ chính là beta.
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          E[R_i] - r_f \;=\; \beta_i \bigl(E[R_m] - r_f\bigr),
+          \qquad
+          \beta_i \;=\; \frac{\mathrm{Cov}(R_i, R_m)}{\mathrm{Var}(R_m)}.
+          \label{eq:capm}
+        \end{equation}
+  \item \textbf{Hệ số alpha Jensen} (Jensen 1968) đo lợi suất vượt CAPM:
+        \begin{equation}
+          \alpha_i \;=\; E[R_i] - r_f - \beta_i \bigl(E[R_m] - r_f\bigr).
+          \label{eq:jensen}
+        \end{equation}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $E[R_i]$: lợi suất kỳ vọng của mã $i$.
+          \item $E[R_m]$: lợi suất kỳ vọng của chỉ số thị trường (FinScope
+                dùng VN-Index).
+          \item $r_f$: lãi suất phi rủi ro (mặc định 4,7\%/năm theo lãi
+                gửi 12 tháng Ngân hàng Nhà nước Việt Nam -- SBV).
+          \item $\beta_i$: hệ số nhạy cảm thị trường của mã $i$.
+          \item $\mathrm{Cov}(R_i, R_m)$: hiệp phương sai lợi suất.
+          \item $\mathrm{Var}(R_m)$: phương sai lợi suất thị trường.
+          \item $\alpha_i$: lợi suất vượt CAPM của mã $i$; $\alpha_i > 0$
+                được coi là vượt trội thị trường (outperform) sau hiệu
+                chỉnh rủi ro.
+        \end{itemize}
+  \item \textbf{Cài đặt:} hồi quy bình phương cực tiểu thông thường
+        (OLS) lợi suất từng mã trên lợi suất VN-Index; tính giá trị
+        $p$ hai phía qua hàm sống sót của phân phối $t$ Student
+        (\texttt{scipy.stats.t.sf}) để giữ độ chính xác khi $|t|$ lớn.
+  \item \textbf{Tài liệu tham khảo:} \citet{Sharpe1964}, \citet{Lintner1965}.
+\end{itemize}
+
+\section{Phân tích thành phần chính PCA -- Principal Component Analysis (Hotelling 1933)}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} chiếu dữ liệu lợi suất nhiều chiều xuống các
+        trục mới (thành phần chính) sao cho phương sai giải thích lớn
+        nhất, giúp nhận diện yếu tố ẩn (thị trường, ngành, quy mô).
+  \item \textbf{Công thức gốc} (phân rã trị riêng):
+        \begin{equation}
+          \boldsymbol{\Sigma} \;=\; \mathbf{V}\boldsymbol{\Lambda}\mathbf{V}^{\!\top},
+          \qquad
+          \text{phương sai giải thích}_i \;=\;
+          \dfrac{\lambda_i}{\sum_{j=1}^{n}\lambda_j}.
+          \label{eq:pca}
+        \end{equation}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $\boldsymbol{\Sigma}$: ma trận tương quan (hoặc hiệp phương
+                sai) lợi suất danh mục.
+          \item $\mathbf{V}$: ma trận vec-tơ riêng, mỗi cột là một thành
+                phần chính (Principal Component -- PC).
+          \item $\boldsymbol{\Lambda}$: ma trận đường chéo trị riêng
+                $\lambda_1 \ge \lambda_2 \ge \cdots \ge \lambda_n$.
+          \item $\lambda_i$: phương sai dọc theo thành phần chính thứ $i$.
+        \end{itemize}
+  \item \textbf{Diễn giải tài chính:} thành phần chính thứ nhất (PC1)
+        thường là yếu tố thị trường (market factor); PC2 và PC3 có thể
+        là yếu tố ngành (sector), quy mô (size) hoặc đà giá (momentum).
+        Sản phẩm hiển thị biểu đồ độ dốc (scree plot) và biểu đồ kép
+        (biplot) PC1 và PC2.
+  \item \textbf{Tài liệu tham khảo:} \citet{Hotelling1933}.
+\end{itemize}
+
+\section{Đồng tích hợp Engle--Granger (1987) -- Nobel 2003}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} hai chuỗi không dừng vẫn có thể có tổ hợp
+        tuyến tính dừng -- gọi là đồng tích hợp; chênh giá hai mã đồng
+        tích hợp có tính phục hồi trung bình (mean-reverting) thích
+        hợp giao dịch cặp (pairs trading).
+  \item \textbf{Công thức gốc (kiểm định hai bước):}
+        \begin{align}
+          \text{Bước 1:}\;\;& Y_t \;=\; \alpha + \beta X_t + u_t
+                              \quad \text{(OLS).} \label{eq:eg1}\\
+          \text{Bước 2:}\;\;& \Delta u_t \;=\; \rho\, u_{t-1}
+                              + \sum_{i=1}^{p}\gamma_i \Delta u_{t-i}
+                              + \varepsilon_t,\;\; H_0:\,\rho = 0.
+                              \label{eq:eg2}
+        \end{align}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $X_t, Y_t$: hai chuỗi giá ban đầu (cùng đơn vị).
+          \item $\alpha, \beta$: hệ số chặn và hệ số đồng tích hợp.
+          \item $u_t$: phần dư hồi quy bước 1 (chênh chuỗi -- spread).
+          \item $\Delta u_t = u_t - u_{t-1}$: sai phân bậc một của $u_t$.
+          \item $\rho$: hệ số trong kiểm định Dickey--Fuller mở rộng
+                (ADF -- Augmented Dickey--Fuller).
+          \item $\gamma_i$: hệ số trễ trong ADF, $i = 1,\dots,p$.
+          \item $H_0:\;\rho = 0$: giả thuyết không, chuỗi $u_t$ có
+                nghiệm đơn vị (không dừng).
+        \end{itemize}
+  \item \textbf{Kết luận:} bác bỏ $H_0$ với $p < 0{,}05$ tương đương kết
+        luận hai chuỗi đồng tích hợp. Sản phẩm in bảng các cặp đồng
+        tích hợp tốt nhất kèm điểm chuẩn hoá ($z$-score) của spread
+        hiện tại trong dải $\pm 2\sigma$ để người dùng nhận diện cơ hội.
+  \item \textbf{Tài liệu tham khảo:} \citet{EngleGranger1987}.
+\end{itemize}
+
+\section{Mô phỏng Monte Carlo, công thức Itô và VaR/CVaR}
+
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=4pt]
+  \item \textbf{Ý tưởng:} mô phỏng vốn danh mục $N$ ngày tới bằng hai
+        phương pháp -- tái lấy mẫu lịch sử (bootstrap) và chuyển động
+        Brown hình học tham số (GBM -- Geometric Brownian Motion) --
+        rồi tính các phân vị, xác suất sinh lời và rủi ro đuôi VaR/CVaR.
+  \item \textbf{Công thức GBM với hiệu chỉnh Itô:}
+        \begin{equation}
+          d \log S_t \;=\; \Bigl(\mu - \tfrac{\sigma^2}{2}\Bigr) dt
+                          + \sigma\, dW_t.
+          \label{eq:gbm}
+        \end{equation}
+  \item \textbf{Diễn giải từng thành phần:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $S_t$: giá tài sản tại thời điểm $t$.
+          \item $\mu$: tốc độ tăng trưởng kỳ vọng (drift) hoá năm.
+          \item $\sigma$: độ biến động (volatility) hoá năm.
+          \item $\sigma^2/2$: hiệu chỉnh Itô, đảm bảo
+                $E[S_T] = S_0\, e^{\mu T}$ đúng theo lý thuyết trung
+                lập rủi ro (risk-neutral).
+          \item $W_t$: chuyển động Brown chuẩn (standard Brownian motion).
+        \end{itemize}
+  \item \textbf{Giá trị rủi ro (VaR) và giá trị rủi ro có điều kiện
+        (CVaR):}
+        \begin{equation}
+          \mathrm{VaR}_\alpha \;=\; -F_R^{-1}(\alpha),
+          \qquad
+          \mathrm{CVaR}_\alpha \;=\;
+          -\,E\!\left[R \;\big|\; R \le F_R^{-1}(\alpha)\right].
+          \label{eq:varcvar}
+        \end{equation}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $\alpha$: mức tin cậy đuôi (mặc định 5\%).
+          \item $R$: biến lợi suất ngẫu nhiên.
+          \item $F_R$: hàm phân phối tích luỹ (CDF) của $R$.
+          \item $F_R^{-1}(\alpha)$: phân vị $\alpha$ của $R$.
+          \item $\mathrm{VaR}_\alpha$: mức lỗ tối đa với độ tin cậy $1-\alpha$.
+          \item $\mathrm{CVaR}_\alpha$: mức lỗ kỳ vọng \emph{khi đã vượt} VaR.
+        \end{itemize}
+  \item \textbf{Tài liệu tham khảo:} \citet{Jorion2007},
+        \citet{RockafellarUryasev2000}.
+\end{itemize}
+
+\section{Quản trị rủi ro}
+
+\indent FinScope sử dụng năm chỉ số rủi ro chuẩn ngành, mỗi chỉ số
+trình bày theo cùng khuôn mẫu công thức kèm diễn giải.
+
+\subsection{Khoảng biến động trung bình (ATR -- Average True Range)}
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=3pt]
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          \mathrm{TR}_t = \max\!\bigl(H_t - L_t,\; |H_t - C_{t-1}|,\;
+                                       |L_t - C_{t-1}|\bigr),\quad
+          \mathrm{ATR}_t = \frac{(n-1)\,\mathrm{ATR}_{t-1} + \mathrm{TR}_t}{n}.
+          \label{eq:atr}
+        \end{equation}
+  \item \textbf{Diễn giải:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $H_t, L_t, C_t$: giá cao nhất, thấp nhất, đóng cửa tại phiên $t$.
+          \item $\mathrm{TR}_t$: khoảng biến động thực (True Range) tại phiên $t$.
+          \item $n$: cửa sổ tính trung bình (mặc định 14 phiên).
+        \end{itemize}
+  \item \textbf{Ứng dụng:} cắt lỗ theo bội số ATR (Wilder 1978).
+\end{itemize}
+
+\subsection{Tỉ số Sharpe (Sharpe ratio)}
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=3pt]
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          \mathrm{Sharpe} \;=\; \frac{E[R_p] - r_f}{\sigma_p} \cdot \sqrt{252}.
+          \label{eq:sharpe}
+        \end{equation}
+  \item \textbf{Diễn giải:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $E[R_p]$: lợi suất kỳ vọng hằng ngày của danh mục.
+          \item $\sigma_p$: độ lệch chuẩn lợi suất ngày (ước lượng không
+                thiên, $\mathrm{ddof} = 1$).
+          \item $r_f$: lãi suất phi rủi ro (mặc định 4,7\%/năm).
+          \item $\sqrt{252}$: hệ số chuẩn hoá năm (252 phiên giao dịch).
+        \end{itemize}
+  \item \textbf{Tài liệu tham khảo:} \citet{Sharpe1966}.
+\end{itemize}
+
+\subsection{Tỉ số Sortino (Sortino ratio)}
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=3pt]
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          \mathrm{Sortino} = \frac{E[R_p] - r_f}{\sigma_p^{-}}\cdot \sqrt{252},
+          \quad
+          \sigma_p^{-} = \sqrt{E\!\left[\min(R_p - r_f,\,0)^2\right]}.
+          \label{eq:sortino}
+        \end{equation}
+  \item \textbf{Diễn giải:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $\sigma_p^{-}$: độ lệch chuẩn lợi suất phía âm (downside
+                deviation), chỉ tính các quan sát thua so với $r_f$.
+          \item Phù hợp khi phân phối lợi suất bất đối xứng -- chỉ phạt
+                biến động bất lợi.
+        \end{itemize}
+  \item \textbf{Tài liệu tham khảo:} \citet{SortinoPrice1994}.
+\end{itemize}
+
+\subsection{Mức rớt sâu nhất (MDD -- Maximum Drawdown)}
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=3pt]
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          \mathrm{MDD} \;=\; \min_{t}\;
+          \frac{E_t - \max_{s \le t} E_s}{\max_{s \le t} E_s}.
+          \label{eq:mdd}
+        \end{equation}
+  \item \textbf{Diễn giải:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $E_t$: giá trị vốn (equity) tại phiên $t$.
+          \item $\max_{s \le t} E_s$: đỉnh vốn cao nhất từ đầu đến phiên $t$.
+          \item Giá trị MDD càng gần 0 càng an toàn (luôn $\le 0$).
+        \end{itemize}
+  \item \textbf{Tài liệu tham khảo:} \citet{MagdonIsmail2004}.
+\end{itemize}
+
+\subsection{Tiêu chí Kelly (Kelly criterion)}
+\begin{itemize}[leftmargin=18pt,topsep=2pt,itemsep=3pt]
+  \item \textbf{Công thức gốc:}
+        \begin{equation}
+          f^{\star} = W - \frac{1 - W}{b},\quad
+          b = \frac{\text{thắng trung bình}}{|\text{lỗ trung bình}|},\quad
+          g^{\star} = W \log(1 + f^{\star}b) + (1 - W)\log(1 - f^{\star}).
+          \label{eq:kelly}
+        \end{equation}
+  \item \textbf{Diễn giải:}
+        \begin{itemize}[leftmargin=14pt,topsep=2pt,itemsep=1pt]
+          \item $W$: tỉ lệ thắng (win-rate) trong lịch sử lệnh.
+          \item $b$: tỉ số kỳ vọng thắng trên lỗ (payoff ratio).
+          \item $f^{\star}$: tỉ lệ vốn tối ưu (full Kelly) mỗi lệnh.
+          \item $g^{\star}$: tốc độ tăng trưởng kỳ vọng log-vốn.
+          \item Sản phẩm dùng 1/2 Kelly và 1/4 Kelly để giảm phương sai
+                (Thorp 1969).
+        \end{itemize}
+  \item \textbf{Tài liệu tham khảo:} \citet{Kelly1956}, \citet{Thorp1969}.
+\end{itemize}
+
+% =====================================================================
+%  CHƯƠNG 5 — TÍNH NĂNG CHI TIẾT
+% =====================================================================
+\chapter{Tính năng chi tiết của 14 trang}
+
+\indent Mỗi trang dưới đây là một bộ công cụ độc lập, tích hợp với tầng
+dữ liệu và mô hình lõi thông qua bộ tham số chung (mã, khoảng thời gian,
+tỷ lệ huấn luyện).
+
+\section{Dashboard Tổng quan}
+
+\indent Trang chủ hiển thị giá đóng cửa hiện tại, các KPI biến động /
+khối lượng / tín hiệu Ichimoku, banner \emph{Dự báo Ensemble} kèm 3 thẻ
+TOP-3 mô hình tốt nhất theo MAPE (động, không cố định), thẻ tâm lý tin
+tức và AI Insight Ichimoku 4 tầng. Phần dưới gồm biểu đồ nến TradingView
+style (1D / 1W / 1M / 3M), bảng dự báo đa mô hình kèm bảng kết quả
+\emph{kiểm định Diebold--Mariano} đối chứng Random Walk.
+
+\section{Tổng quan Thị trường}
+
+\indent Snapshot 53 mã HOSE: bản đồ nhiệt theo \% thay đổi, tổng quan 31
+ngành (vốn hoá, GTGD trung bình), top movers (tăng / giảm mạnh nhất ngày),
+sparkline 5 phiên gần nhất cho từng mã.
+
+\section{Phân tích Cơ bản}
+
+\indent Báo cáo tài chính 4 quý gần nhất kèm 7 tỷ số tự tính (P/E, P/B,
+ROE, ROA, EPS, biên LN, D/E) áp dụng đúng cho DN thường và ngân hàng.
+Tab peer comparison so sánh với 6 mã đầu ngành.
+
+\section{Phân tích Chi tiết}
+
+\indent Chín tab tương ứng 8 mô hình + FinScope Ensemble. Mỗi tab có:
+phương trình toán, tham số đã chọn (AIC), chẩn đoán phần dư (ACF /
+PACF / Q--Q plot), fan chart khoảng tin cậy 80\% và 95\%.
+
+\section{Mô hình Nâng cao}
+
+\indent Khu vực chuyên cho các mô hình nâng cao (SARIMA / ETS / GARCH /
+SARIMAX / GBR + Ensemble) với hiển thị khoảng tin cậy chuyên sâu, AIC,
+BIC, Ljung--Box $p$-value.
+
+\section{Chiến lược Giao dịch}
+
+\indent 12 phiếu chỉ báo (MA50 / MA5-20 / MACD / RSI / Bollinger /
+Stochastic / ADX / OBV / Ichimoku consensus / mẫu nến / dự báo / tin
+tức) chấm điểm $-1, 0, +1$, tổng hợp thành tín hiệu MUA / BÁN / GIỮ.
+Hiển thị điểm vào, SL, TP theo ATR. Backtest nhanh chiến lược kỹ thuật
+\emph{đã trừ phí + thuế HOSE}.
+
+\section{Tin tức Thị trường}
+
+\indent Tổng hợp RSS từ CafeF, VnExpress, Vietstock. Sentiment phân tích
+bằng PhoBERT (warm trong nền) với fallback từ điển khi không có GPU.
+Nhận diện chủ đề + gom nhóm tin theo mã.
+
+\section{Tín hiệu \& Cảnh báo}
+
+\indent Alerts dashboard 11 chỉ báo (chuyên gia + tổng hợp đồng thuận),
+biểu đồ kỹ thuật tổng hợp + 4 tab nhóm (Xu hướng / Động lượng / Biến
+động / Khối lượng), phần \emph{cảnh báo giá cá nhân} per-user (above /
+below), Ichimoku 4 tầng chi tiết.
+
+\section{Lịch sử \& Dữ liệu}
+
+\indent Bảng giá đầy đủ 10+ năm với bộ lọc; xuất CSV; tóm tắt thống kê
+mô tả.
+
+\section{Danh mục Đầu tư}
+
+\indent So sánh 2--6 mã cùng lúc: bảng kết quả 4 mô hình, biểu đồ chuẩn
+hoá giá, bảng thống kê return hằng ngày. Tiếp đó là 4 phần \emph{lý
+thuyết toán}: (a) \textbf{Markowitz Mean-Variance} với 3 portfolio Equal
+/ Min-Var / Max-Sharpe + biên hiệu quả; (b) \textbf{CAPM} bảng $\beta /
+\alpha$ vs VN-Index + biểu đồ SML; (c) \textbf{PCA} scree + biplot PC1
+× PC2; (d) \textbf{Cointegration} bảng top cặp Engle--Granger + chart
+$z$-score spread.
+
+\section{Giao dịch Demo (Paper Trading)}
+
+\indent Bảy tab: \emph{Đề xuất chuyên gia} (signal engine 8 trụ +
+conviction $[-100, +100]$ + 3 phương án Thận trọng / Cân bằng / Tích
+cực); \emph{Đặt lệnh} (BUY / SELL với phí 0{,}15\% + thuế 0{,}10\%);
+\emph{Vị thế}; \emph{Lịch sử}; \emph{Nhật ký} (thesis + lesson + tag +
+rating); \emph{Backtest} (walk-forward signal engine với Sharpe, Sortino,
+Buy \& Hold, MDD); \emph{Thống kê \& Huy hiệu} (12 KPI + 14 achievement
+badges + Monte Carlo projection).
+
+\section{Cơ sở Toán học}
+
+\indent Trang \LaTeX{} showcase tất cả $\sim$25 công thức được sử dụng
+trong sản phẩm (mỗi block kèm trích dẫn APA 7th), chia 5 tab: Dự báo
+chuỗi thời gian, Phân tích kỹ thuật, Lý thuyết danh mục, Quản trị rủi ro,
+Kiểm định thống kê. Giúp ban giám khảo tra cứu nhanh không cần đọc code.
+
+\section{Hồ sơ cá nhân và Hướng dẫn sử dụng}
+
+\indent \emph{Hồ sơ cá nhân} gồm bốn tab: chỉnh thông tin (display
+name, email); đổi mật khẩu (xác minh mật khẩu cũ kèm cập nhật
+PBKDF2); xuất toàn bộ dữ liệu cá nhân ra ZIP (sổ Paper, watchlist,
+nhật ký, cảnh báo); xoá tài khoản (yêu cầu mật khẩu và xác nhận văn
+bản). \emph{Hướng dẫn sử dụng} mô tả từng trang, quy ước tham số, ý
+nghĩa các chỉ báo và mô hình kèm phần Câu hỏi thường gặp.
+
+% =====================================================================
+%  CHƯƠNG 6 — KẾT QUẢ ĐẠT ĐƯỢC, HẠN CHẾ VÀ HƯỚNG PHÁT TRIỂN
+% =====================================================================
+\chapter{Kết quả, hạn chế và hướng phát triển}
+
+\section{Kết quả đạt được}
+
+\begin{itemize}[leftmargin=22pt,topsep=2pt,itemsep=4pt]
+  \item Hoàn thiện \textbf{14 trang chức năng} hoạt động ổn định trên
+   cả light / dark theme và song ngữ VI / EN.
+  \item Triển khai \textbf{8 mô hình dự báo + Ensemble} với kiểm định
+   Diebold--Mariano khách quan.
+  \item Tích hợp \textbf{4 thuật toán toán -- tài chính cổ điển}
+   (Markowitz, CAPM, PCA, Engle--Granger) hiếm thấy trong sản phẩm
+   sinh viên.
+  \item \textbf{Engine tín hiệu 8 trụ cột} cho điểm tin cậy giải trình
+   được + 3 phương án giao dịch (Thận trọng / Cân bằng / Tích cực).
+  \item \textbf{Trang Cơ sở Toán học} chuyên dụng với 25 công thức
+   \LaTeX{} kèm 38 trích dẫn APA 7th.
+  \item Hệ thống \textbf{xác thực PBKDF2 200k vòng} + dữ liệu cá nhân
+   hoá (sổ Paper / watchlist / cảnh báo / nhật ký riêng).
+  \item Hiệu năng: tab switch warm $<1$ giây sau khi cache đã nóng;
+   tiered warmer 53 mã hoàn tất trong $\sim$3 phút.
+\end{itemize}
+
+\section{Hạn chế}
+
+\begin{itemize}[leftmargin=22pt,topsep=2pt,itemsep=4pt]
+  \item Phụ thuộc nguồn dữ liệu miễn phí \texttt{vnstock} với rate-limit
+   $\sim$20 yêu cầu / phút; thời điểm peak có thể bị giới hạn tạm thời.
+  \item Mô hình dự báo dựa trên dữ liệu cuối ngày; chưa hỗ trợ
+   intraday hay forex / phái sinh.
+  \item Sentiment AI dùng PhoBERT yêu cầu ${\sim}1$ GB RAM khi nạp; máy
+   cấu hình thấp sẽ tự rơi về fallback từ điển.
+  \item Backtest signal engine là walk-forward đơn giản, chưa tích hợp
+   slippage hay market impact.
+\end{itemize}
+
+\section{Hướng phát triển}
+
+\begin{itemize}[leftmargin=22pt,topsep=2pt,itemsep=4pt]
+  \item Bổ sung mô hình \textbf{LSTM} / \textbf{Transformer} cho dự báo
+   chuỗi thời gian học sâu.
+  \item Mở rộng sang \textbf{phái sinh} VN30F1M + Cover Warrant.
+  \item Tích hợp \textbf{API broker} (SSI iBoard, VNDIRECT) để giao
+   dịch thật (sau khi sản phẩm trưởng thành).
+  \item Bổ sung tab \textbf{Black--Litterman} mở rộng Markowitz với prior
+   quan điểm chủ quan.
+\end{itemize}
+
+% =====================================================================
+%  KẾT
+% =====================================================================
+% =====================================================================
+%  TÀI LIỆU THAM KHẢO
+% =====================================================================
+\clearpage
+\addcontentsline{toc}{chapter}{Tài liệu tham khảo}
+\renewcommand{\bibname}{Tài liệu tham khảo}
+
+\begin{thebibliography}{99}
+
+\bibitem[Akaike(1974)]{Akaike1974}
+Akaike, H. (1974). A new look at the statistical model identification.
+\emph{IEEE Transactions on Automatic Control}, 19(6), 716--723.
+
+\bibitem[Bates \& Granger(1969)]{BatesGranger1969}
+Bates, J. M., \& Granger, C. W. J. (1969). The combination of forecasts.
+\emph{Operational Research Quarterly}, 20(4), 451--468.
+
+\bibitem[Bollerslev(1986)]{Bollerslev1986}
+Bollerslev, T. (1986). Generalized autoregressive conditional
+heteroskedasticity. \emph{Journal of Econometrics}, 31(3), 307--327.
+
+\bibitem[Box \& Jenkins(1970)]{BoxJenkins1970}
+Box, G. E. P., \& Jenkins, G. M. (1970). \emph{Time Series Analysis:
+Forecasting and Control}. San Francisco: Holden-Day.
+
+\bibitem[Box \emph{et al.}(2008)]{BoxJenkinsReinsel2008}
+Box, G. E. P., Jenkins, G. M., \& Reinsel, G. C. (2008). \emph{Time
+Series Analysis: Forecasting and Control} (4th ed.). Hoboken: Wiley.
+
+\bibitem[Diebold \& Mariano(1995)]{DieboldMariano1995}
+Diebold, F. X., \& Mariano, R. S. (1995). Comparing predictive accuracy.
+\emph{Journal of Business \& Economic Statistics}, 13(3), 253--263.
+
+\bibitem[Engle(1982)]{Engle1982}
+Engle, R. F. (1982). Autoregressive conditional heteroscedasticity with
+estimates of the variance of United Kingdom inflation.
+\emph{Econometrica}, 50(4), 987--1007.
+
+\bibitem[Engle \& Granger(1987)]{EngleGranger1987}
+Engle, R. F., \& Granger, C. W. J. (1987). Co-integration and error
+correction: Representation, estimation, and testing.
+\emph{Econometrica}, 55(2), 251--276.
+
+\bibitem[Friedman(2001)]{Friedman2001}
+Friedman, J. H. (2001). Greedy function approximation: A gradient
+boosting machine. \emph{The Annals of Statistics}, 29(5), 1189--1232.
+
+\bibitem[Greene(2018)]{Greene2018}
+Greene, W. H. (2018). \emph{Econometric Analysis} (8th ed.). New York:
+Pearson.
+
+\bibitem[Harvey \emph{et al.}(1997)]{HarveyLeybourneNewbold1997}
+Harvey, D., Leybourne, S., \& Newbold, P. (1997). Testing the equality
+of prediction mean squared errors. \emph{International Journal of
+Forecasting}, 13(2), 281--291.
+
+\bibitem[Holt(1957)]{Holt1957}
+Holt, C. C. (1957). Forecasting seasonals and trends by exponentially
+weighted moving averages. ONR Memorandum, Carnegie Institute of
+Technology (tái bản: \emph{International Journal of Forecasting}, 2004).
+
+\bibitem[Hosoda(1969)]{Hosoda1969}
+Hosoda, G. (1969). \emph{Ichimoku Kinko Hyo}. Tokyo (xuất bản gốc tiếng
+Nhật, bút danh Sanjin Ichimoku).
+
+\bibitem[Hotelling(1933)]{Hotelling1933}
+Hotelling, H. (1933). Analysis of a complex of statistical variables
+into principal components. \emph{Journal of Educational Psychology},
+24(6), 417--441.
+
+\bibitem[Hyndman \emph{et al.}(2008)]{Hyndman2008state}
+Hyndman, R. J., Koehler, A. B., Ord, J. K., \& Snyder, R. D. (2008).
+\emph{Forecasting with Exponential Smoothing: The State Space
+Approach}. Berlin: Springer.
+
+\bibitem[Hyndman \& Athanasopoulos(2021)]{HyndmanAthanasopoulos2021}
+Hyndman, R. J., \& Athanasopoulos, G. (2021). \emph{Forecasting:
+Principles and Practice} (3rd ed.). Melbourne: OTexts. URL:
+\url{https://otexts.com/fpp3/}.
+
+\bibitem[Jorion(2007)]{Jorion2007}
+Jorion, P. (2007). \emph{Value at Risk: The New Benchmark for Managing
+Financial Risk} (3rd ed.). New York: McGraw-Hill.
+
+\bibitem[Lintner(1965)]{Lintner1965}
+Lintner, J. (1965). The valuation of risk assets and the selection of
+risky investments in stock portfolios and capital budgets.
+\emph{The Review of Economics and Statistics}, 47(1), 13--37.
+
+\bibitem[Markowitz(1952)]{Markowitz1952}
+Markowitz, H. (1952). Portfolio selection. \emph{The Journal of
+Finance}, 7(1), 77--91.
+
+\bibitem[Sharpe(1964)]{Sharpe1964}
+Sharpe, W. F. (1964). Capital asset prices: A theory of market
+equilibrium under conditions of risk. \emph{The Journal of Finance},
+19(3), 425--442.
+
+\bibitem[Stock \& Watson(2004)]{StockWatson2004}
+Stock, J. H., \& Watson, M. W. (2004). Combination forecasts of output
+growth in a seven-country data set. \emph{Journal of Forecasting},
+23(6), 405--430.
+
+\bibitem[Winters(1960)]{Winters1960}
+Winters, P. R. (1960). Forecasting sales by exponentially weighted
+moving averages. \emph{Management Science}, 6(3), 324--342.
+
+\bibitem[Sharpe(1966)]{Sharpe1966}
+Sharpe, W. F. (1966). Mutual fund performance. \emph{The Journal of
+Business}, 39(1), 119--138.
+
+\bibitem[Sortino \& Price(1994)]{SortinoPrice1994}
+Sortino, F. A., \& Price, L. N. (1994). Performance measurement in a
+downside risk framework. \emph{The Journal of Investing}, 3(3), 59--64.
+
+\bibitem[Magdon-Ismail \& Atiya(2004)]{MagdonIsmail2004}
+Magdon-Ismail, M., \& Atiya, A. F. (2004). Maximum drawdown.
+\emph{Risk}, 17(10), 99--102.
+
+\bibitem[Kelly(1956)]{Kelly1956}
+Kelly, J. L. (1956). A new interpretation of information rate.
+\emph{The Bell System Technical Journal}, 35(4), 917--926.
+
+\bibitem[Thorp(1969)]{Thorp1969}
+Thorp, E. O. (1969). Optimal gambling systems for favorable games.
+\emph{Review of the International Statistical Institute}, 37(3), 273--293.
+
+\bibitem[Rockafellar \& Uryasev(2000)]{RockafellarUryasev2000}
+Rockafellar, R. T., \& Uryasev, S. (2000). Optimization of conditional
+value-at-risk. \emph{Journal of Risk}, 2, 21--42.
+
+\bibitem[Streamlit(2024)]{StreamlitCloud2024}
+Streamlit Inc.\ (Snowflake) (2024). \emph{Streamlit Community Cloud
+Documentation}. URL: \url{https://docs.streamlit.io/deploy/streamlit-community-cloud}.
+
+\bibitem[Wang \& Carreira-Perpiñán(2013)]{WangCarreira2013}
+Wang, W., \& Carreira-Perpiñán, M. Á. (2013). Projection onto the
+probability simplex: An efficient algorithm with a simple proof, and
+an application. \emph{arXiv preprint arXiv:1309.1541}.
+
+\end{thebibliography}
+
+\end{document}

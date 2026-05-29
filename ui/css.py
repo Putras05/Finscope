@@ -1997,7 +1997,9 @@ div[data-testid="stVerticalBlockBorderWrapper"]
 }
 
 /* Smooth scroll */
-html { scroll-behavior: smooth; }
+/* scroll-behavior: auto thay vì smooth — smooth ép browser repaint mỗi wheel
+   event, gây lag rõ rệt khi scroll qua nhiều Plotly chart (DOM nặng). */
+html { scroll-behavior: auto; }
 
 /* ══ VERTICAL BLOCK — base transparent (overridden by theme CSS) ════════════ */
 [data-testid="stVerticalBlock"],
@@ -2028,13 +2030,54 @@ def inject_global_css() -> None:
 #     ngang khi đang rerun → feedback rõ ràng mà KHÔNG che/mờ nội dung cũ.
 #  3) Cursor wait nhẹ trên toàn body khi stale (cho mọi action).
 _NAV_TRANSITION_CSS = """<style>
-/* ══ TẮT FADE-OUT khi đang rerun — giữ nội dung sắc nét ════════════════════ */
+/* ══ TẮT FADE-OUT khi đang rerun — giữ nội dung sắc nét ════════════════════
+   Streamlit 1.40+ thêm nhiều selector data-stale; phải override hết.       */
+[data-stale],
+[data-stale="true"],
+[data-stale="true"] *,
+[data-testid="stAppViewContainer"] [data-stale],
 [data-testid="stAppViewContainer"] [data-stale="true"],
+[data-testid="stApp"] [data-stale],
 [data-testid="stApp"] [data-stale="true"],
-[data-stale="true"] {
+[data-testid="stMain"] [data-stale="true"],
+section.main [data-stale="true"],
+.element-container[data-stale="true"],
+.stMarkdown[data-stale="true"],
+[data-testid="stPlotlyChart"][data-stale="true"],
+[data-testid="stMetric"][data-stale="true"],
+[data-testid="stTabs"] [data-stale="true"],
+[data-testid="stVerticalBlock"] [data-stale="true"] {
     opacity: 1 !important;
     filter: none !important;
     pointer-events: auto !important;
+    transition: none !important;
+    animation: none !important;
+}
+
+/* ══ Disable Streamlit element fade-in animation cũng ═════════════════════ */
+[data-testid="stAppViewContainer"] *,
+[data-testid="stMain"] * {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+}
+/* Trừ các keyframes tôi định nghĩa thủ công.
+   .live-dot PHẢI giữ animation (dashboard.py:557 — LIVE pulse green indicator).
+   .live-bubble-meta + .streaming-cursor là dead selectors — đã xoá. */
+.best-model-card,
+.splash-wrap,
+.live-dot {
+    animation-duration: revert !important;
+    animation-delay: revert !important;
+}
+
+/* ══ Disable Plotly transitions trong chart (nhúng SVG-level) ═════════════
+   Pan/zoom Plotly emit 100+ DOM mutations; mỗi child element repaint với
+   transition delay = visible stutter. Tắt hoàn toàn.                       */
+.js-plotly-plot .plotly .main-svg,
+.js-plotly-plot * {
+    transition: none !important;
+    transition-duration: 0s !important;
+    animation: none !important;
 }
 
 /* ══ THANH PROGRESS TRÊN ĐỈNH khi rerun (thay cho fade toàn page) ═══════════ */

@@ -160,7 +160,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
  if not _is_en else 'Practice trading with REAL market prices, track P&L + behavior stats (win rate, avg trade…). Book stored locally in paper_state.json — NOT a real brokerage account.'}<br><br>
 
 <b style="color:{_T['text_primary']}">{'Nội dung:' if not _is_en else 'Content:'}</b><br>
-{'• 5 KPI: <b>Tiền mặt · Giá trị nắm giữ · Tổng tài sản · P&L tổng · Tỉ lệ thắng</b><br>'
+{'• 5 KPI: <b>Tiền mặt · Giá trị nắm giữ · Tổng tài sản · P&L tổng · Tỷ lệ thắng</b><br>'
  '• Tab <b>Đặt lệnh</b>: chọn MUA/BÁN, KL, giá (mặc định = close gần nhất); preview tổng giá trị<br>'
  '• Tab <b>Vị thế hiện tại</b>: bảng KL · giá vốn TB · giá hiện tại · lãi/lỗ tạm tính<br>'
  '• Tab <b>Lịch sử lệnh</b>: log đầy đủ + realized P&L mỗi lệnh bán<br>'
@@ -297,7 +297,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 {'• Bảng điểm 9 phiếu: MA50 · MA5/20 · MACD · RSI · Bollinger · Ichimoku · <b>mẫu hình nến</b> · đồng thuận dự báo · <b>tâm lý tin tức</b><br>'
  '• Khuyến nghị MUA/BÁN/GIỮ với điểm <b>vào lệnh</b>, <b>cắt lỗ (SL)</b>, <b>chốt lời (TP)</b> theo ATR<br>'
  '• <b>Phân tích Kỹ thuật nâng cao</b>: Hỗ trợ/Kháng cự · Fibonacci · Kênh xu hướng · Sóng (ZigZag) · Pivot Points · mẫu hình nến<br>'
- '• <b>Backtest</b> chiến lược (đã trừ phí giao dịch ~0,3% khứ hồi): số lệnh, tỉ lệ thắng, Sharpe, lợi nhuận tích lũy'
+ '• <b>Backtest</b> chiến lược (đã trừ phí giao dịch ~0,3% khứ hồi): số lệnh, tỷ lệ thắng, Sharpe, lợi nhuận tích lũy'
  if not _is_en else
  '• 9-vote score: MA50 · MA5/20 · MACD · RSI · Bollinger · Ichimoku · <b>candlestick patterns</b> · forecast consensus · <b>news sentiment</b><br>'
  '• BUY/SELL/HOLD recommendation with <b>entry</b>, <b>stop-loss (SL)</b>, <b>take-profit (TP)</b> via ATR<br>'
@@ -353,7 +353,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
 <b style="color:{_T['text_primary']}">{'Tham số mô hình:' if not _is_en else 'Model parameters:'}</b><br>
 {'• <b>Mã giao dịch:</b> chọn trong <b>53 mã HOSE</b> (VN30 + nhiều mã thanh khoản cao: FPT, HPG, VCB, PNJ, GMD, DGC, ...) — gom theo 31 ngành<br>'
- '• <b>Tỉ lệ Huấn luyện:</b> 70–90% — tỉ lệ dữ liệu dùng để train mô hình (còn lại để test)<br>'
+ '• <b>Tỷ lệ Huấn luyện:</b> 70–90% — tỷ lệ dữ liệu dùng để train mô hình (còn lại để test)<br>'
  '• <b>Độ trễ (p):</b> số phiên quá khứ làm input cho AR/MLR; với ARIMA dùng làm trần bậc AR khi tự chọn order. Mặc định p=1; tăng 3–5 để thử. Quy tắc an toàn: p ≤ √n<br>'
  '• <b>Khoảng thời gian:</b> lọc dữ liệu lịch sử theo ngày <b>Từ</b> / <b>Đến</b> (định dạng YYYY/MM/DD)'
  if not _is_en else

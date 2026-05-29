@@ -24,6 +24,11 @@ def _ema(s, n):
     return s.ewm(span=n, adjust=False).mean()
 
 
+@st.cache_data(ttl=900, show_spinner=False,
+                 hash_funcs={pd.DataFrame: lambda d: (
+                     int(len(d)), str(d['Ngay'].iloc[0]) if len(d) else 'empty',
+                     str(d['Ngay'].iloc[-1]) if len(d) else 'empty',
+                     float(d['Close'].iloc[-1]) if len(d) else 0.0)})
 def _compute_indicators(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
     close, high, low = d['Close'], d['High'], d['Low']
@@ -562,7 +567,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         (('Mua & Giữ' if not is_en else 'Buy & Hold'), f'{bt["total_bh"]:+.1f}%',
          _T['success'] if bt['total_bh'] >= 0 else _T['danger']),
         (('Số lệnh' if not is_en else 'Trades'), f'{bt["n_trades"]}', _T['text_primary']),
-        (('Tỉ lệ thắng' if not is_en else 'Win rate'), f'{bt["win_rate"]:.0f}%', _T['accent']),
+        (('Tỷ lệ thắng' if not is_en else 'Win rate'), f'{bt["win_rate"]:.0f}%', _T['accent']),
         (('Sụt giảm tối đa' if not is_en else 'Max drawdown'), f'{bt["max_dd"]:.1f}%', _T['danger']),
         (('Sharpe (năm)' if not is_en else 'Sharpe (ann.)'), f'{bt["sharpe"]:.2f}', _T['text_primary']),
         (('Phí giao dịch' if not is_en else 'Fee drag'), f'-{bt["total_fee"]:.1f}%', _T['warning']),

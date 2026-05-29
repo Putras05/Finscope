@@ -70,9 +70,11 @@ def fetch_financials(ticker: str) -> dict:
     try:
         import contextlib, io
         from concurrent.futures import ThreadPoolExecutor
-        from vnstock import Vnstock
+        # v56 — Singleton + throttle
+        from data._clients import vn_stock, throttle
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            s = Vnstock().stock(symbol=ticker.upper(), source='VCI')
+            throttle()
+            s = vn_stock(ticker.upper(), 'VCI')
             # 3 BCTC SONG SONG → tổng thời gian = max thay vì tổng. Cashflow
             # là báo cáo thứ 3 trong Big 3 (income + balance + cashflow).
             with ThreadPoolExecutor(max_workers=3) as _ex:

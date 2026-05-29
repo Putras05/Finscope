@@ -1,11 +1,18 @@
 [runner]
 fastReruns = true
 enforceSerializableSessionState = false
+# v56 perf — không track magic vars, tăng tốc rerun
+magicEnabled = false
 
 [server]
 maxUploadSize = 50
 enableCORS = false
 enableXsrfProtection = false
+# v56 perf — tắt file watcher trên prod-like (đỡ kernel events khi
+# user duyệt). Local dev có thể override khi cần hot-reload.
+fileWatcherType = "none"
+# Tắt static file caching dài hơi để static asset (logo PNG) phục vụ instant
+enableStaticServing = true
 
 [client]
 # Minimal toolbar → ẩn "Manage app" button, hamburger menu, header

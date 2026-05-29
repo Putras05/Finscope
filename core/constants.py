@@ -104,3 +104,14 @@ COLORS = {
 
 def get_clr(T: dict) -> dict:
     return CLR_DARK if T.get('is_dark', False) else CLR
+
+
+# ── HOSE fee & tax (retail) — single source of truth ────────────────────────
+# Phí khớp lệnh: 0.15% trên giá trị giao dịch (mua + bán), thông dụng tại các
+# CTCK retail Việt Nam (SSI, VPS, VND, MBS, HSC, FPTS, BVSC...). Có khuyến mãi
+# zero-fee cho tài khoản mới nhưng giá phổ biến vẫn là 0.15%.
+# Thuế thu nhập cá nhân: 0.10% chỉ áp dụng cho lệnh BÁN (theo Thông tư
+# 111/2013/TT-BTC, mức cố định trên giá trị bán bất kể lãi/lỗ).
+HOSE_FEE_RATE = 0.0015      # 0.15% — cả 2 chiều
+HOSE_TAX_SELL = 0.0010      # 0.10% — chỉ lệnh BÁN
+HOSE_FEE_ROUND_TRIP_PCT = (HOSE_FEE_RATE * 2 + HOSE_TAX_SELL) * 100.0   # 0.40%

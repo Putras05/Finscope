@@ -10,13 +10,33 @@ import json
 import datetime as _dt
 from pathlib import Path
 
-_STATE_FILE = Path(__file__).resolve().parent.parent / 'paper_state.json'
-_DEFAULT_CAPITAL = 100_000_000.0      # 100 triệu đồng
+_APP_ROOT = Path(__file__).resolve().parent.parent
+# Sổ legacy (chế độ pre-auth) — vẫn dùng cho mode KHÁCH để giữ tương thích.
+_STATE_FILE_LEGACY = _APP_ROOT / 'paper_state.json'
+_USER_PAPER_DIR    = _APP_ROOT / 'user_data' / 'paper'
+_DEFAULT_CAPITAL   = 100_000_000.0      # 100 triệu đồng
 
-# Phí + thuế HOSE phổ biến (CTCK retail) — sát thực tế để paper trade KHÔNG
-# bị lệch P&L so với giao dịch thật. Có thể chỉnh trong reset_state.
-_FEE_RATE = 0.0015                    # 0.15% phí khớp lệnh (cả mua + bán)
-_TAX_SELL = 0.0010                    # 0.10% thuế thu nhập (chỉ lệnh BÁN)
+# Phí + thuế HOSE — single source of truth từ core/constants.py để các module
+# (data/paper, services/backtest, app_pages/strategy) đồng bộ.
+from core.constants import HOSE_FEE_RATE as _FEE_RATE, HOSE_TAX_SELL as _TAX_SELL
+
+
+def _state_file_for_user(uid: str = None) -> Path:
+    """Đường dẫn sổ Paper cho user. uid='guest' hoặc None → file legacy chung."""
+    if uid is None:
+        # Nếu chạy trong Streamlit, tự lấy user hiện tại
+        try:
+            from auth.session import user_id as _uid
+            uid = _uid()
+        except Exception:
+            uid = 'guest'
+    if not uid or uid == 'guest':
+        return _STATE_FILE_LEGACY
+    try:
+        _USER_PAPER_DIR.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+    return _USER_PAPER_DIR / f'{uid}.json'
 
 
 def _empty_state(capital: float = _DEFAULT_CAPITAL) -> dict:
@@ -32,8 +52,8 @@ def _empty_state(capital: float = _DEFAULT_CAPITAL) -> dict:
 def load_state() -> dict:
     """Đọc trạng thái từ file; nếu thiếu/lỗi → state rỗng (mặc định 100tr đ)."""
     try:
-        if _STATE_FILE.exists():
-            with _STATE_FILE.open('r', encoding='utf-8') as f:
+        if _state_file_for_user().exists():
+            with _state_file_for_user().open('r', encoding='utf-8') as f:
                 s = json.load(f)
             # bảo đảm các khoá tồn tại
             for k in ('cash', 'initial_capital', 'positions', 'history'):
@@ -47,7 +67,7 @@ def load_state() -> dict:
 def save_state(s: dict) -> None:
     """Ghi trạng thái xuống file — best-effort, không ném lỗi."""
     try:
-        with _STATE_FILE.open('w', encoding='utf-8') as f:
+        with _state_file_for_user().open('w', encoding='utf-8') as f:
             json.dump(s, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
@@ -133,12 +153,29 @@ def sell(state: dict, ticker: str, qty: int, price: float) -> tuple:
                          f'(net P&L {realized:+,.0f}).')
 
 
+# Hash fingerprint hợp nhất ở core/cache.py (v55) — single source of truth.
+from core.cache import state_fingerprint as _state_fingerprint
+
+
 def equity_curve(state: dict) -> list:
     """Đường tài sản (equity = cash + holdings × close tại ngày đó) theo thời gian.
 
     Đi qua từng lệnh theo thứ tự thời gian, dựng cash + positions sau mỗi lệnh,
     rồi tính holdings tại Close của NGÀY giao dịch đó. Điểm cuối = hôm nay.
     Trả list of dict {date, cash, holdings, equity}.
+
+    Wrapper cache theo fingerprint state — gọi 3 lần/render Paper page giờ chỉ
+    tính 1 lần thực sự, các lần sau lấy cache.
+    """
+    return _equity_curve_cached(_state_fingerprint(state), state)
+
+
+import streamlit as _st
+
+@_st.cache_data(ttl=600, show_spinner=False, hash_funcs={dict: lambda d: 0})
+def _equity_curve_cached(_fp: tuple, state: dict) -> list:
+    """Implementation thực — `_fp` là cache key (state fingerprint), `state`
+    là dict gốc (hash_funcs=0 để bỏ qua hash dict; chỉ key thực là `_fp`).
     """
     from data.fetcher import fetch_data
     import datetime as _dt

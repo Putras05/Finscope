@@ -134,7 +134,7 @@ TEXT = {
                           'EN': 'MAPE < 2%: excellent · RMSE/MAE: lower is better · R²adj: higher is better'},
     # Sidebar labels
     'sidebar.ticker':      {'VI': 'MÃ CỔ PHIẾU',      'EN': 'TICKER'},
-    'sidebar.train_ratio': {'VI': 'TỈ LỆ HUẤN LUYỆN', 'EN': 'TRAIN RATIO'},
+    'sidebar.train_ratio': {'VI': 'TỶ LỆ HUẤN LUYỆN', 'EN': 'TRAIN RATIO'},
     'sidebar.date_range':  {'VI': 'KHOẢNG THỜI GIAN',  'EN': 'DATE RANGE'},
     'sidebar.from':        {'VI': 'Từ',                'EN': 'From'},
     'sidebar.to':          {'VI': 'Đến',               'EN': 'To'},

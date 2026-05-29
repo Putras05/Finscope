@@ -13,9 +13,14 @@ Giá trong df ở đơn vị "nghìn đồng" (như toàn app); hàm không nhâ
 """
 import numpy as np
 import pandas as pd
+import streamlit as _st
+
+# Hash fingerprint hợp nhất ở core/cache.py (v55) — single source of truth.
+from core.cache import df_fingerprint as _df_fp, df_hash_funcs as _HASH
 
 
 # ── Điểm swing (đỉnh/đáy cục bộ) ────────────────────────────────────────────
+@_st.cache_data(ttl=900, show_spinner=False, hash_funcs=_HASH)
 def swing_points(df: pd.DataFrame, window: int = 5) -> dict:
     """Tìm đỉnh/đáy cục bộ: nến cao/thấp nhất trong cửa sổ ±window.
 
@@ -41,6 +46,7 @@ def swing_points(df: pd.DataFrame, window: int = 5) -> dict:
 
 
 # ── Hỗ trợ / Kháng cự (gom cụm mức giá swing) ───────────────────────────────
+@_st.cache_data(ttl=900, show_spinner=False, hash_funcs=_HASH)
 def support_resistance(df: pd.DataFrame, window: int = 5,
                        max_levels: int = 6, tol: float = 0.015,
                        lookback: int = 260) -> dict:
@@ -84,6 +90,7 @@ def support_resistance(df: pd.DataFrame, window: int = 5,
 _FIB = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0]
 
 
+@_st.cache_data(ttl=900, show_spinner=False, hash_funcs=_HASH)
 def fibonacci_levels(df: pd.DataFrame, lookback: int = 120) -> dict:
     """Mức Fibonacci từ sóng lớn nhất trong `lookback` phiên gần nhất.
 
@@ -125,6 +132,7 @@ def pivot_points(df: pd.DataFrame) -> dict:
 
 
 # ── Kênh xu hướng hồi quy tuyến tính ────────────────────────────────────────
+@_st.cache_data(ttl=900, show_spinner=False, hash_funcs=_HASH)
 def trend_channel(df: pd.DataFrame, lookback: int = 90) -> dict:
     """Hồi quy tuyến tính giá đóng cửa trong `lookback` phiên → đường giữa +
     biên trên/dưới = đường giữa ± k·độ lệch chuẩn phần dư (k chọn để bao ~95%).
@@ -151,6 +159,7 @@ def trend_channel(df: pd.DataFrame, lookback: int = 90) -> dict:
 
 
 # ── ZigZag (nối các điểm đảo chiều ≥ pct) — nền tảng đếm sóng ────────────────
+@_st.cache_data(ttl=900, show_spinner=False, hash_funcs=_HASH)
 def zigzag(df: pd.DataFrame, pct: float = 0.05) -> dict:
     """Đường ZigZag: chỉ giữ các đảo chiều có biên độ ≥ `pct` (mặc định 5%).
 
@@ -177,6 +186,7 @@ def zigzag(df: pd.DataFrame, pct: float = 0.05) -> dict:
 
 
 # ── VWAP (Volume-Weighted Average Price) — cuộn (rolling) cho dữ liệu phiên ─
+@_st.cache_data(ttl=900, show_spinner=False, hash_funcs=_HASH)
 def vwap(df: pd.DataFrame, window: int = 20) -> np.ndarray:
     """VWAP cuộn: trung bình giá tiêu biểu có trọng số khối lượng trong cửa sổ.
 
@@ -191,6 +201,7 @@ def vwap(df: pd.DataFrame, window: int = 20) -> np.ndarray:
 
 
 # ── Parabolic SAR (Wilder 1978) — chấm dừng lỗ & đảo chiều ──────────────────
+@_st.cache_data(ttl=900, show_spinner=False, hash_funcs=_HASH)
 def parabolic_sar(df: pd.DataFrame, af0: float = 0.02, af_step: float = 0.02,
                   af_max: float = 0.20) -> np.ndarray:
     """Parabolic SAR theo Wilder: SAR(t+1) = SAR(t) + AF·(EP − SAR(t)).
@@ -238,6 +249,7 @@ def parabolic_sar(df: pd.DataFrame, af0: float = 0.02, af_step: float = 0.02,
 
 
 # ── Stochastic Oscillator (%K, %D) — Lane 1957 ──────────────────────────────
+@_st.cache_data(ttl=900, show_spinner=False, hash_funcs=_HASH)
 def stochastic(df: pd.DataFrame, k: int = 14, d: int = 3) -> dict:
     """Stochastic Oscillator: %K=(C-Ln)/(Hn-Ln)·100; %D=SMA(%K,d).
 
@@ -251,6 +263,7 @@ def stochastic(df: pd.DataFrame, k: int = 14, d: int = 3) -> dict:
 
 
 # ── ADX (Average Directional Index) — Wilder 1978: cường độ xu hướng ────────
+@_st.cache_data(ttl=900, show_spinner=False, hash_funcs=_HASH)
 def adx(df: pd.DataFrame, n: int = 14) -> np.ndarray:
     """ADX: cường độ xu hướng (KHÔNG phụ thuộc chiều). >25 trend rõ, <20 ngang.
 
@@ -270,6 +283,7 @@ def adx(df: pd.DataFrame, n: int = 14) -> np.ndarray:
 
 
 # ── OBV (On-Balance Volume) — Granville 1963: xác nhận xu hướng ─────────────
+@_st.cache_data(ttl=900, show_spinner=False, hash_funcs=_HASH)
 def obv(df: pd.DataFrame) -> np.ndarray:
     """OBV: tổng tích lũy Volume theo chiều giá (giá tăng → +V, giảm → −V).
 
@@ -280,6 +294,7 @@ def obv(df: pd.DataFrame) -> np.ndarray:
 
 
 # ── Mẫu hình nến (candlestick patterns) ─────────────────────────────────────
+@_st.cache_data(ttl=900, show_spinner=False, hash_funcs=_HASH)
 def candlestick_patterns(df: pd.DataFrame, lookback: int = 12) -> list:
     """Nhận dạng các mẫu hình nến phổ biến trong `lookback` phiên gần nhất.
 
@@ -365,6 +380,7 @@ def candlestick_patterns(df: pd.DataFrame, lookback: int = 12) -> list:
 
 
 # ── Tóm tắt vị thế kỹ thuật cho thẻ/bảng ────────────────────────────────────
+@_st.cache_data(ttl=900, show_spinner=False, hash_funcs=_HASH)
 def technical_summary(df: pd.DataFrame) -> dict:
     """Gộp các chỉ số vị thế cho bảng tóm tắt: hỗ trợ/kháng cự gần nhất,
     vị trí Fibonacci, hệ số dốc kênh, biên độ kênh hiện tại."""

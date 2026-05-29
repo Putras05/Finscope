@@ -36,6 +36,129 @@ _BEAR_CODES    = {'bear', 'strong_sell', 'weak_sell', 'bear_conf', 'bear_kumo',
 _COUNTER_CODES = {'counter_buy', 'counter_sell'}
 
 
+def _render_user_alerts(ticker, df, _T):
+    """Card cảnh báo giá cá nhân — list + thêm + xoá + auto-check trigger."""
+    import streamlit as _st
+    from services.alerts import (list_alerts, add_alert, remove_alert,
+                                  check_triggered, clear_triggered)
+    is_en = _st.session_state.get('lang', 'VI') == 'EN'
+
+    # Auto-check: dùng close gần nhất (đồng) cho mã hiện tại + watchlist
+    try:
+        cur_dong = float(df['Close'].iloc[-1]) * 1000.0
+    except Exception:
+        cur_dong = 0.0
+    if cur_dong > 0:
+        check_triggered({ticker: cur_dong})
+
+    items = list_alerts(only_active=False)
+    n_active = sum(1 for a in items if not a.get('triggered_at'))
+    n_trig   = sum(1 for a in items if a.get('triggered_at'))
+
+    with _st.expander(
+        (f'Cảnh báo giá cá nhân ({n_active} chờ · {n_trig} đã chạm)'
+         if not is_en else
+         f'My price alerts ({n_active} pending · {n_trig} triggered)'),
+        expanded=(n_trig > 0),
+    ):
+        col_f, col_lst = _st.columns([1, 1.6])
+        with col_f:
+            _st.markdown(
+                f'<div style="font-size:12.5px;font-weight:700;color:{_T["text_primary"]};'
+                f'margin-bottom:4px">'
+                f'{"Đặt cảnh báo cho " if not is_en else "Set alert for "}'
+                f'<span style="color:{_T["accent"]}">{ticker}</span>'
+                f' · <span style="color:{_T["text_muted"]};font-weight:600">'
+                f'{"giá hiện tại" if not is_en else "current"} '
+                f'{cur_dong:,.0f} đ</span></div>',
+                unsafe_allow_html=True)
+            with _st.form('_alert_form', clear_on_submit=True):
+                kind = _st.radio(
+                    'Loại' if not is_en else 'Kind',
+                    options=['above', 'below'],
+                    format_func=lambda k: ('↑ khi giá vượt' if not is_en else '↑ when price ≥')
+                                          if k == 'above' else
+                                          ('↓ khi giá rớt' if not is_en else '↓ when price ≤'),
+                    horizontal=True, key='_alert_kind',
+                )
+                price = _st.number_input(
+                    'Giá mục tiêu (đ)' if not is_en else 'Target price (đ)',
+                    min_value=100.0, max_value=10_000_000.0,
+                    value=float(cur_dong) if cur_dong else 10000.0,
+                    step=100.0, format='%.0f', key='_alert_px')
+                note = _st.text_input(
+                    'Ghi chú (tuỳ chọn)' if not is_en else 'Note (optional)',
+                    max_chars=120, key='_alert_note')
+                ok = _st.form_submit_button(
+                    'Thêm cảnh báo' if not is_en else 'Add alert',
+                    type='primary', use_container_width=True)
+            if ok:
+                try:
+                    add_alert(ticker, kind, float(price), note)
+                    _st.success('Đã thêm.' if not is_en else 'Added.')
+                    _st.rerun()
+                except Exception as e:
+                    _st.error(str(e))
+
+        with col_lst:
+            _st.markdown(
+                f'<div style="font-size:12.5px;font-weight:700;color:{_T["text_primary"]};'
+                f'margin-bottom:4px">{"Cảnh báo của bạn" if not is_en else "Your alerts"}</div>',
+                unsafe_allow_html=True)
+            if not items:
+                _st.markdown(
+                    f'<div style="background:{_T["bg_card"]};border:1px dashed {_T["border"]};'
+                    f'border-radius:10px;padding:12px 16px;color:{_T["text_muted"]};'
+                    f'font-size:12px">'
+                    f'{"Chưa có cảnh báo nào. Đặt mục tiêu giá ở bên trái." if not is_en else "No alerts yet. Set a price target on the left."}'
+                    f'</div>', unsafe_allow_html=True)
+            else:
+                # Sort: triggered mới nhất → pending theo created_at desc
+                items_sorted = sorted(
+                    items,
+                    key=lambda a: (0 if a.get('triggered_at') else 1,
+                                     -(_dt_to_ts(a.get('triggered_at') or a.get('created_at','')))))
+                for a in items_sorted[:20]:
+                    arrow = '↑' if a['kind'] == 'above' else '↓'
+                    if a.get('triggered_at'):
+                        col, bg = _T['danger'], _T['danger_bg']
+                        status = (f'Đã chạm @ {a.get("triggered_at_price",0):,.0f} đ '
+                                   f'({a["triggered_at"][:16].replace("T"," ")})')
+                    else:
+                        col, bg = _T['accent'], _T['bg_card']
+                        status = ('chờ' if not is_en else 'pending')
+                    _st.markdown(
+                        f'<div style="display:flex;justify-content:space-between;'
+                        f'align-items:center;background:{bg};border:1px solid {_T["border"]};'
+                        f'border-left:4px solid {col};border-radius:8px;'
+                        f'padding:8px 12px;margin-bottom:5px">'
+                        f'<div style="font-size:12.5px;color:{_T["text_primary"]}">'
+                        f'<b style="color:{col}">{arrow} {a["ticker"]}</b> '
+                        f'@ <b>{a["price_dong"]:,.0f} đ</b> '
+                        f'<span style="color:{_T["text_muted"]};font-size:11px">· {status}</span>'
+                        + (f' <span style="color:{_T["text_muted"]};font-size:11px;'
+                           f'font-style:italic">— {a["note"]}</span>' if a.get('note') else '')
+                        + f'</div></div>', unsafe_allow_html=True)
+                # Hàng nút quản trị: xoá tất cả triggered
+                if n_trig > 0:
+                    if _st.button(
+                        f'Xoá {n_trig} cảnh báo đã chạm'
+                        if not is_en else f'Clear {n_trig} triggered',
+                        key='_alert_clear_trig', type='secondary',
+                        use_container_width=False,
+                    ):
+                        clear_triggered()
+                        _st.rerun()
+
+
+def _dt_to_ts(iso: str) -> float:
+    try:
+        import datetime as _d
+        return _d.datetime.fromisoformat(iso).timestamp()
+    except Exception:
+        return 0.0
+
+
 def _sig_color(code: str, is_dark: bool) -> str:
     if code in _COUNTER_CODES: return '#FBBF24' if is_dark else '#B45309'
     if code in _BULL_CODES:    return '#34D399' if is_dark else '#15803D'
@@ -445,6 +568,9 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         f'<h1>{t("nav.signals")} — {ticker}</h1>'
         f'<p>{t("signal.subtitle", ticker=ticker)}</p>'
         f'</div>', unsafe_allow_html=True)
+
+    # ── Cảnh báo giá cá nhân (price alerts per user) ───────────────────
+    _render_user_alerts(ticker, df, _T)
 
     is_dark  = _T.get('is_dark', False)
     _fg      = _T['text_primary']

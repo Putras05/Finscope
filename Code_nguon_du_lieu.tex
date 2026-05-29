@@ -1,0 +1,192 @@
+% =====================================================================
+%  CODE NGUỒN DỮ LIỆU — FinScope
+%  Trích đoạn mã Python thể hiện cách lấy và xử lý dữ liệu HOSE
+%  từ thư viện vnstock. Phục vụ ban giám khảo đối chiếu logic.
+%  Hội thi Toán học — Lý thuyết và Ứng dụng năm học 2025-2026
+% =====================================================================
+% Compile bằng XeLaTeX: xelatex Code_nguon_du_lieu.tex
+\documentclass[12pt,a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\setmonofont{Consolas}[Scale=0.9]
+\usepackage[left=2cm, right=2cm, top=2.2cm, bottom=2.2cm]{geometry}
+\usepackage[fontsize=12pt]{scrextend}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{fancyvrb}
+\usepackage{fvextra}
+\fvset{
+  fontsize=\footnotesize,
+  frame=single,
+  framesep=2mm,
+  numbers=left,
+  numbersep=4pt,
+  breaklines=true,
+  breakanywhere=true,
+  formatcom=\color{black!85},
+}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{lastpage}
+\usepackage[unicode,colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue]{hyperref}
+\usepackage[most]{tcolorbox}
+
+\graphicspath{{picture/}}
+
+% ── Listings setup for Python with syntax highlight ─────────────────────
+\definecolor{mintbg}{RGB}{248,248,248}
+\definecolor{kw}{RGB}{0,0,180}
+\definecolor{str}{RGB}{160,0,0}
+\definecolor{com}{RGB}{0,120,0}
+\definecolor{num}{RGB}{120,80,0}
+\definecolor{bg}{RGB}{248,248,248}
+\definecolor{frm}{RGB}{210,210,210}
+\definecolor{lin}{RGB}{120,120,120}
+
+% (Styles handled by minted via Pygments — đã setminted ở trên.)
+
+\titleformat{\section}[hang]
+  {\bfseries\fontsize{14}{17}\selectfont}
+  {\thesection.}{0.6em}{}
+\titlespacing*{\section}{0pt}{14pt}{6pt}
+
+\setlength\parindent{0pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small\itshape Code nguồn dữ liệu -- FinScope}
+\fancyhead[R]{\small \thepage/\pageref{LastPage}}
+\setlength{\headheight}{14pt}
+\fancypagestyle{plain}{\fancyhf{}\renewcommand{\headrulewidth}{0pt}}
+
+\begin{document}
+
+% =====================================================================
+%  TRANG BÌA — đồng bộ form NCKH
+% =====================================================================
+\begin{titlepage}
+\thispagestyle{empty}
+\centerline{\large\bfseries TỔNG LIÊN ĐOÀN LAO ĐỘNG VIỆT NAM}
+\vspace*{0.2cm}
+\centerline{\large\bfseries TRƯỜNG ĐẠI HỌC TÔN ĐỨC THẮNG}
+\centerline{------------------------------}
+\vspace*{1cm}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.3\linewidth]{picture/TDT_logo}
+\end{figure}
+\vspace*{1.0cm}
+\centerline{\large\bfseries Hội thi Toán học -- Lý thuyết và Ứng dụng năm học 2025--2026}
+\vspace*{0.3cm}
+\centerline{\itshape Chủ đề: ``Toán học trong kỷ nguyên trí tuệ nhân tạo''}
+\vspace*{2.0cm}
+\centerline{\Large\bfseries CODE NGUỒN DỮ LIỆU}
+\vspace*{0.3cm}
+\centerline{\Large\bfseries TRÍCH ĐOẠN MÃ PYTHON TẦNG TRUY XUẤT}
+\centerline{\Large\bfseries DỮ LIỆU HOSE -- ỨNG DỤNG FINSCOPE}
+\vspace*{3cm}
+\noindent\textbf{ĐƠN VỊ:}\quad KHOA TOÁN -- THỐNG KÊ
+
+\vspace*{0.4cm}
+\noindent\textbf{NHÓM SINH VIÊN THỰC HIỆN:}\\
+$\begin{array}{llll}
+  \mbox{1.} &\mbox{Nguyễn Thành Danh \;(Trưởng nhóm)} &-&\mbox{C2300014}\\
+  \mbox{2.} &\mbox{Trần Huỳnh Nhã Trúc}               &-&\mbox{C2300189}
+\end{array}$
+\vfill
+\centerline{\bfseries TP. Hồ Chí Minh, tháng 5 năm 2026}
+\end{titlepage}
+
+\setcounter{page}{1}
+
+% =====================================================================
+%  MỞ ĐẦU
+% =====================================================================
+\section{Giới thiệu}
+
+\noindent FinScope sử dụng dữ liệu thời gian thực 53 mã chứng khoán
+niêm yết trên Sở Giao dịch Chứng khoán Thành phố Hồ Chí Minh (HOSE)
+thông qua thư viện mã nguồn mở \texttt{vnstock 4.0.4}. Toàn bộ logic
+\textbf{lấy -- làm sạch -- chuẩn hoá} dữ liệu được tập trung tại
+thư mục \texttt{data/} của mã nguồn. Tài liệu này trích đoạn ba file
+cốt lõi của tầng dữ liệu để ban giám khảo đối chiếu:
+
+\begin{itemize}
+  \item \texttt{data/\_clients.py} -- singleton kết nối + bộ điều tiết
+        tốc độ truy vấn (token bucket) dưới 20 yêu cầu/phút.
+  \item \texttt{data/fetcher.py} -- truy xuất giá lịch sử 1 mã, kèm
+        các chỉ báo kỹ thuật cơ bản (MA, RSI).
+  \item \texttt{data/market.py} -- truy xuất snapshot thị trường (giá
+        khớp lệnh hiện tại, vốn hoá, room nước ngoài) cho danh sách mã.
+\end{itemize}
+
+Toàn bộ phần còn lại của ứng dụng (14 trang giao diện, 8 mô hình dự
+báo, 4 thuật toán toán -- tài chính cổ điển, hệ thống xác thực và cá
+nhân hoá) chạy trực tiếp trên \textbf{Streamlit Community Cloud} --
+ban giám khảo truy cập qua trình duyệt mà không cần cài đặt môi
+trường Python (chi tiết tại tệp \texttt{Mo\_ta\_san\_pham.pdf}).
+
+% =====================================================================
+%  data/_clients.py
+% =====================================================================
+\section{data/\_clients.py -- Singleton client và token bucket}
+
+\noindent File này giải quyết hai bài toán: (i) tái sử dụng kết nối
+\texttt{vnstock} -- khởi tạo một lần, dùng chung mọi nơi (tránh
+TLS handshake 200--500\,ms cho mỗi lần truy vấn); (ii) chia sẻ một
+\emph{token bucket} duy nhất giữa mọi luồng (foreground + warmer
+nền) để tổng tốc độ không vượt giới hạn của \texttt{vnstock}.
+
+\VerbatimInput{data/_clients.py}
+
+% =====================================================================
+%  data/fetcher.py
+% =====================================================================
+\section{data/fetcher.py -- Truy xuất giá lịch sử và chỉ báo}
+
+\noindent Hàm \texttt{fetch\_data(ticker)} là cửa ngõ chính để mọi tầng
+phía trên (mô hình, biểu đồ, bộ máy tín hiệu) lấy chuỗi giá. Kết quả
+được cache đĩa 24 giờ thông qua \texttt{@st.cache\_data(persist="disk")};
+các chỉ báo cơ bản (MA5/20/50, MA5\_Vol, RSI14) được tính ngay tại tầng
+dữ liệu để mọi page tái sử dụng.
+
+\VerbatimInput{data/fetcher.py}
+
+% =====================================================================
+%  data/market.py
+% =====================================================================
+\section{data/market.py -- Snapshot toàn thị trường}
+
+\noindent Hàm \texttt{market\_snapshot(tickers)} dùng cho các trang Tổng
+quan thị trường, Phân tích cơ bản và Dashboard. Một lần truy vấn
+\texttt{price\_board} của \texttt{vnstock} trả về dữ liệu cho cả danh
+sách 53 mã, tiết kiệm thời gian so với truy vấn từng mã một.
+
+\VerbatimInput{data/market.py}
+
+% =====================================================================
+%  KẾT
+% =====================================================================
+\section{Ghi chú thực thi}
+
+\noindent Hai chi tiết kỹ thuật đáng chú ý:
+
+\begin{enumerate}
+  \item \textbf{Bao \texttt{contextlib.redirect\_stdout/redirect\_stderr}}:
+        \texttt{vnstock} in các thông báo bằng tiếng Việt ra console
+        (cảnh báo cập nhật, quảng cáo bản Insiders). Trên hệ điều hành
+        Windows với mã hoá \texttt{cp1252}, các ký tự tiếng Việt gây
+        \texttt{UnicodeEncodeError} làm vỡ hàm \texttt{fetch}. Nhóm
+        bọc các lời gọi \texttt{vnstock} trong khối nuốt stdout/stderr
+        để tránh sự cố này (đã quan sát trên mã ACB).
+
+  \item \textbf{Tier-aware throttle}: hàm \texttt{throttle()} phân biệt
+        hai loại lời gọi -- foreground (\texttt{is\_foreground=True})
+        chỉ chờ tối thiểu 1,6 giây; background/warmer chờ 3,4 giây và
+        nhường nhịn khi foreground vừa claim slot. Cơ chế này giúp khi
+        người dùng đổi mã chứng khoán, ứng dụng không bị treo chờ
+        warmer đã chiếm token trước đó.
+\end{enumerate}
+
+\end{document}

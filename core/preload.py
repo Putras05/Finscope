@@ -55,13 +55,21 @@ def _bg_arima(ticker: str, ar_order: int,
                 pass
 
 
+_arima_bg_started: set = set()
+_arima_bg_lock = threading.Lock()
+
+
 def trigger_bg_arima(ticker: str, ar_order: int,
                      date_from=None, date_to=None) -> None:
-    """Launch ARIMA background precompute nếu chưa chạy cho ticker này."""
-    bg_key = f'_arima_bg_{ticker}'
-    if st.session_state.get(bg_key):
-        return
-    st.session_state[bg_key] = True
+    """Launch ARIMA background precompute nếu chưa chạy cho ticker này.
+
+    Idempotent qua một set + lock cấp module (thread-safe). Trước đây dùng
+    st.session_state nhưng không truy cập được từ daemon thread.
+    """
+    with _arima_bg_lock:
+        if ticker in _arima_bg_started:
+            return
+        _arima_bg_started.add(ticker)
     th = threading.Thread(
         target=_bg_arima,
         args=(ticker, ar_order, date_from, date_to),
@@ -72,11 +80,7 @@ def trigger_bg_arima(ticker: str, ar_order: int,
 
 
 def trigger_bg_arima_all() -> None:
-    """Warm ARIMA cho TẤT CẢ tickers × p values ở background.
-
-    Gọi sau preload_all_tickers → lúc user đang đọc Dashboard, ARIMA background
-    đã train xong cho mọi combo → switch page = instant.
-    """
+    """Warm ARIMA cho TẤT CẢ tickers preload ở background."""
     for tk in _PRELOAD_TICKERS:
         trigger_bg_arima(tk, _DEFAULT_P)
 
@@ -94,49 +98,27 @@ def _fetch_all_parallel() -> None:
 
 
 # ── Main preload ─────────────────────────────────────────────────────────────
-def preload_all_tickers() -> None:
-    """Warm cache cho 3 tickers × 5 ratios × 3 p values.
+# Class-level Event để gate giữa các session/thread (st.session_state không
+# truy cập được trong daemon thread). Một process Streamlit chỉ kick-off 1 lần.
+_PRELOAD_KICKED = threading.Event()
 
-    Chạy 1 lần mỗi session (gated bởi session_state `_preloaded`).
-    Tổng khoảng 45 model AR + 45 model MLR → ~5-8s trên máy thường.
-    CART background song song, không block UI.
+
+def _silent_train_models() -> None:
+    """Train AR+MLR cho mọi combo trong daemon thread, không animate UI.
+
+    UI render ngay sau khi fetch xong (~1s); train tiếp ở nền. Khi user click
+    page Mô hình lần đầu, model có thể chưa warm hết → fallback path tự train
+    trên-the-fly (đã có). Lần thứ 2 trở đi cache hit.
     """
-    if st.session_state.get('_preloaded'):
-        return
-
     from models.ar  import run_ar
     from models.mlr import run_mlr
-
-    _loader   = st.empty()
-    _progress = st.empty()
-
-    with _loader.container():
-        st.markdown(
-            '<div style="background:rgba(21,101,192,0.08);'
-            'border:1px solid rgba(21,101,192,0.2);'
-            'border-radius:10px;padding:12px 18px;margin-bottom:8px">'
-            '<div style="font-size:12px;font-weight:700;color:#1565C0;'
-            'letter-spacing:0.5px;text-transform:uppercase">'
-            'Khởi tạo dữ liệu · First launch</div>'
-            '<div style="font-size:11px;color:#64748B;margin-top:4px">'
-            'Tải dữ liệu mã mặc định + huấn luyện sẵn AR/MLR cho '
-            'mọi tỉ lệ và p={1,3,5}...</div>'
-            '</div>', unsafe_allow_html=True)
-
-    _bar = _progress.progress(0, text='')
-
-    # Step 1: Fetch mã mặc định
-    _bar.progress(5, text='Tải dữ liệu mã mặc định...')
-    _fetch_all_parallel()
-
-    # Step 2: AR + MLR song song cho mã mặc định × ratios × p.
+    from concurrent.futures import as_completed
     jobs = []
     for tk in _PRELOAD_TICKERS:
         for p in _COMMON_P:
             for tr in _SLIDER_VALUES:
                 jobs.append(('AR',  tk, tr, p))
                 jobs.append(('MLR', tk, tr, p))
-    total = len(jobs)
 
     def _train_one(job):
         kind, tk, tr, p = job
@@ -148,23 +130,36 @@ def preload_all_tickers() -> None:
         except Exception:
             pass
 
-    _bar.progress(10, text=f'Huấn luyện {total} mô hình AR+MLR (song song)...')
-    done = 0
-    from concurrent.futures import as_completed
-    with ThreadPoolExecutor(max_workers=8) as ex:
-        futures = {ex.submit(_train_one, j): j for j in jobs}
-        for fut in as_completed(futures):
-            done += 1
-            if done % 6 == 0 or done == total:  # cập nhật progress mỗi 6 jobs
-                pct = 10 + int(done / total * 85)
-                kind, tk, tr, p = futures[fut]
-                _bar.progress(pct,
-                              text=f'{kind}({p}) · {tk} · {int(tr*100)}% · {done}/{total}')
+    try:
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            futs = [ex.submit(_train_one, j) for j in jobs]
+            for f in as_completed(futs):
+                pass
+    except Exception:
+        pass
 
-    _bar.progress(100, text='Hoàn tất · ARIMA đang precompute ngầm')
-    _loader.empty()
-    _progress.empty()
-    st.session_state['_preloaded'] = True
 
-    # Step 3: ARIMA background cho tất cả tickers × common p
-    trigger_bg_arima_all()
+def preload_all_tickers() -> None:
+    """Khởi động preload mà KHÔNG block main thread.
+
+    1. Fetch dữ liệu mã mặc định đồng bộ (~1s, blocking nhưng nhanh) — cần
+       cho chart đầu tiên.
+    2. Train AR+MLR và ARIMA precompute trong daemon thread → app render ngay.
+
+    Một process Streamlit chỉ kick-off 1 lần (gated bởi threading.Event ở
+    cấp module — st.session_state không truy cập được trong daemon thread).
+    """
+    if _PRELOAD_KICKED.is_set():
+        return
+    _PRELOAD_KICKED.set()
+
+    # Step 1 — fetch giá thô đồng bộ. Nhanh (~1s) khi vnstock chưa throttle;
+    # cần thiết cho chart đầu tiên trên Dashboard.
+    try:
+        _fetch_all_parallel()
+    except Exception:
+        pass
+
+    # Step 2 — train AR/MLR + ARIMA nền. Không block UI.
+    threading.Thread(target=_silent_train_models, daemon=True).start()
+    threading.Thread(target=trigger_bg_arima_all,  daemon=True).start()

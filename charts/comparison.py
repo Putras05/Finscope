@@ -381,7 +381,10 @@ def _resample_ohlc(df: pd.DataFrame, freq: str | None) -> pd.DataFrame:
             int(len(d)),
             float(d['Close'].iloc[-1]) if len(d) else 0.0,
         ),
-        dict: lambda T: bool(T.get('is_dark', False)),
+        dict: lambda T: (bool(T.get('is_dark', False)),
+                          T.get('accent', ''),
+                          T.get('border', ''),
+                          T.get('bg_card', '')),
     },
 )
 def chart_price_candlestick(df: pd.DataFrame, ticker: str, T: dict,

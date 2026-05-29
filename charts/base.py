@@ -21,7 +21,38 @@ _PLOTLY_CONFIG = {
         'hoverClosestCartesian', 'hoverCompareCartesian', 'toggleSpikelines',
     ],
     'toImageButtonOptions': {'format': 'png', 'scale': 3, 'filename': 'finscope_chart'},
+    # v57 — Tắt mọi animation/transition của Plotly. Default Plotly là 500ms
+    # transition khi zoom/pan; với 10 trace x 1000+ points, tween animation
+    # nuốt CPU. responsive=False để tắt resize observer (lag khi scroll do
+    # sidebar reflow).
+    'responsive': False,
+    'doubleClick': 'reset',
+    'scrollZoom': False,
 }
+
+
+# v57 — Layout patch áp dụng MỌI figure: tắt animation/transition figure-level.
+_PLOTLY_LAYOUT_NO_ANIM = {
+    'transition': {'duration': 0},
+    'uirevision': 'static',  # giữ trạng thái zoom/pan giữa các rerun → không relayout
+}
+
+
+# v57 — Monkey-patch go.Figure.update_layout để MỌI chart trong app tự động
+# thêm transition.duration=0 + uirevision='static'. Tránh phải sửa 11 file
+# charts/*.py. setdefault → không ghi đè caller nếu họ pass explicit value.
+_ORIG_UPDATE_LAYOUT = go.Figure.update_layout
+
+
+def _patched_update_layout(self, *args, **kwargs):
+    if 'transition' not in kwargs:
+        kwargs['transition'] = {'duration': 0}
+    if 'uirevision' not in kwargs:
+        kwargs['uirevision'] = 'static'
+    return _ORIG_UPDATE_LAYOUT(self, *args, **kwargs)
+
+
+go.Figure.update_layout = _patched_update_layout
 
 
 def calc_r2(y_true, y_pred) -> float:

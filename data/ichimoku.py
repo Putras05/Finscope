@@ -49,23 +49,8 @@ SENKOU_N  = 52
 DISPLACE  = 26
 
 
-def _df_fingerprint(df: pd.DataFrame) -> tuple:
-    """Hash O(1) cho DataFrame OHLC: (first_date, last_date, len, last_close).
-
-    Thêm first_date phòng khi user kéo date_from về xa hơn nhưng len trùng cờ
-    với 1 fingerprint cũ (collision rất hiếm nhưng có thể trả wrong cache).
-    """
-    if len(df) == 0:
-        return ('empty', 'empty', 0, 0.0)
-    try:
-        return (
-            str(df['Ngay'].iloc[0]),
-            str(df['Ngay'].iloc[-1]),
-            int(len(df)),
-            float(df['Close'].iloc[-1]),
-        )
-    except Exception:
-        return (id(df), id(df), int(len(df)), 0.0)
+# Hash fingerprint hợp nhất ở core/cache.py (v55) — single source of truth.
+from core.cache import df_fingerprint as _df_fingerprint
 
 
 def _donchian_mid(high: pd.Series, low: pd.Series, n: int) -> pd.Series:
@@ -121,15 +106,24 @@ def add_ichimoku(df: pd.DataFrame,
     # ── 5 thành phần Ichimoku gốc (Hosoda 1969) ─────────────────────────
     tenkan = _donchian_mid(H, L, tenkan_n)
     kijun  = _donchian_mid(H, L, kijun_n)
-    sen_a  = ((tenkan + kijun) / 2.0).shift(displace)
-    sen_b  = _donchian_mid(H, L, senkou_n).shift(displace)
+    # RAW (chưa shift) — đại diện MÂY TƯƠNG LAI sẽ hiển thị tại t+26.
+    # Cần expose riêng để classify_future_kumo (Tier 4) đọc đúng. Trước đó
+    # signal_engine đọc Senkou_A/Senkou_B.iloc[-1] = giá trị mây cũ tại t-26
+    # → "future kumo" thật ra là "past kumo" 26 bar stale.
+    sen_a_raw = (tenkan + kijun) / 2.0
+    sen_b_raw = _donchian_mid(H, L, senkou_n)
+    # Shift +26 để vẽ chart (chuẩn hiển thị Ichimoku: mây vẽ trước giá 26 phiên).
+    sen_a  = sen_a_raw.shift(displace)
+    sen_b  = sen_b_raw.shift(displace)
     chikou = C.shift(-displace)
 
-    out['Tenkan']   = tenkan
-    out['Kijun']    = kijun
-    out['Senkou_A'] = sen_a
-    out['Senkou_B'] = sen_b
-    out['Chikou']   = chikou
+    out['Tenkan']       = tenkan
+    out['Kijun']        = kijun
+    out['Senkou_A']     = sen_a
+    out['Senkou_B']     = sen_b
+    out['Senkou_A_raw'] = sen_a_raw   # cho future-kumo classifier (Tier 4)
+    out['Senkou_B_raw'] = sen_b_raw
+    out['Chikou']       = chikou
 
     # ── Kumo boundaries ────────────────────────────────────────────────
     kumo_top = pd.concat([sen_a, sen_b], axis=1).max(axis=1)
