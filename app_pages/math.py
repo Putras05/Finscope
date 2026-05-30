@@ -667,7 +667,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                 'Monte Carlo + GBM (Itô correction)',
                 [r'd \ln S_t = \left(\mu - \frac{\sigma^2}{2}\right) dt + \sigma \, dW_t',
                  r'\ln(S_t / S_{t-1}) \sim N\left((\mu - \sigma^2/2) \Delta t, \, \sigma^2 \Delta t\right)'],
-                'Mô phỏng Geometric Brownian Motion. Itô correction $\\mu - \\sigma^2/2$ đảm bảo $E[S_T] = S_0 e^{\\mu T}$. Bootstrap = resample lịch sử thay vì giả định Gaussian.',
+                'Mô phỏng Geometric Brownian Motion. Itô correction μ − σ²/2 đảm bảo E[S_T] = S₀·e^(μT). Bootstrap = resample lịch sử thay vì giả định Gaussian.',
                 'Geometric Brownian Motion simulation with Itô drift correction.',
                 components=[
                     ('S_t',         'Giá tài sản tại thời điểm t.',
