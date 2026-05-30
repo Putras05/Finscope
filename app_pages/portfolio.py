@@ -139,12 +139,14 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     ]
     for _kc, (_lbl, _val, _col) in zip(_kpi_cols, _kpi_data):
         _kc.markdown(
-            f'<div style="background:{_T["bg_card"]};border-radius:12px;padding:14px 16px;'
+            f'<div style="background:{_T["bg_card"]};border-radius:12px;padding:14px 16px 16px;'
             f'box-shadow:{_T["shadow_sm"]};border:1px solid {_T["border"]};'
-            f'border-top:3px solid {_col}">'
+            f'border-top:3px solid {_col};min-height:88px;word-break:break-word">'
             f'<div style="font-size:10px;font-weight:700;color:{_T["text_muted"]};'
-            f'letter-spacing:.7px;text-transform:uppercase;margin-bottom:6px">{_lbl}</div>'
-            f'<div style="font-size:15px;font-weight:800;color:{_col}">{_val}</div>'
+            f'letter-spacing:.7px;text-transform:uppercase;margin-bottom:6px;'
+            f'line-height:1.35">{_lbl}</div>'
+            f'<div style="font-size:clamp(14px, 1.45vw, 17px);font-weight:800;'
+            f'color:{_col};line-height:1.2">{_val}</div>'
             f'</div>', unsafe_allow_html=True)
 
     st.markdown('<div style="margin-top:14px"></div>', unsafe_allow_html=True)

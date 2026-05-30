@@ -116,10 +116,13 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     for col, (lbl, val, c) in zip(cols, _kpis):
         col.markdown(
             f'<div style="background:{_T["bg_card"]};border:1px solid {_T["border"]};'
-            f'border-top:3px solid {c};border-radius:10px;padding:12px 14px">'
+            f'border-top:3px solid {c};border-radius:10px;'
+            f'padding:14px 16px 16px;min-height:88px;word-break:break-word">'
             f'<div style="font-size:10px;font-weight:700;color:{_T["text_muted"]};'
-            f'text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">{lbl}</div>'
-            f'<div style="font-size:18px;font-weight:800;color:{c};line-height:1.1">{val}</div>'
+            f'text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;'
+            f'line-height:1.35">{lbl}</div>'
+            f'<div style="font-size:clamp(16px, 1.6vw, 19px);font-weight:800;'
+            f'color:{c};line-height:1.15">{val}</div>'
             f'</div>', unsafe_allow_html=True)
 
     # ── TOP MOVERS (gainers + losers) ──────────────────────────────────

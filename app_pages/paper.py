@@ -14,14 +14,18 @@ from data.fetcher import fetch_data
 
 
 def _kpi_card(label, value, color, _T, sub=None):
-    sub_html = (f'<div style="font-size:10px;color:{_T["text_muted"]};margin-top:3px">'
-                f'{sub}</div>' if sub else '')
+    # v58.2 — min-height 96 + clamp font cho text dài; word-break tránh tràn
+    sub_html = (f'<div style="font-size:10px;color:{_T["text_muted"]};'
+                f'margin-top:5px;line-height:1.45">{sub}</div>' if sub else '')
     return (
         f'<div style="background:{_T["bg_card"]};border:1px solid {_T["border"]};'
-        f'border-top:3px solid {color};border-radius:10px;padding:12px 14px">'
+        f'border-top:3px solid {color};border-radius:10px;'
+        f'padding:14px 16px 16px;min-height:96px;word-break:break-word">'
         f'<div style="font-size:10px;font-weight:700;color:{_T["text_muted"]};'
-        f'text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">{label}</div>'
-        f'<div style="font-size:18px;font-weight:800;color:{color};line-height:1.1">{value}</div>'
+        f'text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;'
+        f'line-height:1.35">{label}</div>'
+        f'<div style="font-size:clamp(16px, 1.6vw, 19px);font-weight:800;'
+        f'color:{color};line-height:1.15">{value}</div>'
         f'{sub_html}</div>'
     )
 
@@ -539,14 +543,15 @@ def _render_monte_carlo_section(state: dict, stats: dict, _T, is_en: bool) -> No
     m = mc['metrics']
     # KPI strip
     def _kpi(lbl_vi, lbl_en, val, col):
-        return (f'<div style="flex:1 1 150px;min-width:140px;background:{_T["bg_card"]};'
+        return (f'<div style="flex:1 1 175px;min-width:155px;background:{_T["bg_card"]};'
                 f'border:1px solid {_T["border"]};border-top:3px solid {col};'
-                f'border-radius:10px;padding:10px 12px">'
+                f'border-radius:10px;padding:12px 14px;min-height:80px;'
+                f'word-break:break-word">'
                 f'<div style="font-size:10px;color:{_T["text_muted"]};font-weight:700;'
-                f'text-transform:uppercase;letter-spacing:.5px">'
+                f'text-transform:uppercase;letter-spacing:.5px;line-height:1.35">'
                 f'{lbl_en if is_en else lbl_vi}</div>'
-                f'<div style="font-size:15px;font-weight:800;color:{col};margin-top:3px">'
-                f'{val}</div></div>')
+                f'<div style="font-size:clamp(14px, 1.45vw, 16px);font-weight:800;'
+                f'color:{col};margin-top:4px;line-height:1.2">{val}</div></div>')
 
     p_col = _T['success'] if m['prob_profit_pct'] >= 50 else _T['warning']
     var_col = _T['warning'] if m['var_95_loss_pct'] < 10 else _T['danger']
@@ -708,14 +713,15 @@ def _render_backtest_tab(ticker: str, df, _T, is_en: bool) -> None:
     m = result['metrics']
     # ── KPI strip ──────────────────────────────────────────────────────
     def _kpi(lbl_vi, lbl_en, val, col):
-        return (f'<div style="flex:1 1 160px;min-width:150px;background:{_T["bg_card"]};'
+        return (f'<div style="flex:1 1 180px;min-width:160px;background:{_T["bg_card"]};'
                 f'border:1px solid {_T["border"]};border-top:3px solid {col};'
-                f'border-radius:10px;padding:10px 12px">'
+                f'border-radius:10px;padding:12px 14px;min-height:82px;'
+                f'word-break:break-word">'
                 f'<div style="font-size:10px;color:{_T["text_muted"]};font-weight:700;'
-                f'text-transform:uppercase;letter-spacing:.5px">'
+                f'text-transform:uppercase;letter-spacing:.5px;line-height:1.35">'
                 f'{lbl_en if is_en else lbl_vi}</div>'
-                f'<div style="font-size:16px;font-weight:800;color:{col};margin-top:3px">'
-                f'{val}</div></div>')
+                f'<div style="font-size:clamp(14px, 1.5vw, 17px);font-weight:800;'
+                f'color:{col};margin-top:4px;line-height:1.2">{val}</div></div>')
 
     ret_col = _T['success'] if m['total_return_pct'] >= 0 else _T['danger']
     bh_col  = _T['success'] if m['buy_hold_return_pct'] >= 0 else _T['danger']
@@ -1219,11 +1225,13 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
              f'{stats["total_tax"]:,.0f} đ', _T['text_secondary']),
         ]
         _cells = ''.join(
-            f'<div style="flex:1 1 180px;min-width:170px;background:{_T["bg_card"]};'
+            f'<div style="flex:1 1 200px;min-width:180px;background:{_T["bg_card"]};'
             f'border:1px solid {_T["border"]};border-top:3px solid {col};border-radius:10px;'
-            f'padding:10px 12px"><div style="font-size:10px;color:{_T["text_muted"]};'
-            f'text-transform:uppercase;letter-spacing:.4px">{lbl}</div>'
-            f'<div style="font-size:15px;font-weight:800;color:{col};margin-top:3px">{val}</div></div>'
+            f'padding:12px 14px;min-height:82px;word-break:break-word">'
+            f'<div style="font-size:10px;color:{_T["text_muted"]};line-height:1.35;'
+            f'text-transform:uppercase;letter-spacing:.4px;font-weight:700">{lbl}</div>'
+            f'<div style="font-size:clamp(14px, 1.45vw, 16px);font-weight:800;'
+            f'color:{col};margin-top:4px;line-height:1.2">{val}</div></div>'
             for lbl, val, col in _detail)
         st.markdown(
             f'<div style="display:flex;gap:10px;flex-wrap:wrap">{_cells}</div>',

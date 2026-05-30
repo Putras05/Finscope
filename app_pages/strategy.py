@@ -236,11 +236,14 @@ def _technical_analysis_section(df, ticker, _T, is_en):
          f'{s["slope_pct"]:+.3f}%', _T['success'] if s['slope_pct'] >= 0 else _T['danger']),
     ]
     _cells = ''.join(
-        f'<div style="flex:1 1 150px;min-width:140px;background:{_T["bg_card"]};'
+        f'<div style="flex:1 1 180px;min-width:160px;background:{_T["bg_card"]};'
         f'border:1px solid {_T["border"]};border-top:3px solid {col};border-radius:10px;'
-        f'padding:10px 12px"><div style="font-size:10px;color:{_T["text_muted"]};'
-        f'text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">{lbl}</div>'
-        f'<div style="font-size:15px;font-weight:800;color:{col}">{val}</div></div>'
+        f'padding:12px 14px;min-height:82px;word-break:break-word">'
+        f'<div style="font-size:10px;color:{_T["text_muted"]};font-weight:700;'
+        f'text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;'
+        f'line-height:1.35">{lbl}</div>'
+        f'<div style="font-size:clamp(14px, 1.45vw, 16px);font-weight:800;'
+        f'color:{col};line-height:1.2">{val}</div></div>'
         for lbl, val, col in _rows)
     st.markdown(
         f'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">{_cells}</div>',
@@ -569,17 +572,20 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         (('Số lệnh' if not is_en else 'Trades'), f'{bt["n_trades"]}', _T['text_primary']),
         (('Tỷ lệ thắng' if not is_en else 'Win rate'), f'{bt["win_rate"]:.0f}%', _T['accent']),
         (('Sụt giảm tối đa' if not is_en else 'Max drawdown'), f'{bt["max_dd"]:.1f}%', _T['danger']),
-        (('Sharpe (năm)' if not is_en else 'Sharpe (ann.)'), f'{bt["sharpe"]:.2f}', _T['text_primary']),
+        (('Sharpe (năm)' if not is_en else 'Sharpe (ann.)'), f'{bt["sharpe"]:.2f}', _T['accent']),
         (('Phí giao dịch' if not is_en else 'Fee drag'), f'-{bt["total_fee"]:.1f}%', _T['warning']),
     ]
     _sc = st.columns(len(_stats))
     for _col, (_l, _v, _c) in zip(_sc, _stats):
         _col.markdown(
             f'<div style="background:{_T["bg_card"]};border:1px solid {_T["border"]};'
-            f'border-top:3px solid {_c};border-radius:10px;padding:10px 12px;text-align:center">'
-            f'<div style="font-size:10px;color:{_T["text_muted"]};text-transform:uppercase;'
-            f'letter-spacing:.5px;margin-bottom:4px">{_l}</div>'
-            f'<div style="font-size:16px;font-weight:800;color:{_c}">{_v}</div></div>',
+            f'border-top:3px solid {_c};border-radius:10px;'
+            f'padding:12px 14px;text-align:center;min-height:82px;word-break:break-word">'
+            f'<div style="font-size:10px;color:{_T["text_muted"]};font-weight:700;'
+            f'text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;'
+            f'line-height:1.35">{_l}</div>'
+            f'<div style="font-size:clamp(14px, 1.5vw, 17px);font-weight:800;'
+            f'color:{_c};line-height:1.2">{_v}</div></div>',
             unsafe_allow_html=True)
 
     _fee1 = bt['fee_side'] * 100      # %/chiều

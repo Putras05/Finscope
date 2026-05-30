@@ -27,11 +27,35 @@ def _theme_css(T: dict) -> str:
     overflow: visible !important;
 }}
 /* Card có border-top (KPI strip, ratios cards) — đảm bảo content không
-   chạm mép dưới. Padding-bottom + min-height đủ cho 3-4 dòng text. */
+   chạm mép dưới. Padding 14-16 + min-height 96 giữ card đều nhau khi
+   hint text wrap 1 vs 2 dòng (đặc biệt: "Quý gần nhất vs quý trước"
+   wrap 2 dòng vs "Tổng 4 quý" 1 dòng). word-break tránh value số dài
+   tràn ngang khi viewport hẹp. */
 [data-testid="stMain"] div[style*="border-top:3px"],
 [data-testid="stMain"] div[style*="border-top: 3px"] {{
-    padding-bottom: 14px !important;
+    padding: 14px 16px 16px !important;
     overflow: visible !important;
+    min-height: 96px !important;
+    word-break: break-word !important;
+}}
+/* v58.2 — KaTeX block formula overflow-x: scroll khi công thức dài
+   (SARIMA, SARIMAX, MAPE-MSE …) bị che ở viewport hẹp. */
+.katex-display {{
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    max-width: 100% !important;
+    padding: 4px 2px !important;
+}}
+.katex-display > .katex {{
+    white-space: nowrap !important;
+}}
+/* Custom KaTeX scrollbar — mỏng, theme-aware */
+.katex-display::-webkit-scrollbar {{
+    height: 6px !important;
+}}
+.katex-display::-webkit-scrollbar-thumb {{
+    background: {T['border']} !important;
+    border-radius: 3px !important;
 }}
 /* Banner header (Dashboard/Cơ bản/Chiến lược/Lịch sử) — gradient dark blue
    thường bị cut at top. */

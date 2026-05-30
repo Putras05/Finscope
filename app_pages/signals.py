@@ -703,7 +703,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             _cards += (
                 f'<div style="flex:1 1 280px;min-width:240px;background:{_T["bg_card"]};'
                 f'border:1px solid {_T["border"]};border-left:4px solid {_c};border-radius:10px;'
-                f'padding:12px 14px">'
+                f'padding:12px 14px;word-break:break-word">'
                 f'<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">'
                 f'<div style="font-size:10px;font-weight:700;color:{_muted};'
                 f'text-transform:uppercase;letter-spacing:.5px">{_cat}</div>{_val}</div>'
@@ -735,9 +735,9 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         _ORDER2 = {'trigger': 0, 'watch': 1, 'neutral': 2}
         for s in sorted(states, key=lambda x: _ORDER2.get(x['status'], 9)):
             _cells += (
-                f'<div style="flex:1 1 180px;min-width:170px;background:{_T["bg_card"]};'
+                f'<div style="flex:1 1 185px;min-width:175px;background:{_T["bg_card"]};'
                 f'border:1px solid {_T["border"]};border-left:3px solid {s["color"]};'
-                f'border-radius:8px;padding:9px 12px">'
+                f'border-radius:8px;padding:10px 12px;word-break:break-word">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center">'
                 f'<span style="font-size:10.5px;font-weight:700;color:{_T["text_muted"]};'
                 f'text-transform:uppercase;letter-spacing:.4px">{s["name"]}</span>'
@@ -808,13 +808,18 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     ])
 
     def _detail_card(col, title, value, color, hint):
+        # v58.2 — min-height + clamp font + word-break giống _kpi_card
         col.markdown(
             f'<div style="background:{_bg_card};border:1px solid {_brd};'
-            f'border-top:3px solid {color};border-radius:10px;padding:12px 14px">'
+            f'border-top:3px solid {color};border-radius:10px;'
+            f'padding:14px 16px 16px;min-height:108px;word-break:break-word">'
             f'<div style="font-size:10px;font-weight:700;color:{_muted};'
-            f'text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">{title}</div>'
-            f'<div style="font-size:20px;font-weight:800;color:{color};line-height:1.1">{value}</div>'
-            f'<div style="font-size:11px;color:{_fg_s};margin-top:5px;line-height:1.4">{hint}</div>'
+            f'text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;'
+            f'line-height:1.35">{title}</div>'
+            f'<div style="font-size:clamp(17px, 1.7vw, 21px);font-weight:800;'
+            f'color:{color};line-height:1.15">{value}</div>'
+            f'<div style="font-size:11px;color:{_fg_s};margin-top:5px;'
+            f'line-height:1.45">{hint}</div>'
             f'</div>', unsafe_allow_html=True)
 
     # ── TAB XU HƯỚNG ────────────────────────────────────────────────────

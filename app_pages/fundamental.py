@@ -26,14 +26,20 @@ def _fmt_pct(v: float) -> str:
 
 
 def _kpi_card(label, value, color, _T, hint=''):
+    # v58.2 — flex-basis 200, min-width 175 để value số dài "9,795 tỷ" /
+    # "-9,482 tỷ" hết wrap khi sidebar mở. Value font dùng clamp() tự co
+    # 16-18px theo width. word-break tránh tràn ngang.
     return (
-        f'<div style="flex:1 1 180px;min-width:160px;background:{_T["bg_card"]};'
+        f'<div style="flex:1 1 200px;min-width:175px;background:{_T["bg_card"]};'
         f'border:1px solid {_T["border"]};border-top:3px solid {color};border-radius:10px;'
-        f'padding:12px 14px">'
+        f'padding:14px 16px 16px;min-height:96px;word-break:break-word">'
         f'<div style="font-size:10px;font-weight:700;color:{_T["text_muted"]};'
-        f'text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">{label}</div>'
-        f'<div style="font-size:18px;font-weight:800;color:{color};line-height:1.1">{value}</div>'
-        f'<div style="font-size:11px;color:{_T["text_secondary"]};margin-top:4px">{hint}</div>'
+        f'text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;'
+        f'line-height:1.35">{label}</div>'
+        f'<div style="font-size:clamp(16px, 1.6vw, 19px);font-weight:800;'
+        f'color:{color};line-height:1.15">{value}</div>'
+        f'<div style="font-size:11px;color:{_T["text_secondary"]};'
+        f'margin-top:5px;line-height:1.45">{hint}</div>'
         f'</div>')
 
 
@@ -358,7 +364,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                   _T, 'Quý gần nhất vs quý trước'),
         _kpi_card(('TTM Doanh thu' if not is_en else 'TTM Revenue'),
                   _fmt_money(kpi['rev_ttm']),
-                  _T['text_primary'], _T, 'Tổng 4 quý'),
+                  _T['accent'], _T, 'Tổng 4 quý'),
         _kpi_card(('TTM LN sau thuế' if not is_en else 'TTM Net income'),
                   _fmt_money(kpi['ni_ttm']),
                   _T['success'], _T, 'Tổng 4 quý'),
