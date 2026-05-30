@@ -19,6 +19,42 @@ def _sector_of(tk: str) -> str:
     return s.split('·')[0].strip() if s else 'Khác'
 
 
+_EMPTY_COLS = ['ticker','sector','ref_price','last_price','change',
+               'change_pct','volume','value_M','market_cap_B','listed_share']
+
+
+def _snapshot_fallback_from_history(symbols: tuple) -> pd.DataFrame:
+    """Fallback khi MỌI Trading source fail (Streamlit Cloud thường gặp):
+    fetch giá đóng cửa mới nhất qua quote.history cho từng mã (cache disk
+    24h sẵn nên rất nhanh sau lần đầu). Trả schema giống price_board nhưng
+    ref_price = previous close, last_price = latest close, không có
+    listed_share/volume realtime → market_cap_B = 0 (caller hide column).
+    """
+    from data.fetcher import fetch_data
+    rows = []
+    for tk in symbols:
+        try:
+            df = fetch_data(tk)
+            if df is None or df.empty or len(df) < 2:
+                continue
+            last = float(df['Close'].iloc[-1]) * 1000  # nghìn đ → đồng
+            ref  = float(df['Close'].iloc[-2]) * 1000
+            vol  = float(df['Volume'].iloc[-1])
+            chg  = last - ref
+            pct  = (chg / ref * 100) if ref > 0 else 0.0
+            rows.append({
+                'ticker': tk, 'sector': _sector_of(tk),
+                'ref_price': ref, 'last_price': last, 'change': chg,
+                'change_pct': pct, 'volume': vol,
+                'value_M': last * vol / 1e6,  # đồng → triệu đ
+                'market_cap_B': 0.0,         # cần listed_share — bỏ
+                'listed_share': 0.0,
+            })
+        except Exception:
+            continue
+    return pd.DataFrame(rows)
+
+
 @st.cache_data(ttl=300, show_spinner=False)
 def market_snapshot(symbols: tuple) -> pd.DataFrame:
     """Snapshot toàn bộ symbols → DataFrame:
@@ -27,16 +63,15 @@ def market_snapshot(symbols: tuple) -> pd.DataFrame:
 
     Giá ở đơn vị đồng (raw từ price_board). value_M = triệu đ; market_cap_B =
     tỷ đ.
+
+    v58 — Triple source fallback (VCI → MSN → TCBS) + nếu cả 3 fail (đặc
+    biệt Streamlit Cloud) thì fallback xây snapshot từ quote.history (cache
+    disk 24h, đã có sẵn cho mọi ticker đã visit).
     """
     import contextlib, io
-    # v56 — Dùng singleton + throttle (chia rate-limit với fetcher/fundamental/capm)
-    # v58 — Multi-source fallback: VCI → MSN. Streamlit Cloud thường fail VCI
-    # endpoint → thử MSN trước khi raise empty.
     from data._clients import vn_trading, throttle
-    _empty_cols = ['ticker','sector','ref_price','last_price','change',
-                   'change_pct','volume','value_M','market_cap_B','listed_share']
     pb = None
-    for source in ['VCI', 'MSN']:
+    for source in ['VCI', 'MSN', 'TCBS']:
         try:
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 throttle()
@@ -45,8 +80,11 @@ def market_snapshot(symbols: tuple) -> pd.DataFrame:
                 break
         except Exception:
             pb = None
+    # v58 — Khi cả 3 Trading source fail: build snapshot từ quote.history.
+    # Chậm hơn (53 API call) nhưng cache disk 24h → mọi mã đã warm sau lần
+    # đầu. Tốt hơn rất nhiều việc hiện banner "Snapshot rỗng" mãi.
     if pb is None or len(pb) == 0:
-        return pd.DataFrame(columns=_empty_cols)
+        return _snapshot_fallback_from_history(symbols)
     rows = []
     for _, r in pb.iterrows():
         try:

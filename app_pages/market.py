@@ -75,8 +75,23 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         except Exception as e:
             st.error(f'Không lấy được snapshot: {str(e)[:120]}')
             return
+    # v58 — Snapshot rỗng: hiện banner + nút Refresh thay vì im lặng
     if mdf.empty:
-        st.warning('Snapshot rỗng — thử lại sau ít phút.' if not is_en else 'Empty snapshot — retry later.')
+        _c1, _c2 = st.columns([4, 1])
+        with _c1:
+            st.warning(
+                ('Snapshot tạm thời rỗng — nguồn dữ liệu thị trường đang '
+                 'bảo trì. Vẫn truy cập được từng mã ở trang Dashboard.')
+                if not is_en else
+                ('Market snapshot temporarily empty — data source under '
+                 'maintenance. Per-ticker data still available on Dashboard.'))
+        with _c2:
+            if st.button(('Làm mới' if not is_en else 'Refresh'),
+                          key='_market_refresh_btn',
+                          use_container_width=True):
+                # Clear cache key để fetch lại ngay
+                st.cache_data.clear()
+                st.rerun()
         return
 
     kpi = market_kpis(mdf)
