@@ -83,15 +83,16 @@ def render_topbar() -> tuple:
 
     # ── Header thương hiệu — wordmark gradient + huy hiệu logo ───────────
     # WORDMARK: "Fin" đậm-tối + "Scope" gradient blue→teal (background-clip).
-    # v58 — line-height 1 → 1.3 + padding-bottom 2px để chống clip mép trên
-    # khi parent có overflow:hidden hoặc layout siết.
+    # v58 — line-height 1.5 + padding 6px chống clip descender 'p' trong
+    # 'Scope'. Background-clip:text + descender + overflow:hidden parent =
+    # cắt mép dưới → tăng line-height + padding cho buffer đủ.
     _wm_html = (
         f"<span style='display:inline-flex;align-items:center;gap:10px;"
         f"font-family:Inter,system-ui,sans-serif;font-size:24px;"
-        f"font-weight:800;letter-spacing:-.8px;line-height:1.3;"
-        f"padding:2px 0;flex-shrink:0'>"
+        f"font-weight:800;letter-spacing:-.8px;line-height:1.5;"
+        f"padding:6px 0;flex-shrink:0;overflow:visible'>"
         f"{_LOGO_SVG}"
-        f"<span style='display:inline-block;line-height:1.2'>"
+        f"<span style='display:inline-block;line-height:1.4;padding-bottom:3px'>"
         f"<span style='color:{_HDR_TX}'>Fin</span>"
         f"<span style='background:linear-gradient(90deg,#1E40AF 0%,#0891B2 60%,#0F766E 100%);"
         f"-webkit-background-clip:text;background-clip:text;color:transparent;"
@@ -153,8 +154,8 @@ def render_topbar() -> tuple:
         # text-stroke vẽ đầy đủ.
         st.markdown(
             f"<div style='display:flex;align-items:center;gap:14px;"
-            f"flex-wrap:nowrap;padding:10px 4px 6px;"
-            f"min-height:50px;overflow:visible'>"
+            f"flex-wrap:nowrap;padding:12px 4px 12px;"
+            f"min-height:60px;overflow:visible'>"
             f"{_wm_html}"
             f"<span style='font-size:10.5px;font-weight:700;color:#0F766E;"
             f"background:linear-gradient(90deg,#ECFEFF 0%,#F0FDFA 100%);"
