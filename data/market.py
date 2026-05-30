@@ -125,13 +125,13 @@ def market_snapshot(symbols: tuple) -> pd.DataFrame:
         pb = _try_source_with_timeout(source, symbols, timeout_s=3.0)
         if pb is not None and len(pb) > 0:
             break
-    # L4: per-ticker history fallback (~30-90s lần đầu, instant sau khi cache)
+    # v58 — Khi L1-L3 fail: ƯU TIÊN L5 STATIC JSON (instant) thay vì L4
+    # per-ticker fetch (85s × throttle). Trên Streamlit Cloud, vnstock thường
+    # fail cả 3 source → L4 sẽ stuck → BGK đợi mãi. Static JSON commit ngày
+    # 30/5 hiện ngay → user có data thấy ngay, banner "snapshot offline".
+    # L4 chỉ trigger thủ công qua nút "Làm mới live" (TODO future).
     if pb is None or len(pb) == 0:
-        df = _snapshot_fallback_from_history(symbols)
-        # L5: nếu L4 cũng empty (tất cả ticker fetch fail) → load static JSON
-        if df.empty:
-            return _snapshot_from_static_json(symbols)
-        return df
+        return _snapshot_from_static_json(symbols)
     rows = []
     for _, r in pb.iterrows():
         try:

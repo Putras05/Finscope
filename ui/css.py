@@ -1612,9 +1612,11 @@ div:has(> span:only-child[class*="viewerBadge"]) {
 }
 
 /* Desktop: constrain max-width để không bị stretch xấu trên 4K/ultrawide.
-   Auto center với margin:auto. Mobile media-query bên dưới override khi cần. */
+   Auto center với margin:auto. Mobile media-query bên dưới override khi cần.
+   v58 — top padding 2.5rem (thay 1rem) để FinScope logo SVG (icon kính lúp)
+   không bị clip ở mép trên page. */
 .main .block-container {
-    padding: 1rem 2rem 3rem;
+    padding: 2.5rem 2rem 3rem;
     max-width: 1600px;
     margin: 0 auto;
 }
