@@ -144,6 +144,19 @@ if not _in_test and not _on_cloud:
     except Exception:
         pass
 
+# v58 — Pre-warm MARKET SNAPSHOT trên Cloud trong background (1 API call,
+# không nặng). Khi user click qua trang Thị trường thì snapshot đã sẵn
+# trong cache → instant thay vì spinner 30-90s.
+if not _in_test and _on_cloud and not st.session_state.get('_market_prewarmed'):
+    st.session_state['_market_prewarmed'] = True
+    try:
+        import threading as _th
+        from data.market import market_snapshot as _ms
+        from core.constants import TICKERS as _TICKERS
+        _th.Thread(target=lambda: _ms(tuple(_TICKERS)), daemon=True).start()
+    except Exception:
+        pass
+
 # Điều hướng + tham số ở TOP main area (luôn hiển thị, không phụ thuộc sidebar)
 page, ticker, train_ratio, date_from, date_to, ar_order = render_topbar()
 

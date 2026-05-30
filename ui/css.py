@@ -437,20 +437,27 @@ def _theme_css(T: dict) -> str:
 
 /* ══ SLIDER (main area) ══════════════════════════════════════════════════════ */
 [data-testid="stMain"] [data-testid="stSlider"] {{
-    padding: 4px 0 !important;
+    /* v58 — Tăng padding-bottom 10px để tick label (70%/90%) tách khỏi
+       value bubble (80%) phía trên slider thumb. */
+    padding: 4px 0 12px !important;
 }}
 [data-testid="stMain"] [data-testid="stSlider"] [data-testid="stTickBar"] > div,
 [data-testid="stMain"] [data-testid="stSlider"] [data-testid="stTickBar"] * {{
-    color: {T['text_secondary']} !important;
-    font-size: 11px !important;
-    font-weight: 700 !important;
+    color: {T['text_muted']} !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    /* v58 — margin-top 4px để tick text không dính sát slider thumb */
+    margin-top: 4px !important;
 }}
 [data-testid="stMain"] [data-testid="stSlider"] [data-testid="stThumbValue"] p,
+[data-testid="stMain"] [data-testid="stSlider"] [data-testid="stThumbValue"],
 [data-testid="stMain"] [data-testid="stSlider"] output {{
     color: {T['accent']} !important;
-    font-weight: 700 !important;
-    font-size: 12px !important;
+    font-weight: 800 !important;
+    font-size: 13px !important;
     background: transparent !important;
+    /* v58 — bubble value lên cao hơn (translateY -4px) để không đè tick */
+    transform: translateY(-2px) !important;
 }}
 [data-testid="stMain"] [data-testid="stSlider"] [role="slider"] {{
     background: {T['accent']} !important;
