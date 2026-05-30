@@ -241,26 +241,6 @@ def _render_auth_panel() -> None:
     import streamlit as _st
     from auth.store import create_user, verify_credentials, update_last_seen
     from auth.session import login_user, login_as_guest
-    from core.config import is_streamlit_cloud
-
-    # v58 — Cảnh báo persistent khi deploy Streamlit Cloud (filesystem
-    # ephemeral). Khuyến nghị ban giám khảo dùng chế độ Khách demo nhanh.
-    if is_streamlit_cloud():
-        _st.markdown(
-            '<div style="max-width:560px;margin:14px auto 4px;'
-            'background:linear-gradient(135deg,#FEF3C7 0%,#FDE68A 100%);'
-            'border:1px solid #F59E0B;border-radius:10px;'
-            'padding:10px 16px;font-size:12.5px;color:#78350F;'
-            'box-shadow:0 2px 8px rgba(245,158,11,0.20);'
-            'position:relative;z-index:5">'
-            '<div style="font-weight:700;margin-bottom:3px">'
-            '⚠ Demo hội thi — tài khoản lưu tạm</div>'
-            '<div style="line-height:1.5">Streamlit Cloud sẽ reset dữ liệu '
-            'khi container restart (sau khi đẩy code mới hoặc app rảnh 7 '
-            'ngày). Khuyến nghị ban giám khảo dùng <b>chế độ Khách</b> để '
-            'trải nghiệm nhanh, không cần đăng ký.</div>'
-            '</div>',
-            unsafe_allow_html=True)
 
     _st.markdown(
         '<div style="max-width:560px;margin:18px auto 6px;'
