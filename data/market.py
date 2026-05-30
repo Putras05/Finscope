@@ -1,10 +1,8 @@
-"""Tổng quan Thị trường — snapshot 53 mã HOSE: giá, % thay đổi, market cap.
+"""Tổng quan Thị trường — snapshot 53 mã HOSE: giá, % thay đổi, vốn hóa.
 
-Nguồn: vnstock Trading.price_board (1 lệnh gọi cho cả 53 mã → nhẹ hơn fetch
-từng mã). Cache 5 phút để không hammer API.
-
-Đây là dữ liệu CƠ BẢN nhất cho app chuyên chứng khoán — thiếu cái này
-thì không thấy bức tranh thị trường, chỉ thấy 1 mã đang xem.
+Nguồn chính: vnstock Trading.price_board (1 lệnh gọi cho cả 53 mã). Có
+5-level fallback (VCI → MSN → TCBS → per-ticker history → static JSON
+commit trong repo) để đảm bảo luôn có dữ liệu kể cả khi mọi API live fail.
 """
 import streamlit as st
 import pandas as pd
@@ -56,12 +54,9 @@ def _snapshot_fallback_from_history(symbols: tuple) -> pd.DataFrame:
 
 
 def _snapshot_from_static_json(symbols: tuple) -> pd.DataFrame:
-    """v58 — LEVEL 5 fallback: đọc snapshot từ data/static/snapshot.json
-    commit trong repo. Instant load, hiển thị data ngày commit.
-
-    Generate file bằng cách chạy local (vnstock work):
-      python -c "from data.market import market_snapshot; ..."
-    rồi commit `data/static/snapshot.json` lên GitHub.
+    """Level 5 fallback: đọc snapshot từ data/static/snapshot.json commit
+    trong repo. Instant load, hiển thị data tại thời điểm commit. Generate
+    bằng cách chạy market_snapshot() local rồi commit file lên GitHub.
     """
     import json
     from pathlib import Path
@@ -83,8 +78,8 @@ def _snapshot_from_static_json(symbols: tuple) -> pd.DataFrame:
 
 
 def _try_source_with_timeout(source: str, symbols: tuple, timeout_s: float = 3.0):
-    """v58 — Gọi vn_trading(source).price_board với HARD TIMEOUT.
-    Tránh stuck 30s khi network slow. Trả None nếu timeout/fail.
+    """Gọi vn_trading(source).price_board với HARD TIMEOUT (tránh stuck
+    30s khi network slow). Trả None nếu timeout/fail.
     """
     import contextlib, io
     from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -104,32 +99,23 @@ def _try_source_with_timeout(source: str, symbols: tuple, timeout_s: float = 3.0
 
 @st.cache_data(ttl=300, show_spinner=False)
 def market_snapshot(symbols: tuple) -> pd.DataFrame:
-    """Snapshot toàn bộ symbols → DataFrame:
+    """Snapshot 53 mã HOSE → DataFrame schema:
     ['ticker', 'sector', 'ref_price', 'last_price', 'change', 'change_pct',
      'volume', 'value_M', 'market_cap_B', 'listed_share'].
 
-    Giá ở đơn vị đồng (raw từ price_board). value_M = triệu đ; market_cap_B =
-    tỷ đ.
+    Giá đơn vị đồng (raw từ price_board); value_M triệu đ; market_cap_B tỷ đ.
 
-    v58 — 5-LEVEL fallback chain:
-      L1: VCI Trading.price_board (3s timeout)
-      L2: MSN Trading.price_board (3s timeout)
-      L3: TCBS Trading.price_board (3s timeout)
-      L4: per-ticker history (cache disk 24h sau lần đầu)
-      L5: STATIC snapshot từ data/static/snapshot.json (instant, offline)
-
-    Worst case all live source fail: instant load từ JSON commit trong repo.
+    Fallback chain: VCI → MSN → TCBS (timeout 3s mỗi nguồn) → static JSON
+    snapshot commit trong repo. Worst case (mọi API live fail): instant
+    load từ JSON, banner offline.
     """
     pb = None
     for source in ['VCI', 'MSN', 'TCBS']:
         pb = _try_source_with_timeout(source, symbols, timeout_s=3.0)
         if pb is not None and len(pb) > 0:
             break
-    # v58 — Khi L1-L3 fail: ƯU TIÊN L5 STATIC JSON (instant) thay vì L4
-    # per-ticker fetch (85s × throttle). Trên Streamlit Cloud, vnstock thường
-    # fail cả 3 source → L4 sẽ stuck → BGK đợi mãi. Static JSON commit ngày
-    # 30/5 hiện ngay → user có data thấy ngay, banner "snapshot offline".
-    # L4 chỉ trigger thủ công qua nút "Làm mới live" (TODO future).
+    # Khi cả 3 live source fail: ưu tiên static JSON (instant) thay vì
+    # per-ticker fetch (53 × throttle = 85s, BGK đợi mãi).
     if pb is None or len(pb) == 0:
         return _snapshot_from_static_json(symbols)
     rows = []

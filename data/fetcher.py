@@ -14,10 +14,9 @@ def _fetch_raw(ticker: str) -> pd.DataFrame:
     cp1252 các ký tự đó gây UnicodeEncodeError → vỡ fetch (đã thấy ở ACB).
     """
     import contextlib, io
-    # v56 — Dùng singleton stock handle + throttle để stay dưới vnstock 20 r/m.
-    # v57 — gọi từ user-initiated fetch → throttle_fg() (1.6s thay vì 3.4s).
-    # v58 — bọc try/except quanh network call để fail gracefully (vnstock down,
-    # rate-limit, ticker delisted, ...). Trả empty DataFrame schema thay vì
+    # Singleton stock handle + throttle foreground (1.6s) cho user-initiated
+    # fetch. Try/except bao network call → fail gracefully khi vnstock down /
+    # rate-limit / ticker delisted: trả empty DataFrame đúng schema thay vì
     # raise — caller check df.empty rồi hiện banner thân thiện.
     from data._clients import vn_stock, throttle_fg
     try:

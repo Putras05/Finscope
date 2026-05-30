@@ -1,18 +1,11 @@
-"""Singleton vnstock clients (`@st.cache_resource`) + token bucket throttle
-để mọi module trong app gọi vnstock CHIA SẺ cùng 1 client + cùng 1 rate limit.
+"""Singleton vnstock clients + token bucket throttle: mọi module trong app
+chia sẻ chung 1 Vnstock() root + 1 rate limit toàn cục.
 
-Trước v56: mỗi `data.fetcher._fetch_raw` / `data.market.market_snapshot` /
-`data.fundamental.fetch_financials` / `services.capm.fetch_vnindex` rebuild
-`Vnstock()` instance fresh → TLS handshake ~200-500ms × 4 module × N call.
-
-Sau v56: 1 `Vnstock()` root + N `vn_stock(symbol)` cached_resource (mỗi
-symbol 1 lần init + tái dùng) + `throttle()` token bucket guarantee tổng
-mọi thread/module ≤ 1 call / MIN_INTERVAL_SEC = 1 call / 3.4s = 17.6 r/m
-< 20 r/m vnstock ceiling.
-
-THAM KHẢO:
-  Streamlit docs — cache_resource pattern for connections.
-  GitHub finance/quant Streamlit repos.
+  - `vn_root()`: Vnstock() instance dùng chung (init 1 lần/process).
+  - `vn_stock(symbol)`: stock handle cached theo symbol.
+  - `vn_trading(source)`: trading handle (market snapshot, price board).
+  - `throttle()` / `throttle_fg()`: token bucket ≤ 20 req/min (vnstock
+    ceiling). throttle_fg dùng interval ngắn hơn cho user-initiated fetch.
 """
 from __future__ import annotations
 import threading
