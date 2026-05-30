@@ -33,10 +33,18 @@ def _theme_css(T: dict) -> str:
    tràn ngang khi viewport hẹp. */
 [data-testid="stMain"] div[style*="border-top:3px"],
 [data-testid="stMain"] div[style*="border-top: 3px"] {{
-    padding: 14px 16px 16px !important;
+    padding: 14px 16px 18px !important;
     overflow: visible !important;
     min-height: 96px !important;
     word-break: break-word !important;
+}}
+/* v58.5 — Cards có border-top:5px (Dashboard KPI strip + Top-3 model
+   forecast cards) — user báo "khúc dưới bị mất / cut". Bottom padding
+   cần > 20px vì các card này có chart sparkline + badge BEST MODEL
+   ngay sát đáy. Min-height bằng 0 (cards tự cao theo content). */
+[data-testid="stMain"] div[style*="border-top:5px"],
+[data-testid="stMain"] div[style*="border-top: 5px"] {{
+    padding-bottom: 22px !important;
 }}
 /* v58.2 — KaTeX block formula overflow-x: scroll khi công thức dài
    (SARIMA, SARIMAX, MAPE-MSE …) bị che ở viewport hẹp. */

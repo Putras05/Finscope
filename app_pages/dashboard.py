@@ -569,15 +569,16 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     vol_color   = '#C62828' if vol_ratio_v > 2 else ('#F9A825' if vol_ratio_v > 1.5 else '#2E7D32')
     sp30_svg    = sparkline_svg(df['Close'].values[-30:] * 1000, col_t)
 
+    # v58.5 — padding-bottom 22px (cũ 18) cho descender + chart breathing
     _CARD_STYLE = (
-        f'background:{_T["bg_card"]};border-radius:14px;padding:18px 14px;'
+        f'background:{_T["bg_card"]};border-radius:14px;padding:18px 14px 22px;'
         f'box-shadow:{_T["shadow_md"]};border:1px solid {_T["border"]};'
-        f'min-height:160px;box-sizing:border-box;'
+        f'min-height:170px;box-sizing:border-box;'
     )
     c_hero, c_rsi, c_ma, c_vol = st.columns([4, 2, 2, 2])
     with c_hero:
         st.markdown(
-            f'<div style="{_CARD_STYLE}border-top:5px solid {col_t};padding:18px 20px;">'
+            f'<div style="{_CARD_STYLE}border-top:5px solid {col_t};padding:18px 20px 22px;">'
             f'<div style="font-size:10px;font-weight:700;color:{_T["text_secondary"]};letter-spacing:.7px;'
             f'text-transform:uppercase;margin-bottom:8px">'
             f'{t("dash.latest_price")} &nbsp;·&nbsp; <b>{ngay}</b> '
@@ -886,9 +887,12 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                         f'{t("dash.ci95")}: <b style="color:{chg_col}">'
                         f'[{_lo*1000:,.0f} – {_hi*1000:,.0f}]</b></div>')
         with mcol:
+            # v58.5 — bỏ overflow:hidden (cut khúc dưới khi badge sát đáy)
+            # + padding-bottom 24 cho BEST MODEL/2ND/3RD badge có khoảng thở.
             st.markdown(
-                f'<div style="background:{_T["bg_card"]};border-radius:16px;padding:20px 18px;'
-                f'border-top:5px solid {col_m};{_border}position:relative;overflow:hidden">'
+                f'<div style="background:{_T["bg_card"]};border-radius:16px;'
+                f'padding:20px 18px 24px;'
+                f'border-top:5px solid {col_m};{_border}position:relative">'
                 f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">'
                 f'<div style="font-size:11px;font-weight:600;color:{_T["text_secondary"]};letter-spacing:1.2px;'
                 f'text-transform:uppercase">{t("col.model")}</div>'
