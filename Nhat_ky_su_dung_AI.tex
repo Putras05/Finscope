@@ -190,6 +190,26 @@ $\begin{array}{llll}
 
 \textit{Kết quả.} Bốn agent hoàn thành rà soát toàn dự án trong $\sim$2 phút. Nhóm em chốt 4 cải tiến: (i) phí + thuế HOSE + MDD + Sharpe cho Paper; (ii) card đối sánh Cơ bản vs Kỹ thuật; (iii) bảng peer ngành; (iv) gộp 2 bảng ``Dự báo'' và ``Xếp hạng'' trùng nội dung 80\% thành 1 bảng 10 cột.
 
+\subsection{Tối ưu hiệu năng cho Streamlit Cloud free tier (1 CPU, 1 GB RAM)}
+
+\textit{Mục tiêu:} sản phẩm phải mượt mà cả khi triển khai trực tuyến cho ban giám khảo, không chỉ trên máy nhóm em.
+
+\begin{promptbox}
+\footnotesize Spawn 4 agent song song audit perf riêng cho Streamlit Cloud: (1) DOM render path trang Thị trường -- vì sao 53-card heatmap chậm trên 1 CPU; (2) chiến lược caching và data source thay thế khi \texttt{vnstock} fail trên Cloud Linux; (3) Plotly render perf -- giảm trace/point; (4) Streamlit Cloud limits thực tế (background thread, memory, WebSocket). Mỗi agent dưới 500 từ, gợi ý fix cụ thể với file:line.
+\end{promptbox}
+
+\textit{Kết quả.} Bốn agent xác định root cause: (a) fallback per-ticker $\times$ 53 mã $\times$ throttle 1{,}6 s $=$ 85 s; (b) preload daemon spawn 2 thread/session $\to$ 200+ thread khi 100 user concurrent $\to$ CPU saturate; (c) heatmap 53 SVG sparkline $=$ 44 KB DOM payload. Nhóm em chốt giải pháp \emph{5-level fallback} cho \texttt{market\_snapshot}: VCI $\to$ MSN $\to$ TCBS (timeout 3 s mỗi nguồn) $\to$ per-ticker history $\to$ \emph{snapshot tĩnh JSON} commit trong repo. Lớp cuối đảm bảo trang Thị trường \emph{luôn} có dữ liệu, kể cả khi mọi API live đều fail. Bỏ preload daemon khi detect Cloud, chỉ pre-warm 1 thread market snapshot. Bỏ matplotlib (giảm 80 MB build), thay sparkline PNG bằng SVG pure Python.
+
+\subsection{Hợp tác AI để chuẩn bị tài liệu nộp ban giám khảo}
+
+\textit{Mục tiêu:} 4 tệp PDF (mô tả ngắn, báo cáo chi tiết, nhật ký AI, code nguồn dữ liệu) đồng bộ trình bày, tuân thủ chuẩn NCKH Khoa Toán -- Thống kê TDT.
+
+\begin{promptbox}
+\footnotesize Soạn 4 PDF LaTeX: \texttt{Mo\_ta\_san\_pham.pdf} 1--2 trang theo mẫu hội thi (tên đề tài, thành viên, danh mục file, hướng dẫn xem); \texttt{Bao\_cao\_san\_pham.pdf} chi tiết tất cả công thức + diễn giải từng thành phần dạng itemize lồng + 29 trích dẫn APA; \texttt{Nhat\_ky\_su\_dung\_AI.pdf} đúng 5 trang theo Hạng mục B; \texttt{Code\_nguon\_du\_lieu.pdf} trích đoạn ba file Python tầng dữ liệu (\texttt{\_clients.py}, \texttt{fetcher.py}, \texttt{market.py}). Trang bìa dùng \textbf{form NCKH gốc} (centerline text, không khung), không màu xanh ``chuyên nghiệp giả'', đầy đủ logo TDT + tên hội thi + chủ đề AI + đơn vị + nhóm. Tự XeLaTeX-compile, verify, tự fix overfull-hbox.
+\end{promptbox}
+
+\textit{Kết quả.} Cả 4 PDF hoàn thành theo đúng đặc tả. AI tự bật chuyển từ \texttt{pdflatex+listings} sang \texttt{xelatex+fvextra} khi gặp lỗi UTF-8 trong code Python tiếng Việt. Phần \texttt{listings} ban đầu render hỏng tiếng Việt trong comment $\to$ chuyển sang \texttt{fancyvrb}, đảm bảo BGK đọc được nguyên văn comment tiếng Việt trong code.
+
 % =====================================================================
 %  CHƯƠNG 3 — ĐÁNH GIÁ
 % =====================================================================
