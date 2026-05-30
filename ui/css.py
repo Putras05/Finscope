@@ -49,11 +49,15 @@ def _theme_css(T: dict) -> str:
     color: {T['text_secondary']} !important;
     background: {T['bg_elevated']} !important;
     border-left: 4px solid {T['accent']} !important;
-    padding: 5px 12px !important;
+    padding: 7px 14px !important;
     border-radius: 0 6px 6px 0 !important;
     font-size: 10.5px !important; font-weight: 800 !important;
     letter-spacing: 1.2px !important; text-transform: uppercase !important;
-    margin: 20px 0 12px !important;
+    /* v58 — margin-bottom 18px (thay vì 12px) để header không dính chart Plotly
+       phía dưới. Margin-top giữ 22px cho khoảng cách section. */
+    margin: 22px 0 18px !important;
+    display: block !important;
+    line-height: 1.4 !important;
 }}
 
 /* ══ TABS ════════════════════════════════════════════════════════════════════ */

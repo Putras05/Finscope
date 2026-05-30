@@ -142,19 +142,24 @@ def render_topbar() -> tuple:
         f"letter-spacing:.6px'>{_u_role}</span></span></div>")
 
     # Header: wordmark trái — bell + chip + logout sub-cột phải, tất cả INLINE
-    _hdr_l, _hdr_r1, _hdr_r2 = st.columns([4.2, 1.5, 0.7])
+    # v58 — Tăng tỷ trọng cột trái (5.5/1.2/0.6 thay vì 4.2/1.5/0.7) để
+    # FinScope + tagline + badge có chỗ thở. Giảm font subtitle 12.5 → 11.5
+    # + thêm white-space:nowrap cho badge để không xuống dòng giữa chừng.
+    _hdr_l, _hdr_r1, _hdr_r2 = st.columns([5.5, 1.2, 0.6])
     with _hdr_l:
         st.markdown(
-            f"<div style='display:flex;align-items:center;gap:12px;"
-            f"flex-wrap:wrap;padding:6px 4px 4px'>"
+            f"<div style='display:flex;align-items:center;gap:10px;"
+            f"flex-wrap:nowrap;padding:6px 4px 4px;overflow:hidden'>"
             f"{_wm_html}"
-            f"<span style='width:1px;height:22px;background:{_DIVIDER}'></span>"
-            f"<span style='font-size:12.5px;color:{_SUB_TX};font-weight:500;"
-            f"letter-spacing:.2px'>{t('app.tagline')}</span>"
+            f"<span style='width:1px;height:22px;background:{_DIVIDER};"
+            f"flex-shrink:0'></span>"
+            f"<span style='font-size:11.5px;color:{_SUB_TX};font-weight:500;"
+            f"letter-spacing:.2px;white-space:nowrap;overflow:hidden;"
+            f"text-overflow:ellipsis;min-width:0'>{t('app.tagline')}</span>"
             f"<span style='font-size:10.5px;font-weight:700;color:#0F766E;"
             f"background:linear-gradient(90deg,#ECFEFF 0%,#F0FDFA 100%);"
             f"border:1px solid #99F6E4;padding:3px 10px;border-radius:999px;"
-            f"letter-spacing:.4px'>"
+            f"letter-spacing:.4px;white-space:nowrap;flex-shrink:0'>"
             f"{'Multi-model · 2026' if _is_en else 'Đa mô hình · 2026'}</span>"
             f"</div>", unsafe_allow_html=True)
     with _hdr_r1:
@@ -171,15 +176,25 @@ def render_topbar() -> tuple:
             st.rerun()
 
     # ── Navigation ngang ────────────────────────────────────────────────
-    _labels = [
-        t('nav.dashboard'),   t('nav.market'),    t('nav.fundamental'),
-        t('nav.analysis'),    t('nav.advanced'),  t('nav.strategy'),
-        t('nav.news'),        t('nav.signals'),   t('nav.history'),
-        t('nav.portfolio'),   t('nav.paper'),
-        ('Cơ sở Toán học' if not _is_en else 'Math Foundations'),
-        ('Hồ sơ' if not _is_en else 'Profile'),
-        t('nav.guide'),
-    ]
+    # v58 — Labels NGẮN GỌN (1-2 từ) để 14 items fit 1 hàng, không wrap 3 dòng.
+    # Vẫn giữ icon riêng + tooltip mô tả đầy đủ qua title attr (option_menu
+    # hỗ trợ qua menu_icon_help).
+    if _is_en:
+        _labels = [
+            'Dashboard', 'Market', 'Fundamental',
+            'Analysis', 'Advanced', 'Strategy',
+            'News', 'Signals', 'History',
+            'Portfolio', 'Paper',
+            'Math', 'Profile', 'Guide',
+        ]
+    else:
+        _labels = [
+            'Dashboard', 'Thị trường', 'Cơ bản',
+            'Chi tiết', 'Nâng cao', 'Chiến lược',
+            'Tin tức', 'Tín hiệu', 'Lịch sử',
+            'Danh mục', 'Paper',
+            'Cơ sở Toán', 'Hồ sơ', 'Hướng dẫn',
+        ]
     if '_page_key' not in st.session_state:
         st.session_state['_page_key'] = 'Dashboard Tổng quan'
     _cur = (_PAGE_KEYS.index(st.session_state['_page_key'])
@@ -222,9 +237,10 @@ def render_topbar() -> tuple:
             'container': {'padding': '4px', 'background-color': _bg,
                           'border-radius': '12px', 'border': f'1px solid {_brd}',
                           'margin-bottom': '6px'},
-            'nav-link': {'font-size': '12.5px', 'font-weight': '600',
-                         'color': _txt, 'padding': '8px 12px',
-                         'border-radius': '8px', 'margin': '0 2px',
+            'nav-link': {'font-size': '12px', 'font-weight': '600',
+                         'color': _txt, 'padding': '7px 9px',
+                         'border-radius': '7px', 'margin': '0 1px',
+                         'white-space': 'nowrap',
                          '--hover-color': _hover},
             'nav-link-selected': {'background-color': _sel_bg, 'color': _sel_tx,
                                   'font-weight': '700'},
