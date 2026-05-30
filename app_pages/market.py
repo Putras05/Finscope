@@ -194,17 +194,25 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                 f'{"sắp theo vốn hóa giảm dần · màu theo % thay đổi" if not is_en else "sorted by mcap desc · colored by %change"}</span></div>',
                 unsafe_allow_html=True)
     sorted_df = mdf.sort_values('market_cap_B', ascending=False)
-    # Pre-load 5-close cho toàn bộ ticker — cached 5'/per session, fail-safe
-    try:
-        _spark_map = _last5_close_map(tuple(sorted_df['ticker'].tolist()))
-    except Exception:
+    # v58 — SKIP sparkline khi >30 ticker để giảm DOM payload 44KB → ~5KB
+    # (53 SVG × 850 bytes/SVG). Trên Streamlit Cloud 1 CPU, lưu cũng giúp
+    # giảm paint time 80-150ms. Trade-off: bỏ trend visual, nhưng % thay
+    # đổi + arrow đã đủ thông tin.
+    _show_sparkline = len(sorted_df) <= 30
+    if _show_sparkline:
+        try:
+            _spark_map = _last5_close_map(tuple(sorted_df['ticker'].tolist()))
+        except Exception:
+            _spark_map = {}
+    else:
         _spark_map = {}
     _cards = ''
     for _, r in sorted_df.iterrows():
         _c = _pct_color(r['change_pct'], _T)
         _bg = _pct_bg(r['change_pct'])
         _arr = '▲' if r['change_pct'] >= 0 else '▼' if r['change_pct'] < -0.05 else '─'
-        _spark_html = _spark_svg(_spark_map.get(r['ticker'], []), _c, w=92, h=20)
+        _spark_html = (_spark_svg(_spark_map.get(r['ticker'], []), _c, w=92, h=20)
+                       if _show_sparkline else '')
         _cards += (
             f'<div style="flex:1 1 130px;min-width:120px;background:{_bg};'
             f'border:1px solid {_T["border"]};border-radius:8px;padding:9px 11px">'

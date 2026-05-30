@@ -55,6 +55,53 @@ def _snapshot_fallback_from_history(symbols: tuple) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _snapshot_from_static_json(symbols: tuple) -> pd.DataFrame:
+    """v58 — LEVEL 5 fallback: đọc snapshot từ data/static/snapshot.json
+    commit trong repo. Instant load, hiển thị data ngày commit.
+
+    Generate file bằng cách chạy local (vnstock work):
+      python -c "from data.market import market_snapshot; ..."
+    rồi commit `data/static/snapshot.json` lên GitHub.
+    """
+    import json
+    from pathlib import Path
+    p = Path(__file__).resolve().parent.parent / 'data' / 'static' / 'snapshot.json'
+    if not p.exists():
+        return pd.DataFrame(columns=_EMPTY_COLS)
+    try:
+        with p.open('r', encoding='utf-8') as f:
+            d = json.load(f)
+        rows = [r for r in d.get('tickers', []) if r.get('ticker') in symbols]
+        df = pd.DataFrame(rows)
+        # Đảm bảo có đủ cột schema để caller không vỡ
+        for col in _EMPTY_COLS:
+            if col not in df.columns:
+                df[col] = 0.0
+        return df[_EMPTY_COLS]
+    except Exception:
+        return pd.DataFrame(columns=_EMPTY_COLS)
+
+
+def _try_source_with_timeout(source: str, symbols: tuple, timeout_s: float = 3.0):
+    """v58 — Gọi vn_trading(source).price_board với HARD TIMEOUT.
+    Tránh stuck 30s khi network slow. Trả None nếu timeout/fail.
+    """
+    import contextlib, io
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError
+    from data._clients import vn_trading, throttle
+    def _call():
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            throttle()
+            return vn_trading(source).price_board(symbols_list=list(symbols))
+    ex = ThreadPoolExecutor(max_workers=1)
+    try:
+        return ex.submit(_call).result(timeout=timeout_s)
+    except (TimeoutError, Exception):
+        return None
+    finally:
+        ex.shutdown(wait=False)
+
+
 @st.cache_data(ttl=300, show_spinner=False)
 def market_snapshot(symbols: tuple) -> pd.DataFrame:
     """Snapshot toàn bộ symbols → DataFrame:
@@ -64,27 +111,27 @@ def market_snapshot(symbols: tuple) -> pd.DataFrame:
     Giá ở đơn vị đồng (raw từ price_board). value_M = triệu đ; market_cap_B =
     tỷ đ.
 
-    v58 — Triple source fallback (VCI → MSN → TCBS) + nếu cả 3 fail (đặc
-    biệt Streamlit Cloud) thì fallback xây snapshot từ quote.history (cache
-    disk 24h, đã có sẵn cho mọi ticker đã visit).
+    v58 — 5-LEVEL fallback chain:
+      L1: VCI Trading.price_board (3s timeout)
+      L2: MSN Trading.price_board (3s timeout)
+      L3: TCBS Trading.price_board (3s timeout)
+      L4: per-ticker history (cache disk 24h sau lần đầu)
+      L5: STATIC snapshot từ data/static/snapshot.json (instant, offline)
+
+    Worst case all live source fail: instant load từ JSON commit trong repo.
     """
-    import contextlib, io
-    from data._clients import vn_trading, throttle
     pb = None
     for source in ['VCI', 'MSN', 'TCBS']:
-        try:
-            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-                throttle()
-                pb = vn_trading(source).price_board(symbols_list=list(symbols))
-            if pb is not None and len(pb) > 0:
-                break
-        except Exception:
-            pb = None
-    # v58 — Khi cả 3 Trading source fail: build snapshot từ quote.history.
-    # Chậm hơn (53 API call) nhưng cache disk 24h → mọi mã đã warm sau lần
-    # đầu. Tốt hơn rất nhiều việc hiện banner "Snapshot rỗng" mãi.
+        pb = _try_source_with_timeout(source, symbols, timeout_s=3.0)
+        if pb is not None and len(pb) > 0:
+            break
+    # L4: per-ticker history fallback (~30-90s lần đầu, instant sau khi cache)
     if pb is None or len(pb) == 0:
-        return _snapshot_fallback_from_history(symbols)
+        df = _snapshot_fallback_from_history(symbols)
+        # L5: nếu L4 cũng empty (tất cả ticker fetch fail) → load static JSON
+        if df.empty:
+            return _snapshot_from_static_json(symbols)
+        return df
     rows = []
     for _, r in pb.iterrows():
         try:
