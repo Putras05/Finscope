@@ -27,9 +27,12 @@ def _block(_T, title_vi: str, title_en: str, latex: str | list,
         for eq in latex:
             st.latex(eq)
     if desc:
+        # v58 — Tăng visibility: font 12.5 → 13.5, color text_secondary →
+        # text_primary, thêm padding + bg subtle để tách khỏi References.
         st.markdown(
-            f'<div style="font-size:12.5px;color:{_T["text_secondary"]};'
-            f'line-height:1.7;margin-top:4px">{desc}</div>',
+            f'<div style="font-size:13.5px;color:{_T["text_primary"]};'
+            f'line-height:1.65;margin-top:6px;padding:8px 10px;'
+            f'background:{_T["bg_elevated"]};border-radius:6px">{desc}</div>',
             unsafe_allow_html=True)
     if references:
         _ref_lbl = 'References:' if is_en else 'Tham khảo:'

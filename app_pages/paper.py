@@ -26,12 +26,13 @@ def _kpi_card(label, value, color, _T, sub=None):
     )
 
 
-@st.cache_data(ttl=60, show_spinner=False)
+@st.cache_data(ttl=300, show_spinner=False)
 def _get_last_close(tk: str) -> float | None:
     """Giá đóng cửa mới nhất (đ) cho mã. None nếu fetch lỗi.
 
-    v58 — cache 60s: tránh fetch lặp cho mỗi position render (~27 mã trong
-    sổ paper, mỗi rerun = 27 calls trước đây).
+    v58 — cache 300s (5 phút thay vì 60s): trên Cloud, cache cold mỗi 60s
+    × 27 position × 1.6s throttle = 43s freeze mỗi minute. Giá HOSE chỉ
+    update mỗi 15s thực tế, 5 phút staleness chấp nhận được cho paper trade.
     """
     try:
         d = fetch_data(tk)
