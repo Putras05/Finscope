@@ -142,9 +142,9 @@ def render_topbar() -> tuple:
         f"letter-spacing:.6px'>{_u_role}</span></span></div>")
 
     # Header: wordmark trái — bell + chip + logout sub-cột phải, tất cả INLINE
-    # v58 — Bỏ subtitle "Phân tích & Dự báo Chứng khoán Đa mô hình" (đè lên
-    # logo trong nhiều viewport). Chỉ giữ FinScope wordmark + badge model.
-    _hdr_l, _hdr_r1, _hdr_r2 = st.columns([5.5, 1.2, 0.6])
+    # v58 — Tăng cột r2 từ 0.6 → 1.0 để nút "Đăng xuất" không wrap 2 dòng
+    # (gây tall button kéo height cả header + empty space giữa header và nav).
+    _hdr_l, _hdr_r1, _hdr_r2 = st.columns([5.1, 1.2, 1.0])
     with _hdr_l:
         st.markdown(
             f"<div style='display:flex;align-items:center;gap:14px;"
@@ -162,7 +162,8 @@ def render_topbar() -> tuple:
             f"gap:8px;padding:8px 4px 0;height:42px'>{_bell_html}{_user_chip_html}</div>",
             unsafe_allow_html=True)
     with _hdr_r2:
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        # v58 — Spacer giảm 8 → 4px để button không bị đẩy xuống quá nhiều.
+        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
         if st.button(('Đăng xuất' if not _is_en else 'Sign out'),
                       key='_topbar_logout', use_container_width=True,
                       help='Quay về màn hình đăng nhập'):
