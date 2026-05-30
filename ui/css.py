@@ -7,6 +7,18 @@ def _theme_css(T: dict) -> str:
 .stApp {{ background: {T['bg_app']} !important; color: {T['text_primary']} !important; }}
 [data-testid="stMain"] .block-container {{ background: transparent !important; color: {T['text_primary']} !important; }}
 
+/* v58 — Inline code (text trong backticks) → màu đen + bg xám nhẹ, KHÔNG
+   xanh lá mặc định Streamlit. Áp dụng cho table feature names (MA5_ratio,
+   RSI14, ...) trong trang Chi tiết / Cơ sở Toán / Hướng dẫn. */
+[data-testid="stMain"] code {{
+    color: {T['text_primary']} !important;
+    background: {T['bg_elevated']} !important;
+    padding: 1px 5px !important;
+    border-radius: 3px !important;
+    font-size: 0.92em !important;
+    font-family: 'Consolas', 'Menlo', monospace !important;
+}}
+
 /* sidebar handled by _SIDEBAR_CSS — injected separately */
 
 /* ══ MAIN CONTENT BUTTONS ════════════════════════════════════════════════════ */
@@ -441,13 +453,11 @@ def _theme_css(T: dict) -> str:
        value bubble (80%) phía trên slider thumb. */
     padding: 4px 0 12px !important;
 }}
-[data-testid="stMain"] [data-testid="stSlider"] [data-testid="stTickBar"] > div,
+/* v58 — ẨN tick label min/max (70% / 90%) — gây dính vị trí giữa value
+   bubble + đôi khi lệch ra ngoài container. Value 80% đã hiển thị rõ. */
+[data-testid="stMain"] [data-testid="stSlider"] [data-testid="stTickBar"],
 [data-testid="stMain"] [data-testid="stSlider"] [data-testid="stTickBar"] * {{
-    color: {T['text_muted']} !important;
-    font-size: 10px !important;
-    font-weight: 600 !important;
-    /* v58 — margin-top 4px để tick text không dính sát slider thumb */
-    margin-top: 4px !important;
+    display: none !important;
 }}
 [data-testid="stMain"] [data-testid="stSlider"] [data-testid="stThumbValue"] p,
 [data-testid="stMain"] [data-testid="stSlider"] [data-testid="stThumbValue"],

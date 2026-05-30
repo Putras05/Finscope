@@ -11,41 +11,54 @@ def _block(_T, title_vi: str, title_en: str, latex: str | list,
             desc_vi: str = '', desc_en: str = '',
             references: list[str] = None, color: str = '#1E40AF',
             is_en: bool = False) -> None:
-    """Render 1 block công thức: header + LaTeX + description + references."""
+    """Render 1 block công thức: header + LaTeX + description + references.
+
+    v58 — Refactor về 2 st.markdown calls (HTML card đóng trong 1 call;
+    st.latex render giữa) tránh broken HTML khi Streamlit wrap mỗi
+    markdown trong element-container riêng.
+    """
     title = title_en if is_en else title_vi
     desc = desc_en if is_en else desc_vi
+    # Card mở + title
     st.markdown(
         f'<div style="background:{_T["bg_card"]};border:1px solid {_T["border"]};'
         f'border-left:4px solid {color};border-radius:10px;'
         f'padding:14px 18px;margin-bottom:14px">'
         f'<div style="font-size:14px;font-weight:800;color:{color};'
-        f'margin-bottom:8px">{title}</div>',
+        f'margin-bottom:8px">{title}</div></div>',
         unsafe_allow_html=True)
+    # LaTeX render — component riêng, nằm giữa 2 card
     if isinstance(latex, str):
         st.latex(latex)
     else:
         for eq in latex:
             st.latex(eq)
+    # Card thứ 2: description + references (đóng cùng 1 markdown)
+    parts = [
+        f'<div style="background:{_T["bg_card"]};border:1px solid {_T["border"]};'
+        f'border-left:4px solid {color};border-radius:10px;'
+        f'padding:14px 18px;margin-bottom:18px;margin-top:-10px">'
+    ]
     if desc:
-        # v58 — Tăng visibility: font 12.5 → 13.5, color text_secondary →
-        # text_primary, thêm padding + bg subtle để tách khỏi References.
-        st.markdown(
+        parts.append(
             f'<div style="font-size:13.5px;color:{_T["text_primary"]};'
-            f'line-height:1.65;margin-top:6px;padding:8px 10px;'
-            f'background:{_T["bg_elevated"]};border-radius:6px">{desc}</div>',
-            unsafe_allow_html=True)
+            f'line-height:1.65;padding:8px 10px;'
+            f'background:{_T["bg_elevated"]};border-radius:6px;'
+            f'margin-bottom:10px">{desc}</div>'
+        )
     if references:
         _ref_lbl = 'References:' if is_en else 'Tham khảo:'
         refs_html = '<br>'.join(
             f'<span style="color:{_T["text_muted"]}">{r}</span>'
             for r in references)
-        st.markdown(
-            f'<div style="font-size:11px;font-style:italic;'
-            f'color:{_T["text_muted"]};line-height:1.6;margin-top:8px;'
+        parts.append(
+            f'<div style="font-size:11.5px;font-style:italic;'
+            f'color:{_T["text_muted"]};line-height:1.6;'
             f'padding-top:6px;border-top:1px dashed {_T["border"]}">'
-            f'<b>{_ref_lbl}</b><br>{refs_html}</div>',
-            unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+            f'<b>{_ref_lbl}</b><br>{refs_html}</div>'
+        )
+    parts.append('</div>')
+    st.markdown(''.join(parts), unsafe_allow_html=True)
 
 
 def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, _T,
