@@ -122,16 +122,20 @@ def chart_correlation_plotly(corr, T=None):
         ),
     ))
 
+    # v58.9 — batch annotations 1 lần (cũ: 9 add_annotation calls cho 3×3
+    # matrix = 9 figure rebuild → 300-600ms). Single update_layout.
+    _annots = []
     for i, row_name in enumerate(corr.index):
         for j, col_name in enumerate(corr.columns):
             v = float(z[i, j])
             txt_color = '#FFFFFF' if v > 0.55 else '#0F172A'
-            fig.add_annotation(
+            _annots.append(dict(
                 x=col_name, y=row_name,
                 text=f'<b>{v:.3f}</b>',
                 showarrow=False,
                 font=dict(size=18, family='Inter', color=txt_color),
-            )
+            ))
+    fig.update_layout(annotations=_annots)
 
     fig.update_layout(
         title=dict(

@@ -753,16 +753,28 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     _is_en_d = st.session_state.get('lang', 'VI') == 'EN'
     with st.spinner('Đang tổng hợp các mô hình...' if not _is_en_d
                     else 'Aggregating models...'):
+        # v58.9 — chạy SONG SONG 5 mô hình (cũ serial Σ thời gian từng cái).
+        # ThreadPool max_workers=5 lợi ngay cả trên Cloud 1 CPU vì numpy
+        # native release GIL. _rgb wrapped try vì sklearn có thể fail.
         from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
         from models.ml import run_gbr
-        _rs = run_sarima(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
-        _re = run_ets(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
-        _rg = run_garch(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
-        _rx = run_sarimax(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
-        try:
-            _rgb = run_gbr(ticker, train_ratio, p=ar_order, date_from=date_from, date_to=date_to)
-        except Exception:
-            _rgb = None
+        from concurrent.futures import ThreadPoolExecutor
+        _kw = dict(ticker=ticker, train_ratio=train_ratio, p=ar_order,
+                   date_from=date_from, date_to=date_to)
+        with ThreadPoolExecutor(max_workers=5) as _ex:
+            _f_sarima = _ex.submit(run_sarima,  **_kw)
+            _f_ets    = _ex.submit(run_ets,     **_kw)
+            _f_garch  = _ex.submit(run_garch,   **_kw)
+            _f_sarmx  = _ex.submit(run_sarimax, **_kw)
+            _f_gbr    = _ex.submit(run_gbr,     **_kw)
+            _rs = _f_sarima.result()
+            _re = _f_ets.result()
+            _rg = _f_garch.result()
+            _rx = _f_sarmx.result()
+            try:
+                _rgb = _f_gbr.result()
+            except Exception:
+                _rgb = None
 
     def _sm(res):
         yte = np.asarray(res['yte'], float); pte = np.asarray(res['pte'], float)
