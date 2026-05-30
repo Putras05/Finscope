@@ -9,52 +9,85 @@ import streamlit as st
 
 def _block(_T, title_vi: str, title_en: str, latex: str | list,
             desc_vi: str = '', desc_en: str = '',
+            components: list[tuple] = None,
             references: list[str] = None, color: str = '#1E40AF',
             is_en: bool = False) -> None:
-    """Render 1 block công thức: header chip + LaTeX (st.latex) + content card.
+    """Render 1 block công thức với đầy đủ thành phần:
+      - HEADER chip (title + border-left màu)
+      - FORMULA st.latex
+      - DESCRIPTION ngắn (Ý tưởng)
+      - COMPONENTS table (mỗi ký hiệu trong công thức → giải thích)
+      - REFERENCES list (bullet)
 
-    v58 — Flatten layout: header chip ngoài (text + dot màu), st.latex
-    render giữa, card duy nhất bên dưới chứa description + references
-    với màu text_primary đậm (KHÔNG text_muted nhạt — BGK không thấy).
+    components: list of (latex_symbol_str, explanation_vi, explanation_en)
+                hoặc (latex_symbol_str, explanation_vi) (EN = VI)
     """
     title = title_en if is_en else title_vi
     desc = desc_en if is_en else desc_vi
 
-    # 1. HEADER chip (không wrap card, dễ căn với latex)
+    # 1. HEADER — line-height 1.5 + padding rõ để text không clip
     st.markdown(
-        f'<div style="font-size:15px;font-weight:800;color:{color};'
-        f'margin:18px 0 4px;padding-left:12px;'
-        f'border-left:4px solid {color}">{title}</div>',
+        f'<div style="font-size:16px;font-weight:800;color:{color};'
+        f'margin:24px 0 10px;padding:8px 0 8px 14px;'
+        f'border-left:4px solid {color};line-height:1.5">{title}</div>',
         unsafe_allow_html=True)
 
-    # 2. LaTeX equation (Streamlit native)
+    # 2. FORMULA st.latex (rộng full-width với centering từ Streamlit native)
     if isinstance(latex, str):
         st.latex(latex)
     else:
         for eq in latex:
             st.latex(eq)
 
-    # 3. Content card: desc + references trong 1 div đóng đầy đủ
+    # 3. CONTENT CARD: desc + components + references trong 1 div đóng đầy đủ
     parts = [
         f'<div style="background:{_T["bg_card"]};border:1px solid {_T["border"]};'
-        f'border-radius:8px;padding:14px 18px;margin-bottom:22px">'
+        f'border-radius:8px;padding:14px 18px;margin-bottom:24px;'
+        f'overflow:hidden;word-wrap:break-word">'
     ]
     if desc:
+        _lbl_idea = 'Ý tưởng:' if not is_en else 'Idea:'
         parts.append(
             f'<div style="font-size:14px;color:{_T["text_primary"]};'
-            f'line-height:1.7;margin-bottom:10px">{desc}</div>'
+            f'line-height:1.7;margin-bottom:12px">'
+            f'<b style="color:{color}">{_lbl_idea}</b> {desc}</div>'
+        )
+    if components:
+        _lbl_comp = 'Diễn giải từng thành phần:' if not is_en else 'Components:'
+        comp_rows = []
+        for c in components:
+            if len(c) >= 3:
+                sym, exp_vi, exp_en = c[0], c[1], c[2]
+            else:
+                sym, exp_vi = c[0], c[1]
+                exp_en = exp_vi
+            exp = exp_en if is_en else exp_vi
+            comp_rows.append(
+                f'<tr><td style="padding:4px 12px 4px 0;vertical-align:top;'
+                f'white-space:nowrap;font-family:Consolas,monospace;'
+                f'color:{color};font-weight:700">{sym}</td>'
+                f'<td style="padding:4px 0;color:{_T["text_primary"]};'
+                f'line-height:1.5">{exp}</td></tr>'
+            )
+        parts.append(
+            f'<div style="padding-top:8px;border-top:1px solid {_T["border"]};'
+            f'margin-top:4px">'
+            f'<div style="font-weight:700;color:{color};margin-bottom:6px;'
+            f'font-size:13px">{_lbl_comp}</div>'
+            f'<table style="width:100%;font-size:13px;border-collapse:collapse">'
+            f'{"".join(comp_rows)}</table></div>'
         )
     if references:
         _ref_lbl = 'Tài liệu tham khảo:' if not is_en else 'References:'
         refs_html = ''.join(
-            f'<div style="margin:3px 0 3px 16px;text-indent:-16px">• {r}</div>'
+            f'<div style="margin:4px 0 4px 18px;text-indent:-18px">• {r}</div>'
             for r in references)
         parts.append(
             f'<div style="font-size:12.5px;'
-            f'color:{_T["text_secondary"]};line-height:1.5;'
-            f'padding-top:8px;border-top:1px solid {_T["border"]};'
-            f'margin-top:6px">'
-            f'<div style="font-weight:700;color:{color};margin-bottom:4px">'
+            f'color:{_T["text_secondary"]};line-height:1.55;'
+            f'padding-top:10px;border-top:1px solid {_T["border"]};'
+            f'margin-top:12px">'
+            f'<div style="font-weight:700;color:{color};margin-bottom:5px">'
             f'{_ref_lbl}</div>{refs_html}</div>'
         )
     parts.append('</div>')
@@ -91,25 +124,69 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
         _block(_T, 'AR(p) — Autoregressive', 'AR(p) — Autoregressive',
                 r'y_t = c + \sum_{i=1}^{p} \phi_i \cdot y_{t-i} + \varepsilon_t',
-                'Hồi quy tuyến tính giá hiện tại lên p giá trị quá khứ. Tham số φᵢ ước lượng bằng OLS hoặc Yule-Walker.',
-                'Linear regression of current price on p past values. Parameters φᵢ estimated by OLS or Yule-Walker.',
-                ['Box, G. E. P., & Jenkins, G. M. (1970). Time Series Analysis: Forecasting and Control. Holden-Day.'],
+                'Giá trị hiện tại được giải thích bởi p giá trị quá khứ kề nhau.',
+                'Current value explained by p preceding values.',
+                components=[
+                    ('y_t',         'Giá trị (giá đóng cửa hoặc log-return) tại phiên t',
+                                     'Value (close price or log-return) at session t'),
+                    ('c',           'Hằng số chặn (intercept)',
+                                     'Intercept constant'),
+                    ('φ_i',         'Hệ số tự hồi quy bậc i (i = 1, …, p)',
+                                     'Autoregressive coefficient of order i'),
+                    ('ε_t',         'Nhiễu trắng, kỳ vọng 0, phương sai σ²',
+                                     'White noise, mean 0, variance σ²'),
+                    ('p',           'Bậc tự hồi quy, chọn theo AIC hoặc PACF',
+                                     'AR order, selected via AIC or PACF'),
+                ],
+                references=[
+                    'Box, G. E. P., & Jenkins, G. M. (1970). Time Series Analysis: Forecasting and Control. Holden-Day.',
+                    'Akaike, H. (1974). A new look at the statistical model identification. IEEE Trans. Automatic Control, 19(6).',
+                ],
                 color='#3B82F6', is_en=is_en)
 
         _block(_T, 'MLR — Multiple Linear Regression', 'MLR — Multiple Linear Regression',
                 r'y_t = \beta_0 + \sum_{j=1}^{k} \beta_j \cdot x_{j,t} + \varepsilon_t',
-                'Hồi quy bội với k = 3p biến độc lập (Close, Volume, Range lag 1..p). Ước lượng bằng OLS giảm thiểu RSS.',
-                'Multiple regression with k = 3p predictors (Close, Volume, Range lag 1..p). OLS estimation minimizes RSS.',
-                ['Hastie, T., Tibshirani, R., & Friedman, J. (2009). The Elements of Statistical Learning (2nd ed.). Springer.'],
+                'Hồi quy tuyến tính bội với k biến ngoại sinh trễ (k = 3p: Close, Volume, Range lag 1..p).',
+                'Multiple linear regression with k lagged exogenous predictors.',
+                components=[
+                    ('y_t',         'Biến phụ thuộc (giá hoặc lợi suất)',
+                                     'Dependent variable (price or return)'),
+                    ('β_0',         'Hệ số chặn (intercept)',
+                                     'Intercept'),
+                    ('β_j',         'Hệ số hồi quy của biến độc lập thứ j',
+                                     'Coefficient of j-th independent variable'),
+                    ('x_{j,t}',     'Biến ngoại sinh thứ j tại phiên t (close, volume, range trễ)',
+                                     'j-th exogenous variable at session t'),
+                    ('ε_t',         'Sai số ngẫu nhiên N(0, σ²) iid',
+                                     'Random error N(0, σ²) iid'),
+                ],
+                references=[
+                    'Greene, W. H. (2018). Econometric Analysis (8th ed.). Pearson.',
+                    'Hastie, T., Tibshirani, R., & Friedman, J. (2009). The Elements of Statistical Learning (2nd ed.). Springer.',
+                ],
                 color='#8B5CF6', is_en=is_en)
 
-        _block(_T, 'ARIMA(p, d, q)', 'ARIMA(p, d, q)',
-                [r'\nabla^d y_t = c + \sum_{i=1}^{p} \phi_i \nabla^d y_{t-i} + \sum_{j=1}^{q} \theta_j \varepsilon_{t-j} + \varepsilon_t',
-                 r'\text{where } \nabla y_t = y_t - y_{t-1}'],
-                'Tổng quát hơn AR — kết hợp sai phân bậc d (loại trend) + thành phần trung bình trượt MA(q). Order (p,d,q) chọn qua AIC/BIC.',
-                'Generalization of AR — combining d-th order differencing (detrend) + moving average MA(q). Order (p,d,q) selected via AIC/BIC.',
-                ['Box, G. E. P., & Jenkins, G. M. (1970). Time Series Analysis. Holden-Day.',
-                 'Hyndman, R. J., & Athanasopoulos, G. (2021). Forecasting: Principles and Practice (3rd ed.). OTexts.'],
+        _block(_T, 'ARIMA(p, d, q) — Autoregressive Integrated Moving Average',
+                'ARIMA(p, d, q)',
+                r'\Phi(L)\,(1-L)^{d}\, y_t = \Theta(L)\, \varepsilon_t',
+                'Kết hợp tự hồi quy bậc p, sai phân bậc d (loại trend), trung bình trượt bậc q.',
+                'Combines AR(p), differencing of order d (detrend), and MA(q).',
+                components=[
+                    ('L',           'Toán tử trễ (lag operator): L·y_t = y_{t-1}',
+                                     'Lag operator: L·y_t = y_{t-1}'),
+                    ('Φ(L)',        '1 − φ_1·L − ⋯ − φ_p·L^p — đa thức AR bậc p',
+                                     '1 − φ_1·L − ⋯ − φ_p·L^p — AR polynomial of order p'),
+                    ('Θ(L)',        '1 + θ_1·L + ⋯ + θ_q·L^q — đa thức MA bậc q',
+                                     '1 + θ_1·L + ⋯ + θ_q·L^q — MA polynomial of order q'),
+                    ('(1−L)^d',     'Toán tử sai phân bậc d, biến chuỗi không dừng thành dừng',
+                                     'Differencing operator of order d'),
+                    ('ε_t',         'Nhiễu trắng',
+                                     'White noise'),
+                ],
+                references=[
+                    'Box, G. E. P., Jenkins, G. M., & Reinsel, G. C. (2008). Time Series Analysis (4th ed.). Wiley.',
+                    'Hyndman, R. J., & Athanasopoulos, G. (2021). Forecasting: Principles and Practice (3rd ed.). OTexts.',
+                ],
                 color='#0EA5E9', is_en=is_en)
 
         _block(_T, 'SARIMA — Seasonal ARIMA', 'SARIMA — Seasonal ARIMA',
