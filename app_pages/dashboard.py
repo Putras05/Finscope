@@ -122,28 +122,7 @@ def _candlestick_section(df, ticker, _T, _is_en_cmp):
             'ℹ️ 3M timeframe has ≤20 bars — Ichimoku will be partial.'
         )
 
-    _cmp_hint = (
-        'Đơn vị giá: <b>nghìn đ</b> · Chọn khung thời gian <b>1D/1W/1M/3M</b> · '
-        'Nến <span style="color:#10B981">xanh</span> = tăng, '
-        '<span style="color:#EF4444">đỏ</span> = giảm · '
-        'Đường <span style="color:#F59E0B">SMA 5</span> & '
-        '<span style="color:#8B5CF6">SMA 20</span> · '
-        'Kéo <b>thanh price bên phải</b> để zoom giá.'
-        if not _is_en_cmp else
-        'Price unit: <b>k VND</b> · Pick timeframe <b>1D/1W/1M/3M</b> · '
-        '<span style="color:#10B981">Green</span> = up, '
-        '<span style="color:#EF4444">red</span> = down · '
-        '<span style="color:#F59E0B">SMA 5</span> & '
-        '<span style="color:#8B5CF6">SMA 20</span> overlays · '
-        'Drag <b>right price scale</b> to zoom price.'
-    )
-    # v58 — margin-top -4px gây overlap với info bar phía dưới khi viewport
-    # hẹp + caption wrap 2 dòng. Đổi sang +8px gap dương.
-    st.markdown(
-        f'<div style="font-size:11px;color:{_T["text_muted"]};margin:8px 0 10px;'
-        f'line-height:1.55">{_cmp_hint}</div>',
-        unsafe_allow_html=True,
-    )
+    # v58.4 — bỏ caption hướng dẫn theo yêu cầu user (toggle row đã đủ rõ).
 
     _info_bar = render_candlestick_info_bar(df, ticker, _selected_tf, _T)
     if _info_bar:
