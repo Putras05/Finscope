@@ -142,20 +142,14 @@ def render_topbar() -> tuple:
         f"letter-spacing:.6px'>{_u_role}</span></span></div>")
 
     # Header: wordmark trái — bell + chip + logout sub-cột phải, tất cả INLINE
-    # v58 — Tăng tỷ trọng cột trái (5.5/1.2/0.6 thay vì 4.2/1.5/0.7) để
-    # FinScope + tagline + badge có chỗ thở. Giảm font subtitle 12.5 → 11.5
-    # + thêm white-space:nowrap cho badge để không xuống dòng giữa chừng.
+    # v58 — Bỏ subtitle "Phân tích & Dự báo Chứng khoán Đa mô hình" (đè lên
+    # logo trong nhiều viewport). Chỉ giữ FinScope wordmark + badge model.
     _hdr_l, _hdr_r1, _hdr_r2 = st.columns([5.5, 1.2, 0.6])
     with _hdr_l:
         st.markdown(
-            f"<div style='display:flex;align-items:center;gap:10px;"
-            f"flex-wrap:nowrap;padding:6px 4px 4px;overflow:hidden'>"
+            f"<div style='display:flex;align-items:center;gap:14px;"
+            f"flex-wrap:nowrap;padding:6px 4px 4px'>"
             f"{_wm_html}"
-            f"<span style='width:1px;height:22px;background:{_DIVIDER};"
-            f"flex-shrink:0'></span>"
-            f"<span style='font-size:11.5px;color:{_SUB_TX};font-weight:500;"
-            f"letter-spacing:.2px;white-space:nowrap;overflow:hidden;"
-            f"text-overflow:ellipsis;min-width:0'>{t('app.tagline')}</span>"
             f"<span style='font-size:10.5px;font-weight:700;color:#0F766E;"
             f"background:linear-gradient(90deg,#ECFEFF 0%,#F0FDFA 100%);"
             f"border:1px solid #99F6E4;padding:3px 10px;border-radius:999px;"
