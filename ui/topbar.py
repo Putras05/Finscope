@@ -164,9 +164,12 @@ def render_topbar() -> tuple:
             f"{'Multi-model · 2026' if _is_en else 'Đa mô hình · 2026'}</span>"
             f"</div>", unsafe_allow_html=True)
     with _hdr_r1:
+        # v58 — padding 8px 4px 0; height:42px cắt phần trên chip nếu logo
+        # cao hơn (line-height + padding). Bỏ height fixed, dùng align-self.
         st.markdown(
             f"<div style='display:flex;justify-content:flex-end;align-items:center;"
-            f"gap:8px;padding:8px 4px 0;height:42px'>{_bell_html}{_user_chip_html}</div>",
+            f"gap:8px;padding:14px 4px 8px;min-height:60px;overflow:visible'>"
+            f"{_bell_html}{_user_chip_html}</div>",
             unsafe_allow_html=True)
     with _hdr_r2:
         # v58 — Spacer giảm 8 → 4px để button không bị đẩy xuống quá nhiều.

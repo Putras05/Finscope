@@ -137,9 +137,11 @@ def _candlestick_section(df, ticker, _T, _is_en_cmp):
         '<span style="color:#8B5CF6">SMA 20</span> overlays · '
         'Drag <b>right price scale</b> to zoom price.'
     )
+    # v58 — margin-top -4px gây overlap với info bar phía dưới khi viewport
+    # hẹp + caption wrap 2 dòng. Đổi sang +8px gap dương.
     st.markdown(
-        f'<div style="font-size:11px;color:{_T["text_muted"]};margin:-4px 0 6px;'
-        f'line-height:1.5">{_cmp_hint}</div>',
+        f'<div style="font-size:11px;color:{_T["text_muted"]};margin:8px 0 10px;'
+        f'line-height:1.55">{_cmp_hint}</div>',
         unsafe_allow_html=True,
     )
 

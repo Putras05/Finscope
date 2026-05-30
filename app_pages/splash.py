@@ -242,14 +242,14 @@ def _render_auth_panel() -> None:
     from auth.store import create_user, verify_credentials, update_last_seen
     from auth.session import login_user, login_as_guest
 
+    # v58 — Bỏ wrapper div unclosed (gây Streamlit tabs render OUTSIDE card
+    # → user thấy ô trống). Chỉ giữ HEADER label centered, tabs render
+    # bình thường dưới với styling từ stTabs CSS.
     _st.markdown(
         '<div style="max-width:560px;margin:18px auto 6px;'
-        'background:#FFFFFF;border:1px solid rgba(148,163,184,0.30);'
-        'border-radius:14px;padding:6px 22px 14px;'
-        'box-shadow:0 4px 18px rgba(15,23,42,.06);position:relative;z-index:5">'
-        '<div style="text-align:center;font-size:11px;font-weight:800;'
+        'text-align:center;font-size:12px;font-weight:800;'
         'color:#1E40AF;text-transform:uppercase;letter-spacing:2.2px;'
-        'padding:10px 0 4px">Tài khoản · Account</div>',
+        'padding:10px 0 8px">Tài khoản · Account</div>',
         unsafe_allow_html=True)
 
     tab_login, tab_reg, tab_guest = _st.tabs([
@@ -306,4 +306,4 @@ def _render_auth_panel() -> None:
             _st.session_state['_splash_done'] = True
             _st.rerun()
 
-    _st.markdown('</div>', unsafe_allow_html=True)
+    # v58 — bỏ stray </div> (đã không còn wrapper div mở ở trên)
