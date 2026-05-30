@@ -38,13 +38,26 @@ def _theme_css(T: dict) -> str:
     min-height: 96px !important;
     word-break: break-word !important;
 }}
-/* v58.5 — Cards có border-top:5px (Dashboard KPI strip + Top-3 model
-   forecast cards) — user báo "khúc dưới bị mất / cut". Bottom padding
-   cần > 20px vì các card này có chart sparkline + badge BEST MODEL
-   ngay sát đáy. Min-height bằng 0 (cards tự cao theo content). */
+/* v58.5+v58.6 — Cards có border-top dày (4-6px) — user báo "khúc dưới
+   bị mất / cut". Bottom padding cần > 20px vì các card này có chart
+   sparkline + badge ngay sát đáy. Cover hết: Dashboard 4 KPI (5px),
+   Top-3 model forecast (5px), Portfolio Markowitz/CAPM/PCA (4px),
+   Paper trading hero (4px). Min-height bằng 0 (cards tự cao). */
+[data-testid="stMain"] div[style*="border-top:4px"],
+[data-testid="stMain"] div[style*="border-top: 4px"],
 [data-testid="stMain"] div[style*="border-top:5px"],
-[data-testid="stMain"] div[style*="border-top: 5px"] {{
+[data-testid="stMain"] div[style*="border-top: 5px"],
+[data-testid="stMain"] div[style*="border-top:6px"],
+[data-testid="stMain"] div[style*="border-top: 6px"] {{
     padding-bottom: 22px !important;
+    overflow: visible !important;
+}}
+/* News sentiment + alert cards dùng border-left dày (4-6px) — content
+   thường có 2-3 dòng + score bar → cần padding-bottom thoáng tương tự. */
+[data-testid="stMain"] div[style*="border-left:4px solid"],
+[data-testid="stMain"] div[style*="border-left:6px solid"] {{
+    padding-bottom: 16px !important;
+    overflow: visible !important;
 }}
 /* v58.2 — KaTeX block formula overflow-x: scroll khi công thức dài
    (SARIMA, SARIMAX, MAPE-MSE …) bị che ở viewport hẹp. */
