@@ -11,51 +11,51 @@ def _block(_T, title_vi: str, title_en: str, latex: str | list,
             desc_vi: str = '', desc_en: str = '',
             references: list[str] = None, color: str = '#1E40AF',
             is_en: bool = False) -> None:
-    """Render 1 block công thức: header + LaTeX + description + references.
+    """Render 1 block công thức: header chip + LaTeX (st.latex) + content card.
 
-    v58 — Refactor về 2 st.markdown calls (HTML card đóng trong 1 call;
-    st.latex render giữa) tránh broken HTML khi Streamlit wrap mỗi
-    markdown trong element-container riêng.
+    v58 — Flatten layout: header chip ngoài (text + dot màu), st.latex
+    render giữa, card duy nhất bên dưới chứa description + references
+    với màu text_primary đậm (KHÔNG text_muted nhạt — BGK không thấy).
     """
     title = title_en if is_en else title_vi
     desc = desc_en if is_en else desc_vi
-    # Card mở + title
+
+    # 1. HEADER chip (không wrap card, dễ căn với latex)
     st.markdown(
-        f'<div style="background:{_T["bg_card"]};border:1px solid {_T["border"]};'
-        f'border-left:4px solid {color};border-radius:10px;'
-        f'padding:14px 18px;margin-bottom:14px">'
-        f'<div style="font-size:14px;font-weight:800;color:{color};'
-        f'margin-bottom:8px">{title}</div></div>',
+        f'<div style="font-size:15px;font-weight:800;color:{color};'
+        f'margin:18px 0 4px;padding-left:12px;'
+        f'border-left:4px solid {color}">{title}</div>',
         unsafe_allow_html=True)
-    # LaTeX render — component riêng, nằm giữa 2 card
+
+    # 2. LaTeX equation (Streamlit native)
     if isinstance(latex, str):
         st.latex(latex)
     else:
         for eq in latex:
             st.latex(eq)
-    # Card thứ 2: description + references (đóng cùng 1 markdown)
+
+    # 3. Content card: desc + references trong 1 div đóng đầy đủ
     parts = [
         f'<div style="background:{_T["bg_card"]};border:1px solid {_T["border"]};'
-        f'border-left:4px solid {color};border-radius:10px;'
-        f'padding:14px 18px;margin-bottom:18px;margin-top:-10px">'
+        f'border-radius:8px;padding:14px 18px;margin-bottom:22px">'
     ]
     if desc:
         parts.append(
-            f'<div style="font-size:13.5px;color:{_T["text_primary"]};'
-            f'line-height:1.65;padding:8px 10px;'
-            f'background:{_T["bg_elevated"]};border-radius:6px;'
-            f'margin-bottom:10px">{desc}</div>'
+            f'<div style="font-size:14px;color:{_T["text_primary"]};'
+            f'line-height:1.7;margin-bottom:10px">{desc}</div>'
         )
     if references:
-        _ref_lbl = 'References:' if is_en else 'Tham khảo:'
-        refs_html = '<br>'.join(
-            f'<span style="color:{_T["text_muted"]}">{r}</span>'
+        _ref_lbl = 'Tài liệu tham khảo:' if not is_en else 'References:'
+        refs_html = ''.join(
+            f'<div style="margin:3px 0 3px 16px;text-indent:-16px">• {r}</div>'
             for r in references)
         parts.append(
-            f'<div style="font-size:11.5px;font-style:italic;'
-            f'color:{_T["text_muted"]};line-height:1.6;'
-            f'padding-top:6px;border-top:1px dashed {_T["border"]}">'
-            f'<b>{_ref_lbl}</b><br>{refs_html}</div>'
+            f'<div style="font-size:12.5px;'
+            f'color:{_T["text_secondary"]};line-height:1.5;'
+            f'padding-top:8px;border-top:1px solid {_T["border"]};'
+            f'margin-top:6px">'
+            f'<div style="font-weight:700;color:{color};margin-bottom:4px">'
+            f'{_ref_lbl}</div>{refs_html}</div>'
         )
     parts.append('</div>')
     st.markdown(''.join(parts), unsafe_allow_html=True)
