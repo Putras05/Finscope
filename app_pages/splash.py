@@ -300,15 +300,6 @@ def _render_auth_panel() -> None:
                     _st.error(msg)
 
     with tab_guest:
-        _st.markdown(
-            '<div style="font-size:13px;color:#475569;line-height:1.7;'
-            'padding:8px 4px 14px">'
-            'Chế độ Khách dùng chung 1 sổ Paper Trading <i>(paper_state.json)</i> '
-            'và không lưu watchlist riêng. Phù hợp khi muốn chạy thử nhanh, '
-            'không cần đăng ký. Bạn có thể tạo tài khoản bất cứ lúc nào để có '
-            'sổ + danh mục yêu thích riêng.'
-            '</div>',
-            unsafe_allow_html=True)
         if _st.button('VÀO NHANH VỚI TƯ CÁCH KHÁCH', key='_guest_enter',
                        use_container_width=True, type='primary'):
             login_as_guest()
