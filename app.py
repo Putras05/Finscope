@@ -119,26 +119,30 @@ except Exception:
     pass
 
 # Preload mã mặc định 1 lần duy nhất mỗi session → UX mượt hơn
+# v58 — SKIP preload + warmer trên Streamlit Cloud (1 CPU, 1GB RAM):
+# - Preload spawn 2 daemon thread / session × 100 user concurrent = 200+ thread
+#   → CPU saturate, RAM tăng dần → app rất nặng / OOM
+# - Warmer drain queue ở 17 req/min cũng share API rate-limit của user fetch
+#   → user chọn mã mới phải đợi warmer xong → lag
+# - Local dev vẫn enable (môi trường mạnh) cho experience mượt
 from core.preload import preload_all_tickers, trigger_bg_arima
-preload_all_tickers()
-
-# v56 — Tiered background warmer cho TẤT CẢ 53 mã (priority queue, rate-limit-aware)
-# Daemon thread drain ~17 req/min < vnstock 20 ceiling. Khi user chọn mã,
-# topbar gọi `prioritize(tk)` để chen lên đầu queue (priority 0).
-# Sau ~3 phút splash mở, mọi mã đã warm → chuyển ticker = sub-second.
+import os as _os
+_in_test  = _os.environ.get('STREAMLIT_TEST') == '1' or _os.environ.get('PYTEST_CURRENT_TEST')
 try:
-    import os as _os
-    # Disable warmer trong AppTest — bg thread + throttle gây timeout.
-    # Detect bằng env var STREAMLIT_TEST_MODE hoặc absence of script_runner.
-    _in_test = _os.environ.get('STREAMLIT_TEST') == '1' or _os.environ.get('PYTEST_CURRENT_TEST')
-    if not _in_test:
+    from core.config import is_streamlit_cloud as _is_cloud
+    _on_cloud = _is_cloud()
+except Exception:
+    _on_cloud = False
+if not _in_test and not _on_cloud:
+    preload_all_tickers()
+    try:
         from services.warmup import start_warmer, seed_queue
         start_warmer()        # idempotent qua cache_resource
         if not st.session_state.get('_warmup_seeded'):
             seed_queue(default_ticker='FPT')
             st.session_state['_warmup_seeded'] = True
-except Exception:
-    pass
+    except Exception:
+        pass
 
 # Điều hướng + tham số ở TOP main area (luôn hiển thị, không phụ thuộc sidebar)
 page, ticker, train_ratio, date_from, date_to, ar_order = render_topbar()

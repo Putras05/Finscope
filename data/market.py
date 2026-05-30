@@ -30,19 +30,22 @@ def market_snapshot(symbols: tuple) -> pd.DataFrame:
     """
     import contextlib, io
     # v56 — Dùng singleton + throttle (chia rate-limit với fetcher/fundamental/capm)
+    # v58 — Multi-source fallback: VCI → MSN. Streamlit Cloud thường fail VCI
+    # endpoint → thử MSN trước khi raise empty.
     from data._clients import vn_trading, throttle
-    # ── Fail-safe: nếu VCI Trading down hoặc trả None/schema lạ → DataFrame
-    # rỗng có schema đúng. CACHE sẽ giữ failure 5 phút → tránh dồn retry,
-    # nhưng app KHÔNG vỡ (các trang gọi market_snapshot sẽ thấy empty df).
     _empty_cols = ['ticker','sector','ref_price','last_price','change',
                    'change_pct','volume','value_M','market_cap_B','listed_share']
-    try:
-        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            throttle()
-            pb = vn_trading('VCI').price_board(symbols_list=list(symbols))
-        if pb is None or len(pb) == 0:
-            return pd.DataFrame(columns=_empty_cols)
-    except Exception:
+    pb = None
+    for source in ['VCI', 'MSN']:
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                throttle()
+                pb = vn_trading(source).price_board(symbols_list=list(symbols))
+            if pb is not None and len(pb) > 0:
+                break
+        except Exception:
+            pb = None
+    if pb is None or len(pb) == 0:
         return pd.DataFrame(columns=_empty_cols)
     rows = []
     for _, r in pb.iterrows():
