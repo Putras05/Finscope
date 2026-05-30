@@ -130,6 +130,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     cg, cl = st.columns(2)
     g_df, l_df = top_movers(mdf, n=5)
     def _movers_html(rows_df, color):
+        # v58.8 — padding 10px 14px (tăng từ 8) + line-height 1.5 cho 'đ' descender
         if rows_df.empty:
             return f'<div style="color:{_T["text_muted"]};font-size:12px;padding:14px">—</div>'
         _items = ''
@@ -137,24 +138,27 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             _arr = '▲' if r['change_pct'] >= 0 else '▼'
             _items += (
                 f'<div style="display:flex;justify-content:space-between;align-items:center;'
-                f'padding:8px 14px;border-top:1px solid {_T["divider"]}">'
+                f'padding:10px 14px;border-top:1px solid {_T["divider"]};line-height:1.5">'
                 f'<div><span style="font-weight:800;color:{_T["accent"]};font-size:14px">{r["ticker"]}</span>'
                 f'<span style="color:{_T["text_muted"]};font-size:11px;margin-left:8px">{r["sector"]}</span></div>'
                 f'<div style="text-align:right">'
                 f'<span style="font-size:13px;color:{_T["text_primary"]}">{r["last_price"]:,.0f} đ</span> '
                 f'<span style="font-size:14px;font-weight:800;color:{color}">{_arr} {r["change_pct"]:+.2f}%</span>'
                 f'</div></div>')
-        return _items
+        # v58.8 — spacer bottom 6px → tránh row cuối sát border
+        return _items + f'<div style="height:6px;background:{_T["bg_card"]}"></div>'
     with cg:
         st.markdown(
-            f'<div style="border:1px solid {_T["border"]};border-radius:12px;overflow:hidden;background:{_T["bg_card"]}">'
+            f'<div style="border:1px solid {_T["border"]};border-radius:12px;overflow:hidden;'
+            f'background:{_T["bg_card"]};box-shadow:0 2px 6px rgba(15,23,42,.08)">'
             f'<div style="padding:10px 14px;background:rgba(22,163,74,0.10);font-size:12px;font-weight:800;'
             f'color:{_T["success"]};letter-spacing:.5px;text-transform:uppercase">▲ {"Top tăng giá" if not is_en else "Top gainers"}</div>'
             f'{_movers_html(g_df, _T["success"])}'
             f'</div>', unsafe_allow_html=True)
     with cl:
         st.markdown(
-            f'<div style="border:1px solid {_T["border"]};border-radius:12px;overflow:hidden;background:{_T["bg_card"]}">'
+            f'<div style="border:1px solid {_T["border"]};border-radius:12px;overflow:hidden;'
+            f'background:{_T["bg_card"]};box-shadow:0 2px 6px rgba(15,23,42,.08)">'
             f'<div style="padding:10px 14px;background:rgba(220,38,38,0.10);font-size:12px;font-weight:800;'
             f'color:{_T["danger"]};letter-spacing:.5px;text-transform:uppercase">▼ {"Top giảm giá" if not is_en else "Top losers"}</div>'
             f'{_movers_html(l_df, _T["danger"])}'

@@ -740,7 +740,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     _timeline_svg = render_param_timeline(ar_order, _T)
     st.markdown(
         f'<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;'
-        f'margin:-4px 0 14px;padding:10px 16px;background:{_T["bg_card"]};'
+        f'margin:4px 0 14px;padding:10px 16px;background:{_T["bg_card"]};'
         f'border:1px solid {_T["border"]};border-radius:10px">'
         f'<div style="flex:0 0 auto">{_badges_html}</div>'
         f'<div style="flex:0 0 auto">{_timeline_svg}</div>'

@@ -1029,7 +1029,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
                              ('Total cost' if _side == 'BUY' else 'Net proceeds')
                 _net_col = _T['danger'] if _side == 'BUY' else _T['success']
                 st.markdown(
-                    f'<div style="font-size:12px;color:{_T["text_muted"]};margin-top:-4px;line-height:1.6">'
+                    f'<div style="font-size:12px;color:{_T["text_muted"]};margin-top:4px;line-height:1.6">'
                     f'{"Giá trị gốc" if not is_en else "Gross"}: '
                     f'<b style="color:{_T["text_primary"]}">{_est:,.0f} đ</b><br>'
                     f'{"Phí" if not is_en else "Fee"} 0.15%: <b>{_fee_prev:,.0f} đ</b>'

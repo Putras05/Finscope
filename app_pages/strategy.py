@@ -300,17 +300,24 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
     _spin = ('Đang tổng hợp dự báo các mô hình...' if not is_en
              else 'Aggregating model forecasts...')
     with st.spinner(_spin):
+        # v58.8 — chạy SONG SONG 5 model (cũ serial). Cache @st.cache_data
+        # bên trong từng run_* → đã tính ở Dashboard thì lấy ngay.
         from models.advanced import run_sarima, run_ets, run_garch, run_sarimax
         from models.ml import run_gbr
+        from concurrent.futures import ThreadPoolExecutor
+        _kw = dict(ticker=ticker, train_ratio=train_ratio, p=ar_order,
+                   date_from=date_from, date_to=date_to)
+        _model_map = [('SARIMA', run_sarima), ('Holt-Winters', run_ets),
+                      ('GARCH', run_garch), ('SARIMAX', run_sarimax),
+                      ('Gradient Boosting', run_gbr)]
         _adv = {}
-        for _nm, _fn in [('SARIMA', run_sarima), ('Holt-Winters', run_ets),
-                         ('GARCH', run_garch), ('SARIMAX', run_sarimax),
-                         ('Gradient Boosting', run_gbr)]:
-            try:
-                _adv[_nm] = _fn(ticker, train_ratio, p=ar_order,
-                                date_from=date_from, date_to=date_to)
-            except Exception:
-                _adv[_nm] = None
+        with ThreadPoolExecutor(max_workers=5) as _ex:
+            _futs = {_ex.submit(_fn, **_kw): _nm for _nm, _fn in _model_map}
+            for _fut, _nm in _futs.items():
+                try:
+                    _adv[_nm] = _fut.result()
+                except Exception:
+                    _adv[_nm] = None
 
     _fc = [(f'AR({ar_order})', float(r1['next_pred'])), ('MLR', float(r2['next_pred'])),
            ('ARIMA', float(r3['next_pred']))]

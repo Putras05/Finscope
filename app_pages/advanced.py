@@ -40,16 +40,24 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
              if not is_en else
              'Estimating SARIMA · Holt-Winters · GARCH · SARIMAX · GBR...')
     with st.spinner(_spin):
-        rs = run_sarima(ticker, train_ratio, p=ar_order,
-                        date_from=date_from, date_to=date_to)
-        re_ = run_ets(ticker, train_ratio, p=ar_order,
-                      date_from=date_from, date_to=date_to)
-        rg = run_garch(ticker, train_ratio, p=ar_order,
-                       date_from=date_from, date_to=date_to)
-        rx = run_sarimax(ticker, train_ratio, p=ar_order,
-                         date_from=date_from, date_to=date_to)
-        rgb = run_gbr(ticker, train_ratio, p=ar_order,
-                      date_from=date_from, date_to=date_to)
+        # v58.8 — chạy SONG SONG 5 mô hình (cũ serial: tổng ~ Σ thời gian
+        # từng mô hình). ThreadPoolExecutor an toàn vì mỗi run_* gọi GIL-bound
+        # statsmodels/sklearn (chủ yếu numpy → release GIL). Trên Cloud 1 CPU
+        # vẫn lợi vì các model có IO/import + numpy native parallel.
+        from concurrent.futures import ThreadPoolExecutor
+        _kw = dict(ticker=ticker, train_ratio=train_ratio, p=ar_order,
+                   date_from=date_from, date_to=date_to)
+        with ThreadPoolExecutor(max_workers=5) as _ex:
+            _f_sarima = _ex.submit(run_sarima,   **_kw)
+            _f_ets    = _ex.submit(run_ets,      **_kw)
+            _f_garch  = _ex.submit(run_garch,    **_kw)
+            _f_sarmx  = _ex.submit(run_sarimax,  **_kw)
+            _f_gbr    = _ex.submit(run_gbr,      **_kw)
+            rs  = _f_sarima.result()
+            re_ = _f_ets.result()
+            rg  = _f_garch.result()
+            rx  = _f_sarmx.result()
+            rgb = _f_gbr.result()
 
     last_close = float(df['Close'].iloc[-1])
 

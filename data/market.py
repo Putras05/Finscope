@@ -109,11 +109,25 @@ def market_snapshot(symbols: tuple) -> pd.DataFrame:
     snapshot commit trong repo. Worst case (mọi API live fail): instant
     load từ JSON, banner offline.
     """
+    # v58.8 — PARALLEL 3 nguồn (cũ serial: nếu VCI+MSN fail → đợi 6s mới
+    # tới TCBS). Race condition: lấy result đầu tiên >0 rows, cancel rest.
     pb = None
-    for source in ['VCI', 'MSN', 'TCBS']:
-        pb = _try_source_with_timeout(source, symbols, timeout_s=3.0)
-        if pb is not None and len(pb) > 0:
-            break
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        futures = {ex.submit(_try_source_with_timeout, src, symbols, 3.0): src
+                   for src in ('VCI', 'MSN', 'TCBS')}
+        for fut in as_completed(futures, timeout=3.5):
+            try:
+                result = fut.result()
+                if result is not None and len(result) > 0:
+                    pb = result
+                    # Hủy các future còn lại — không đợi 2 nguồn slower.
+                    for other in futures:
+                        if other is not fut and not other.done():
+                            other.cancel()
+                    break
+            except Exception:
+                continue
     # Khi cả 3 live source fail: ưu tiên static JSON (instant) thay vì
     # per-ticker fetch (53 × throttle = 85s, BGK đợi mãi).
     if pb is None or len(pb) == 0:

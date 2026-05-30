@@ -102,9 +102,12 @@ def _render_user_alerts(ticker, df, _T):
                     _st.error(str(e))
 
         with col_lst:
+            # v58.8 — đồng bộ font + margin với label "Đặt cảnh báo cho FPT"
+            # bên trái (signals.py:67) để 2 cột thẳng hàng, header ko bị cắt.
             _st.markdown(
-                f'<div style="font-size:12.5px;font-weight:700;color:{_T["text_primary"]};'
-                f'margin-bottom:4px">{"Cảnh báo của bạn" if not is_en else "Your alerts"}</div>',
+                f'<div style="font-size:13px;font-weight:700;color:{_T["text_primary"]};'
+                f'margin:6px 0 10px;padding:2px 0;line-height:1.5">'
+                f'{"Cảnh báo của bạn" if not is_en else "Your alerts"}</div>',
                 unsafe_allow_html=True)
             if not items:
                 _st.markdown(
@@ -735,23 +738,30 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         # Sắp triggered → watch → neutral
         _ORDER2 = {'trigger': 0, 'watch': 1, 'neutral': 2}
         for s in sorted(states, key=lambda x: _ORDER2.get(x['status'], 9)):
+            # v58.8 — flex:1 1 0 + min-width 150 → 6 cards/row đều nhau (cũ
+            # 175 → 5+1 lệch). min-height 96 + line-height tăng → đều cao.
             _cells += (
-                f'<div style="flex:1 1 185px;min-width:175px;background:{_T["bg_card"]};'
+                f'<div style="flex:1 1 0;min-width:150px;background:{_T["bg_card"]};'
                 f'border:1px solid {_T["border"]};border-left:3px solid {s["color"]};'
-                f'border-radius:8px;padding:10px 12px;word-break:break-word">'
-                f'<div style="display:flex;justify-content:space-between;align-items:center">'
+                f'border-radius:8px;padding:10px 12px 14px;min-height:96px;'
+                f'word-break:break-word">'
+                f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                f'gap:6px">'
                 f'<span style="font-size:10.5px;font-weight:700;color:{_T["text_muted"]};'
-                f'text-transform:uppercase;letter-spacing:.4px">{s["name"]}</span>'
-                f'<span style="font-size:13px;color:{s["color"]}">{_ICON[s["status"]]}</span>'
+                f'text-transform:uppercase;letter-spacing:.4px;line-height:1.3">{s["name"]}</span>'
+                f'<span style="font-size:13px;color:{s["color"]};flex-shrink:0">{_ICON[s["status"]]}</span>'
                 f'</div>'
-                f'<div style="font-size:15px;font-weight:800;color:{s["color"]};margin-top:2px;line-height:1.2">{s["value"]}</div>'
-                f'<div style="font-size:10.5px;color:{_T["text_secondary"]};margin-top:2px">{s["hint"]}</div>'
+                f'<div style="font-size:15px;font-weight:800;color:{s["color"]};'
+                f'margin-top:3px;line-height:1.25">{s["value"]}</div>'
+                f'<div style="font-size:10.5px;color:{_T["text_secondary"]};'
+                f'margin-top:3px;line-height:1.45">{s["hint"]}</div>'
                 f'</div>')
         st.markdown(
-            f'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">{_cells}</div>',
+            f'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">{_cells}</div>',
             unsafe_allow_html=True)
+        # v58.8 — bỏ margin âm -8px (overlap cards row trên), dùng +6px gap dương.
         st.markdown(
-            f'<div style="font-size:11px;color:{_muted};margin:-8px 0 14px;line-height:1.5">'
+            f'<div style="font-size:11px;color:{_muted};margin:6px 0 14px;line-height:1.55">'
             f'● {"đang KÍCH HOẠT" if not _is_en_sig else "TRIGGERED"} (điều kiện đạt ngưỡng) · '
             f'◐ {"CẢNH GIỚI" if not _is_en_sig else "WATCH"} (tiến gần ngưỡng) · '
             f'○ {"trung tính" if not _is_en_sig else "neutral"} — '

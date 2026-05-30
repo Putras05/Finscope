@@ -123,14 +123,19 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             _rep = items[cl['rep']]
             _asp = NA.aspect_tags(_rep['title'] + ' ' + _rep.get('summary', ''), is_en=is_en)
             _chips = ''.join(_chip(a, _T['accent'], _T) for a in _asp)
+            # v58.8 — min-height 110 + padding-bottom 14 + box-shadow → cards
+            # cùng row đều cao, không lệch khi chips wrap khác số dòng.
             _cards += (
                 f'<div style="flex:1 1 280px;min-width:240px;background:{_T["bg_card"]};'
-                f'border:1px solid {_T["border"]};border-radius:10px;padding:12px 14px">'
+                f'border:1px solid {_T["border"]};border-radius:10px;'
+                f'padding:12px 14px 14px;min-height:110px;word-break:break-word;'
+                f'box-shadow:0 2px 6px rgba(15,23,42,.06)">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center">'
                 f'<span style="font-size:10px;font-weight:800;color:{_T["accent"]};'
                 f'background:{_T["accent"]}1A;padding:2px 8px;border-radius:6px">{cl["size"]} {"tin" if not is_en else "news"}</span>'
                 f'</div>'
-                f'<div style="font-size:13px;font-weight:600;color:{_T["text_primary"]};margin:6px 0 4px;line-height:1.4">{_rep["title"]}</div>'
+                f'<div style="font-size:13px;font-weight:600;color:{_T["text_primary"]};'
+                f'margin:6px 0 6px;line-height:1.5">{_rep["title"]}</div>'
                 f'<div>{_chips}</div></div>')
         st.markdown(f'<div style="display:flex;gap:10px;flex-wrap:wrap">{_cards}</div>',
                     unsafe_allow_html=True)

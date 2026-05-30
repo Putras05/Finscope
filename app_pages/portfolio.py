@@ -308,7 +308,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             )
 
     st.markdown(f"""
-<div style="overflow-x:auto;border:1px solid {_BRD};border-radius:10px;overflow:hidden">
+<div style="overflow-x:auto;border:1px solid {_BRD};border-radius:10px">
 <table style="width:100%;border-collapse:collapse;background:{_BG}">
 <thead><tr>
   <th style="{_th};width:60px">{t('col.ticker')}</th>
@@ -340,7 +340,7 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             f'</tr>'
         )
     st.markdown(f"""
-<div style="overflow-x:auto;border:1px solid {_BRD};border-radius:10px;overflow:hidden;margin-top:4px">
+<div style="overflow-x:auto;border:1px solid {_BRD};border-radius:10px;margin-top:4px">
 <table style="width:100%;border-collapse:collapse;background:{_BG}">
 <thead><tr>
   <th style="{_th};width:60px;text-align:center">{t('col.ticker')}</th>
