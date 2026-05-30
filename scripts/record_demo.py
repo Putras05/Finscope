@@ -27,7 +27,13 @@ Kịch bản:
 from __future__ import annotations
 import sys
 import time
+import io
 from pathlib import Path
+
+# Windows cp1252 console không in được tiếng Việt → force UTF-8
+if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 URL = 'https://finscope-bfz4abyb4tq6fhg6rd3gkx.streamlit.app/'
 OUT_DIR = Path(__file__).resolve().parent
@@ -59,7 +65,7 @@ def main():
         sys.exit(1)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)  # headless=True để chạy nền
+        browser = p.chromium.launch(headless=True)  # headless để chạy nền tự động
         context = browser.new_context(
             viewport=VIEWPORT,
             record_video_dir=str(OUT_DIR),
@@ -84,11 +90,23 @@ def main():
 
         for i, (label, wait_s) in enumerate(SEQUENCE, start=3):
             print(f'[{i}/12] Click {label!r} (chờ {wait_s}s)')
-            try:
-                # Streamlit option_menu render label thành text trong span/p
-                page.get_by_text(label, exact=False).first.click(timeout=10_000)
-            except Exception as e:
-                print(f'   ⚠ Skip {label}: {e}')
+            clicked = False
+            # streamlit-option-menu render trong iframe — thử iframe trước
+            for f in page.frames:
+                try:
+                    if 'option_menu' in (f.name or '') or 'option_menu' in (f.url or ''):
+                        f.get_by_text(label, exact=False).first.click(timeout=5_000)
+                        clicked = True
+                        break
+                except Exception:
+                    continue
+            # Fallback: thử trên main page (cho sidebar/main button)
+            if not clicked:
+                try:
+                    page.get_by_text(label, exact=False).first.click(timeout=5_000)
+                    clicked = True
+                except Exception as e:
+                    print(f'   ⚠ Skip {label}: {str(e)[:80]}')
             time.sleep(wait_s)
             # Scroll xuống nửa trang để show thêm nội dung
             page.evaluate('window.scrollTo(0, document.body.scrollHeight / 2)')
