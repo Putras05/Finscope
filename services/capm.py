@@ -46,14 +46,29 @@ def fetch_vnindex(start: str = '2016-01-01',
     """Fetch daily close VN-Index qua vnstock VCI. Cache 6h.
 
     Trả DataFrame cột Ngay (date), Close (giá đóng cửa index).
+    v58 — Multi-source fallback (VCI → MSN → empty df) để không crash CAPM
+    page khi 1 source down. Bọc try/except chặt cho từng source.
     """
     from data._clients import vn_stock, throttle
     if end is None:
         end = _dt.date.today().isoformat()
-    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        throttle()
-        v = vn_stock('VNINDEX', 'VCI')
-        df = v.quote.history(start=start, end=end, interval='1D')
+    df = None
+    last_err = None
+    for source in ['VCI', 'MSN']:
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                throttle()
+                v = vn_stock('VNINDEX', source)
+                df = v.quote.history(start=start, end=end, interval='1D')
+            if df is not None and not df.empty:
+                break
+        except Exception as e:
+            last_err = e
+            df = None
+    if df is None or df.empty:
+        # Trả empty df đúng schema → CAPM caller check empty và hiện banner
+        # thân thiện thay vì raise ConnectionError xấu xí.
+        return pd.DataFrame(columns=['Ngay', 'Close', 'Return'])
     df = df.rename(columns={'time': 'Ngay', 'close': 'Close'})
     df['Ngay'] = pd.to_datetime(df['Ngay']).dt.date
     df = df.sort_values('Ngay').reset_index(drop=True)

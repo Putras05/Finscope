@@ -557,10 +557,20 @@ def _render_capm_section(sel, all_data, _T, is_en):
     with st.spinner('Đang tải VN-Index...' if not is_en else 'Loading VN-Index...'):
         try:
             vn = fetch_vnindex()
-        except Exception as e:
-            st.warning(
-                f'{"Không tải được VN-Index" if not is_en else "Could not load VN-Index"}: {e}')
-            return
+        except Exception:
+            vn = None
+
+    # v58 — Empty df / None handle gracefully (vnstock đôi khi fail trên Streamlit
+    # Cloud → multi-source fallback đã thử VCI+MSN; nếu cả 2 fail thì hiện banner
+    # thân thiện thay vì traceback ConnectionError).
+    if vn is None or vn.empty:
+        st.warning(
+            ('Tạm thời không tải được VN-Index để tính CAPM. '
+             'Nguồn dữ liệu có thể đang bảo trì — thử lại sau ít phút.')
+            if not is_en else
+            ('Could not load VN-Index for CAPM. The data source may be down — '
+             'please try again in a few minutes.'))
+        return
 
     rows = capm_table(all_data, vn, rf_annual_pct=float(rf_pct))
     if not rows:

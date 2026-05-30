@@ -25,6 +25,11 @@ _PLOTLY_CONFIG = {
     # showTips=False để tắt tooltip "double click to autoscale" của Plotly
     'showTips': False,
     'staticPlot': False,  # giữ tương tác (hover + drag = pan)
+    # v58 — GIỮ LẠI toImageButtonOptions key dù displayModeBar=False, vì 18+
+    # chỗ trong app_pages dùng pattern `{**_PLOTLY_CONFIG, 'toImageButtonOptions':
+    # {**_PLOTLY_CONFIG['toImageButtonOptions'], 'filename': '...'}}` để custom
+    # filename khi user export PNG. Bỏ key này gây KeyError vỡ chart.
+    'toImageButtonOptions': {'format': 'png', 'scale': 3, 'filename': 'finscope_chart'},
 }
 
 
