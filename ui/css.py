@@ -19,6 +19,27 @@ def _theme_css(T: dict) -> str:
     font-family: 'Consolas', 'Menlo', monospace !important;
 }}
 
+/* v58 — GLOBAL: card/badge containers (div có border-radius + padding) hay
+   bị clipped phía dưới do height inherent từ flex container. Force overflow
+   visible + min content. Áp dụng cho card pattern phổ biến (P/E, ROE, KPI,
+   pattern badges, sec-hdr, ...). */
+[data-testid="stMain"] div[style*="border-radius:"][style*="border:"] {{
+    overflow: visible !important;
+}}
+/* Card có border-top (KPI strip, ratios cards) — đảm bảo content không
+   chạm mép dưới. Padding-bottom + min-height đủ cho 3-4 dòng text. */
+[data-testid="stMain"] div[style*="border-top:3px"],
+[data-testid="stMain"] div[style*="border-top: 3px"] {{
+    padding-bottom: 14px !important;
+    overflow: visible !important;
+}}
+/* Banner header (Dashboard/Cơ bản/Chiến lược/Lịch sử) — gradient dark blue
+   thường bị cut at top. */
+[data-testid="stMain"] div[style*="linear-gradient"][style*="border-radius:"] {{
+    padding-top: 18px !important;
+    padding-bottom: 18px !important;
+}}
+
 /* sidebar handled by _SIDEBAR_CSS — injected separately */
 
 /* ══ MAIN CONTENT BUTTONS ════════════════════════════════════════════════════ */
