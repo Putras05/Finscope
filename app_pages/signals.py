@@ -63,9 +63,10 @@ def _render_user_alerts(ticker, df, _T):
     ):
         col_f, col_lst = _st.columns([1, 1.6])
         with col_f:
+            # v58.3 — padding-top 6px tránh label bị cắt bởi expander border
             _st.markdown(
-                f'<div style="font-size:12.5px;font-weight:700;color:{_T["text_primary"]};'
-                f'margin-bottom:4px">'
+                f'<div style="font-size:13px;font-weight:700;color:{_T["text_primary"]};'
+                f'margin:6px 0 10px;padding:2px 0;line-height:1.5">'
                 f'{"Đặt cảnh báo cho " if not is_en else "Set alert for "}'
                 f'<span style="color:{_T["accent"]}">{ticker}</span>'
                 f' · <span style="color:{_T["text_muted"]};font-weight:600">'

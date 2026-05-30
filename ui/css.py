@@ -403,6 +403,16 @@ def _theme_css(T: dict) -> str:
 [data-testid="stMain"] [data-testid="stMetricLabel"] p {{
     color: {T['text_secondary']} !important;
     background: transparent !important;
+    /* v58.3 — cho label wrap thay vì clip → "MAPE Kiểm tra" hiện đủ
+       chữ ngay cả khi cột hẹp do sidebar mở. */
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    line-height: 1.35 !important;
+}}
+[data-testid="stMain"] [data-testid="stMetricLabel"] {{
+    overflow: visible !important;
+    white-space: normal !important;
 }}
 [data-testid="stMain"] [data-testid="stMetricValue"],
 [data-testid="stMain"] [data-testid="stMetricValue"] * {{

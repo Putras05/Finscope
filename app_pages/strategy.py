@@ -198,13 +198,17 @@ def _technical_analysis_section(df, ticker, _T, is_en):
             _parr = '▲' if p['dir'] > 0 else '▼' if p['dir'] < 0 else '◆'
             _pnm = p['name_en'] if is_en else p['name']
             _pds = p['desc_en'] if is_en else p['desc']
+            # v58.3 — padding bottom + line-height 1.5 cho descender 'g','y'
+            # không bị cut. min-height đều card; break-word cho mô tả dài.
             _chips += (
                 f'<div style="flex:1 1 220px;min-width:200px;background:{_T["bg_card"]};'
                 f'border:1px solid {_T["border"]};border-left:3px solid {_pc};'
-                f'border-radius:8px;padding:8px 12px">'
-                f'<div style="font-size:12px;font-weight:700;color:{_pc}">'
-                f'{_parr} {_pnm}</div>'
-                f'<div style="font-size:10px;color:{_T["text_muted"]};margin-top:2px">'
+                f'border-radius:8px;padding:10px 12px 12px;min-height:74px;'
+                f'word-break:break-word">'
+                f'<div style="font-size:12px;font-weight:700;color:{_pc};'
+                f'line-height:1.4">{_parr} {_pnm}</div>'
+                f'<div style="font-size:10.5px;color:{_T["text_muted"]};'
+                f'margin-top:4px;line-height:1.55">'
                 f'{str(p["date"])[:10]} · {_pds}</div></div>')
         st.markdown(
             f'<div style="font-size:11px;font-weight:700;color:{_T["text_secondary"]};'
@@ -458,7 +462,8 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
             f'letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">'
             f'{"Kế hoạch vào lệnh (theo ATR)" if not is_en else "Trade plan (ATR-based)"}</div>'
             f'{_pr}'
-            f'<div style="font-size:12px;color:{_T["text_muted"]};margin-top:8px">'
+            f'<div style="font-size:12px;color:{_T["text_muted"]};'
+            f'margin-top:10px;line-height:1.6;padding-bottom:2px">'
             f'ATR(14) = <b>{atr*1000:,.0f} đ</b> &nbsp;·&nbsp; R:R ≈ <b>{rr:.2f}</b></div>'
             f'</div>', unsafe_allow_html=True)
 

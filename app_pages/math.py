@@ -325,7 +325,12 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
 
         _block(_T, 'FinScope Ensemble (inverse-MAPE weighted)',
                 'FinScope Ensemble (inverse-MAPE weighted)',
-                r'\hat{y}_t^{\,\text{ens}} = \frac{\sum_{i=1}^{K} w_i \cdot \hat{y}_t^{(i)}}{\sum_{i=1}^{K} w_i}, \quad w_i = \frac{1}{\text{MAPE}_i + \delta}',
+                # v58.3 — widehat + capital Y + \,\, để superscript ens
+                # không dính sát mũ; mathrm thay text cho thẳng đứng đều.
+                r'\widehat{Y}^{\,\mathrm{ens}}_{t} \;=\; '
+                r'\frac{\displaystyle\sum_{i=1}^{K} w_{i} \cdot \widehat{Y}^{(i)}_{t}}'
+                r'{\displaystyle\sum_{i=1}^{K} w_{i}}, \qquad '
+                r'w_{i} \;=\; \frac{1}{\mathrm{MAPE}_{i} + \delta}',
                 'Gộp K mô hình theo trọng số nghịch đảo MAPE — mô hình tốt hơn có trọng số cao hơn. Hằng số δ = 0.1 tránh chia 0.',
                 'Combines K models with weights inversely proportional to MAPE.',
                 components=[

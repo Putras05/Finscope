@@ -486,8 +486,11 @@ def _adv_equation(label, res, is_en):
                            if not is_en else
                            'inverse-MAPE weighted average: more accurate models get '
                            'larger weights → more robust forecast'))
-            st.latex(r"\hat{Y}_t=\sum_i w_i\,\hat{Y}_{i,t},\qquad"
-                     r"w_i=\frac{1/(\mathrm{MAPE}_i+0.1)}{\sum_j 1/(\mathrm{MAPE}_j+0.1)}")
+            # v58.3 — fix: 2 raw-string nối → "\qquadw_i" (LaTeX không nhận lệnh
+            # \qquadw_i) → render thô. Thêm space + dùng widehat cho rộng rãi.
+            st.latex(r"\widehat{Y}_{t} \;=\; \sum_{i} w_{i}\,\widehat{Y}_{i,t},"
+                     r"\qquad\qquad w_{i} \;=\; \frac{1 / (\mathrm{MAPE}_{i} + 0.1)}"
+                     r"{\sum_{j} 1 / (\mathrm{MAPE}_{j} + 0.1)}")
             _w = res.get('weights', {}) or {}
             if _w:
                 _wh = ('| Mô hình thành phần | Trọng số |\n|---|---|\n' if not is_en
