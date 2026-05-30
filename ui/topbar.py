@@ -83,13 +83,15 @@ def render_topbar() -> tuple:
 
     # ── Header thương hiệu — wordmark gradient + huy hiệu logo ───────────
     # WORDMARK: "Fin" đậm-tối + "Scope" gradient blue→teal (background-clip).
-    # Font-feature: liga + numeric tabular cho cảm giác chuyên nghiệp.
+    # v58 — line-height 1 → 1.3 + padding-bottom 2px để chống clip mép trên
+    # khi parent có overflow:hidden hoặc layout siết.
     _wm_html = (
         f"<span style='display:inline-flex;align-items:center;gap:10px;"
         f"font-family:Inter,system-ui,sans-serif;font-size:24px;"
-        f"font-weight:800;letter-spacing:-.8px;line-height:1'>"
+        f"font-weight:800;letter-spacing:-.8px;line-height:1.3;"
+        f"padding:2px 0;flex-shrink:0'>"
         f"{_LOGO_SVG}"
-        f"<span style='display:inline-block'>"
+        f"<span style='display:inline-block;line-height:1.2'>"
         f"<span style='color:{_HDR_TX}'>Fin</span>"
         f"<span style='background:linear-gradient(90deg,#1E40AF 0%,#0891B2 60%,#0F766E 100%);"
         f"-webkit-background-clip:text;background-clip:text;color:transparent;"
@@ -146,9 +148,13 @@ def render_topbar() -> tuple:
     # (gây tall button kéo height cả header + empty space giữa header và nav).
     _hdr_l, _hdr_r1, _hdr_r2 = st.columns([5.1, 1.2, 1.0])
     with _hdr_l:
+        # v58 — Container min-height + padding-top đảm bảo logo không clip
+        # ở mép trên page. overflow:visible (KHÔNG hidden) cho phép gradient
+        # text-stroke vẽ đầy đủ.
         st.markdown(
             f"<div style='display:flex;align-items:center;gap:14px;"
-            f"flex-wrap:nowrap;padding:6px 4px 4px'>"
+            f"flex-wrap:nowrap;padding:10px 4px 6px;"
+            f"min-height:50px;overflow:visible'>"
             f"{_wm_html}"
             f"<span style='font-size:10.5px;font-weight:700;color:#0F766E;"
             f"background:linear-gradient(90deg,#ECFEFF 0%,#F0FDFA 100%);"
@@ -324,10 +330,13 @@ def render_topbar() -> tuple:
 
     train_ratio = c[3].slider(t('sidebar.train_ratio'), 70, 90, 80, step=5,
                               format='%d%%', key='tb_ratio') / 100
+    # v58 — Bỏ value= khi đã có key= + session_state preset (Streamlit warn:
+    # 'widget created with default value but also had value set via Session
+    # State API'). Chỉ dùng KEY → session_state nắm value.
     if 'sb_ar_order' not in st.session_state:
         st.session_state['sb_ar_order'] = 1
     ar_order = c[4].number_input(
-        'p', min_value=1, max_value=100, value=st.session_state['sb_ar_order'],
+        'p', min_value=1, max_value=100,
         step=1, key='sb_ar_order', help=t('sidebar.ar_order_help'))
     _today = _dt.date.today()
     if 'sb_date_from' not in st.session_state:
