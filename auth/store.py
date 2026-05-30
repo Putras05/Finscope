@@ -111,8 +111,8 @@ def create_user(username: str, password: str,
     """
     if not isinstance(username, str) or not _USERNAME_RE.match(username.strip().lower()):
         return False, ('Tên đăng nhập 3–32 ký tự, chỉ chữ thường, số và . _ -'), None
-    if not isinstance(password, str) or len(password) < 6:
-        return False, 'Mật khẩu tối thiểu 6 ký tự.', None
+    if not isinstance(password, str) or len(password) < 6 or len(password) > 512:
+        return False, 'Mật khẩu 6–512 ký tự.', None
     if email is not None and email.strip() and not _EMAIL_RE.match(email.strip()):
         return False, 'Email không hợp lệ.', None
 

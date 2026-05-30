@@ -424,12 +424,14 @@ def _theme_css(T: dict) -> str:
 
 /* ══ LIVE DOT ANIMATION ══════════════════════════════════════════════════════ */
 @keyframes live-pulse {{
-    0%, 100% {{ opacity:1; transform:scale(1); box-shadow:0 0 6px #10B981; }}
-    50%       {{ opacity:.65; transform:scale(1.35); box-shadow:0 0 14px #10B981; }}
+    0%, 100% {{ opacity:1; transform:scale(1); box-shadow:0 0 6px {('#34D399' if T.get('is_dark') else '#10B981')}; }}
+    50%       {{ opacity:.65; transform:scale(1.35); box-shadow:0 0 14px {('#34D399' if T.get('is_dark') else '#10B981')}; }}
 }}
 .live-dot {{
+    /* v58 — green sáng hơn (#34D399) trên dark mode để contrast ≥ 4.5:1.
+       Light mode giữ #10B981 (đậm hơn) cho contrast trên nền trắng.       */
     display:inline-block; width:8px; height:8px; border-radius:50%;
-    background:#10B981; margin-right:5px; vertical-align:middle;
+    background:{('#34D399' if T.get('is_dark') else '#10B981')}; margin-right:5px; vertical-align:middle;
     animation: live-pulse 2s infinite;
 }}
 

@@ -44,6 +44,13 @@ def render(ticker, train_ratio, date_from, date_to, df, r1, r2, r3, m1, m2, m3, 
         return
 
     items = r['items']
+    # v58 — empty state explicit (RSS trả 0 tin, không phải fail)
+    if not items:
+        st.info(('Chưa có tin tức nào về mã này trong 24 giờ qua. '
+                 'Thử mã khác hoặc quay lại sau.') if not is_en else
+                ('No news for this ticker in the last 24 hours. '
+                 'Try another ticker or check back later.'))
+        return
     _dl_used = bool(r.get('dl_used'))   # PhoBERT đã chạy ngầm — luôn bật khi có sẵn
 
     # ── Badge trạng thái nguồn cảm xúc (không có toggle — chạy ngầm) ────

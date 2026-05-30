@@ -7,7 +7,10 @@ def calc_metrics(ytrue, ypred, k: int = 1) -> dict:
     rmse  = np.sqrt(mean_squared_error(ytrue, ypred))
     mae   = mean_absolute_error(ytrue, ypred)
     mask  = ytrue != 0
-    mape  = np.mean(np.abs((ytrue[mask] - ypred[mask]) / ytrue[mask])) * 100
+    # v58 — guard zero-size mask (mọi ytrue=0): tránh "zero-size array
+    # to reduction" crash khi mã có dữ liệu bất thường.
+    mape  = (np.mean(np.abs((ytrue[mask] - ypred[mask]) / ytrue[mask])) * 100
+             if mask.any() else float('nan'))
     ssr   = np.sum((ytrue - ypred) ** 2)
     sst   = np.sum((ytrue - np.mean(ytrue)) ** 2)
     r2    = 1 - ssr / sst if sst else 0
