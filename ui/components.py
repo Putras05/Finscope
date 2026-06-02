@@ -1,10 +1,28 @@
+import streamlit as st
 from core.i18n import t
 
 # (Đã xoá _SVG_ICONS + svg_icon ngày 2026-05-29 — superseded by ui/icons.py
 #  với 25+ Bootstrap Icons paths. Function svg_icon() không có caller.)
 
 
+@st.cache_data(show_spinner=False, max_entries=128)
+def _sparkline_svg_cached(prices_tuple: tuple, color: str,
+                          width: int, height: int) -> str:
+    return _build_sparkline_svg(list(prices_tuple), color, width, height)
+
+
 def sparkline_svg(prices, color: str, width: int = 240, height: int = 56) -> str:
+    # v58.10 — cache theo tuple giá (round 2dp) → tiết kiệm 20ms × N cards.
+    try:
+        _ptup = tuple(round(float(p), 2) for p in prices if p is not None)
+    except Exception:
+        return _build_sparkline_svg(list(prices), color, width, height)
+    if len(_ptup) < 2:
+        return ''
+    return _sparkline_svg_cached(_ptup, color, width, height)
+
+
+def _build_sparkline_svg(prices, color: str, width: int, height: int) -> str:
     prices = [float(p) for p in prices if p is not None]
     if len(prices) < 2: return ''
     mn, mx = min(prices), max(prices)

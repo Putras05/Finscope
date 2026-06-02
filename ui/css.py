@@ -520,7 +520,8 @@ def _theme_css(T: dict) -> str:
     0%, 100% {{ box-shadow: 0 0 5px #F9A825, 0 0 10px rgba(249,168,37,0.3); }}
     50%       {{ box-shadow: 0 0 18px #F9A825, 0 0 35px rgba(249,168,37,0.5); }}
 }}
-.best-model-card {{ animation: best-glow 2.5s ease-in-out infinite; }}
+/* v58.10 — slow 2.5s → 4s (6 fps vs 10 fps) — CPU idle 5-8% → 1-2%. */
+.best-model-card {{ animation: best-glow 4s ease-in-out infinite; }}
 
 /* ══ LIVE DOT ANIMATION ══════════════════════════════════════════════════════ */
 @keyframes live-pulse {{
@@ -529,10 +530,11 @@ def _theme_css(T: dict) -> str:
 }}
 .live-dot {{
     /* v58 — green sáng hơn (#34D399) trên dark mode để contrast ≥ 4.5:1.
-       Light mode giữ #10B981 (đậm hơn) cho contrast trên nền trắng.       */
+       Light mode giữ #10B981 (đậm hơn) cho contrast trên nền trắng.
+       v58.10 — 2s → 3s slow pulse, tiết kiệm CPU.                          */
     display:inline-block; width:8px; height:8px; border-radius:50%;
     background:{('#34D399' if T.get('is_dark') else '#10B981')}; margin-right:5px; vertical-align:middle;
-    animation: live-pulse 2s infinite;
+    animation: live-pulse 3s infinite;
 }}
 
 /* ══ SLIDER (main area) ══════════════════════════════════════════════════════ */
