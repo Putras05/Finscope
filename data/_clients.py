@@ -68,12 +68,10 @@ def vn_root():
     return Vnstock()
 
 
-@st.cache_resource(show_spinner=False, max_entries=256)
+@st.cache_resource(show_spinner=False, max_entries=128)
 def vn_stock(symbol: str, source: str = 'VCI'):
     """Stock handle cho 1 ticker — cached_resource theo (symbol, source).
     Mỗi ticker chỉ init 1 lần / process, không phải mỗi call.
-    v58.9: max_entries 128 → 256 (53 tickers × 3 sources = 159 > 128
-    → LRU eviction loop. Tăng để cover full universe.).
     """
     return vn_root().stock(symbol=symbol, source=source)
 

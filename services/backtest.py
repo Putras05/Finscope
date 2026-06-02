@@ -33,7 +33,6 @@ THAM KHẢO:
 from __future__ import annotations
 import numpy as np
 import pandas as pd
-import streamlit as st
 from typing import Optional
 
 # Bypass cached wrapper — walk-forward gọi N lần với N slice khác nhau, mỗi
@@ -102,56 +101,7 @@ def _max_dd_pct(equity: np.ndarray) -> float:
     return float(dd.min())
 
 
-def _df_fp(df: pd.DataFrame) -> tuple:
-    # Fingerprint nhẹ — đủ phân biệt 2 mã / 2 đoạn thời gian khác nhau.
-    if df is None or len(df) == 0:
-        return ('empty',)
-    try:
-        _last = float(df['Close'].iloc[-1])
-        _prev = float(df['Close'].iloc[-2]) if len(df) >= 2 else _last
-    except Exception:
-        _last, _prev = 0.0, 0.0
-    return (len(df), str(df.index[0]) if len(df) else '',
-            str(df.index[-1]) if len(df) else '', round(_last, 2), round(_prev, 2))
-
-
-@st.cache_data(ttl=900, show_spinner=False, max_entries=32,
-               hash_funcs={pd.DataFrame: _df_fp})
-def _run_backtest_cached(df: pd.DataFrame, ticker: str,
-                          entry_threshold: float, exit_threshold: float,
-                          warmup_bars: int, initial_capital: float,
-                          position_pct: float, include_fundamentals: bool,
-                          step: int, rf_annual_pct: float) -> dict:
-    """Cache wrapper — exclude on_progress callback (unhashable)."""
-    return _run_backtest_impl(df, ticker, entry_threshold, exit_threshold,
-                               warmup_bars, initial_capital, position_pct,
-                               include_fundamentals, step, rf_annual_pct, None)
-
-
 def run_backtest(df: pd.DataFrame, ticker: str,
-                  entry_threshold: float = 35.0,
-                  exit_threshold: float = 20.0,
-                  warmup_bars: int = 120,
-                  initial_capital: float = 100_000_000.0,
-                  position_pct: float = 0.30,
-                  include_fundamentals: bool = False,
-                  step: int = 5,
-                  rf_annual_pct: float = 4.7,
-                  on_progress=None) -> dict:
-    """Public entry — nếu không có progress callback, dùng cache. Có
-    callback (user xem tiến trình) thì bypass cache để on_progress fire."""
-    # v58.9 — cache walk-forward loop (200 iters × 500ms = 100s cold).
-    if on_progress is None:
-        return _run_backtest_cached(df, ticker, entry_threshold, exit_threshold,
-                                     warmup_bars, initial_capital, position_pct,
-                                     include_fundamentals, step, rf_annual_pct)
-    return _run_backtest_impl(df, ticker, entry_threshold, exit_threshold,
-                               warmup_bars, initial_capital, position_pct,
-                               include_fundamentals, step, rf_annual_pct,
-                               on_progress)
-
-
-def _run_backtest_impl(df: pd.DataFrame, ticker: str,
                   entry_threshold: float = 35.0,
                   exit_threshold: float = 20.0,
                   warmup_bars: int = 120,

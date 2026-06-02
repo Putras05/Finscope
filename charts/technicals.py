@@ -95,55 +95,40 @@ def chart_technical(df: pd.DataFrame, ticker: str, T: dict, *,
         except Exception:
             pass
 
-    # v58.9 — BATCH shapes + annotations 1 lần thay vì 9 lần add_hline.
-    # Mỗi add_hline rebuild figure internal → 9 calls = 800-1200ms.
-    # Gom hết vào _shapes/_annots, update_layout(shapes=..., annotations=...)
-    # 1 phát → cut 60%+ thời gian render chart kỹ thuật.
-    _shapes = list(fig.layout.shapes) if fig.layout.shapes else []
-    _annots = list(fig.layout.annotations) if fig.layout.annotations else []
-
     # ── Fibonacci thoái lui — nhãn dồn về PHẢI, font nhỏ, nền nhạt ───────
     if show_fib:
         fib = TA.fibonacci_levels(d, lookback=window)
         for r, px in fib.get('levels', []):
             if r in (0.0, 1.0):
                 continue
-            _shapes.append(dict(
-                type='line', xref='paper', yref='y', x0=0, x1=1,
-                y0=px * K, y1=px * K,
-                line=dict(color=_FIB_CLR, width=0.9, dash='dot'),
-                opacity=0.45))
-            _annots.append(dict(
-                xref='paper', yref='y', x=1, y=px * K,
-                text=f'Fib {r*100:.1f}%', xanchor='left', xshift=-2,
-                showarrow=False, font=dict(size=8, color=_FIB_CLR),
-                bgcolor='rgba(124,58,237,0.08)', borderpad=1))
+            fig.add_hline(
+                y=px * K, line=dict(color=_FIB_CLR, width=0.9, dash='dot'),
+                opacity=0.45,
+                annotation_text=f'Fib {r*100:.1f}%',
+                annotation_position='right',
+                annotation_font=dict(size=8, color=_FIB_CLR),
+                annotation_bgcolor='rgba(124,58,237,0.08)',
+                annotation_borderpad=1,
+                annotation_xshift=-2,
+            )
 
     # ── Hỗ trợ / Kháng cự — chỉ giữ TOP 2 mỗi bên cho gọn ──────────────
     if show_sr:
         sr = TA.support_resistance(d, lookback=window, max_levels=2)
         for px, strg in sr['resistance'][:2]:
-            _shapes.append(dict(
-                type='line', xref='paper', yref='y', x0=0, x1=1,
-                y0=px * K, y1=px * K,
-                line=dict(color=_RES_CLR, width=1.2, dash='solid'),
-                opacity=0.55))
-            _annots.append(dict(
-                xref='paper', yref='y', x=1, y=px * K, xanchor='left',
-                text=f'{"R" if is_en else "Kháng cự"} {px*K:,.0f} ·{strg}',
-                showarrow=False, font=dict(size=9, color=_RES_CLR)))
+            fig.add_hline(
+                y=px * K, line=dict(color=_RES_CLR, width=1.2, dash='solid'),
+                opacity=0.55,
+                annotation_text=f'{"R" if is_en else "Kháng cự"} {px*K:,.0f} ·{strg}',
+                annotation_position='right',
+                annotation_font=dict(size=9, color=_RES_CLR))
         for px, strg in sr['support'][:2]:
-            _shapes.append(dict(
-                type='line', xref='paper', yref='y', x0=0, x1=1,
-                y0=px * K, y1=px * K,
-                line=dict(color=_SUP_CLR, width=1.2, dash='solid'),
-                opacity=0.55))
-            _annots.append(dict(
-                xref='paper', yref='y', x=1, y=px * K, xanchor='left',
-                text=f'{"S" if is_en else "Hỗ trợ"} {px*K:,.0f} ·{strg}',
-                showarrow=False, font=dict(size=9, color=_SUP_CLR)))
-
-    fig.update_layout(shapes=_shapes, annotations=_annots)
+            fig.add_hline(
+                y=px * K, line=dict(color=_SUP_CLR, width=1.2, dash='solid'),
+                opacity=0.55,
+                annotation_text=f'{"S" if is_en else "Hỗ trợ"} {px*K:,.0f} ·{strg}',
+                annotation_position='right',
+                annotation_font=dict(size=9, color=_SUP_CLR))
 
     # ── ZigZag — line + marker, BỎ số (gọn hơn) ─────────────────────────
     if show_zigzag:
